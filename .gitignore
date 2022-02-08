@@ -1,0 +1,22 @@
+node_modules
+yarn.lock
+
+#Hardhat files
+cache
+artifacts
+deployments
+typechain
+coverage
+coverage.json
+
+.idea
+.hardhat
+secrets.ts
+.openzeppelin
+.tenderly
+arguments-*.js
+sh
+tmp
+settings.ts
+.env
+docs

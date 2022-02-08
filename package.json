@@ -1,0 +1,81 @@
+{
+  "name": "gasly",
+  "version": "1.0.0",
+  "description": "Gasly contracts monorepo",
+  "main": "hardhat.config.ts",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "build": "npm run clean && npm run compile",
+    "clean": "npx hardhat clean",
+    "compile": "npx hardhat compile",
+    "test": "npm run build && npx hardhat test",
+    "coverage": "npm run build && npx cross-env NODE_OPTIONS=\"--max_old_space_size=8192\" hardhat coverage --temp artifacts --max-memory 4096",
+    "slither": "npm run build && slither .",
+    "lint": "tslint -p tsconfig.json",
+    "lint-fix": "tslint --fix -p tsconfig.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gasly/gasly-contracts.git"
+  },
+  "keywords": [
+    "solidity",
+    "ethereum",
+    "polygon",
+    "bsc",
+    "smart",
+    "contracts",
+    "gasly"
+  ],
+  "author": "Gasly team <admin@gasly.io>",
+  "license": "MIT",
+  "homepage": "https://gasly.org/",
+  "dependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.0.4",
+    "@nomiclabs/hardhat-etherscan": "^3.0.0",
+    "@nomiclabs/hardhat-solhint": "^2.0.0",
+    "@nomiclabs/hardhat-waffle": "^2.0.2",
+    "@nomiclabs/hardhat-web3": "^2.0.0",
+    "@openzeppelin/contracts": "4.3.2",
+    "@openzeppelin/contracts-upgradeable": "4.3.2",
+    "@openzeppelin/hardhat-upgrades": "^1.10.0",
+    "@tenderly/hardhat-tenderly": "^1.0.12",
+    "@typechain/ethers-v5": "^7.2.0",
+    "@typechain/hardhat": "^4.0.0",
+    "@types/chai": "^4.2.22",
+    "@types/chai-as-promised": "^7.1.4",
+    "@types/chai-string": "^1.4.2",
+    "@types/mocha": "^8.2.2",
+    "@types/node": "^17.0.12",
+    "axios": "^0.21.4",
+    "chai": "^4.3.4",
+    "chai-as-promised": "^7.1.1",
+    "dotenv": "^10.0.0",
+    "ethereum-waffle": "^3.4.0",
+    "ethereumjs-tx": "^2.1.2",
+    "ethers": "^5.5.3",
+    "hardhat": "^2.8.3",
+    "hardhat-contract-sizer": "^2.1.1",
+    "hardhat-deploy": "^0.9.28",
+    "hardhat-docgen": "^1.1.2",
+    "hardhat-etherscan-abi": "^0.1.1",
+    "hardhat-gas-reporter": "^1.0.4",
+    "hardhat-tracer": "^1.0.0-alpha.6",
+    "hardhat-typechain": "^0.3.5",
+    "mocha": "^8.4.0",
+    "solc-0.8.4": "npm:solc@^0.8.9",
+    "solidity-coverage": "^0.7.17",
+    "ts-generator": "^0.1.1",
+    "ts-node": "^10.4.0",
+    "tslint": "^6.1.3",
+    "tslog": "^3.2.2",
+    "typechain": "^7.0.0",
+    "typescript": "^4.5.5",
+    "yargs": "^17.2.1"
+  },
+  "engines": {
+    "node": "^14.18.1"
+  }
+}

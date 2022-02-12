@@ -6,8 +6,8 @@ import "../../interface/IERC20.sol";
 
 contract BaseV1 is IERC20 {
 
-  string public constant symbol = "GASLY";
-  string public constant name = "Gasly";
+  string public constant symbol = "DYST";
+  string public constant name = "Dystopia token";
   uint8 public constant decimals = 18;
   uint public override totalSupply = 0;
 

@@ -15,7 +15,7 @@ import "solidity-coverage"
 dotEnvConfig();
 // tslint:disable-next-line:no-var-requires
 const argv = require('yargs/yargs')()
-  .env('GASLY')
+  .env('')
   .options({
     hardhatChainId: {
       type: "number",

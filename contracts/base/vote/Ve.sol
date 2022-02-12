@@ -54,8 +54,8 @@ contract Ve is IERC721, IERC721Metadata, IVe {
   mapping(uint => bool) public voted;
   address public voter;
 
-  string constant public override name = "veNFT";
-  string constant public override symbol = "veNFT";
+  string constant public override name = "veDYST";
+  string constant public override symbol = "veDYST";
   string constant public version = "1.0.0";
   uint8 constant public decimals = 18;
 
@@ -991,7 +991,7 @@ contract Ve is IERC721, IERC721Metadata, IVe {
     output = string(abi.encodePacked(output, "locked_end ", toString(_locked_end), '</text><text x="10" y="310" class="base">'));
     output = string(abi.encodePacked(output, "value ", toString(_value), '</text></svg>'));
 
-    string memory json = Base64.encode(bytes(string(abi.encodePacked('{"name": "lock #', toString(_tokenId), '", "description": "Gasly locks, can be used to boost gauge yields, vote on token emission, and receive bribes", "image": "data:image/svg+xml;base64,', Base64.encode(bytes(output)), '"}'))));
+    string memory json = Base64.encode(bytes(string(abi.encodePacked('{"name": "lock #', toString(_tokenId), '", "description": "Dystopia locks, can be used to boost gauge yields, vote on token emission, and receive bribes", "image": "data:image/svg+xml;base64,', Base64.encode(bytes(output)), '"}'))));
     output = string(abi.encodePacked('data:application/json;base64,', json));
   }
 

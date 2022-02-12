@@ -1,7 +1,7 @@
 {
-  "name": "gasly",
+  "name": "dystopia",
   "version": "1.0.0",
-  "description": "Gasly contracts monorepo",
+  "description": "Dystopia contracts monorepo",
   "main": "hardhat.config.ts",
   "directories": {
     "test": "test"
@@ -18,7 +18,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/gasly/gasly-contracts.git"
+    "url": "https://github.com/dystopia-exchange/dystopia-contracts.git"
   },
   "keywords": [
     "solidity",
@@ -26,12 +26,11 @@
     "polygon",
     "bsc",
     "smart",
-    "contracts",
-    "gasly"
+    "contracts"
   ],
-  "author": "Gasly team <admin@gasly.io>",
+  "author": "Dystopia team <admin@dystopia.exchange>",
   "license": "MIT",
-  "homepage": "https://gasly.org/",
+  "homepage": "https://dystopia.exchange/",
   "dependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.4",
     "@nomiclabs/hardhat-etherscan": "^3.0.0",

@@ -1,5 +1,5 @@
-## Gasly
-GASLY allows low cost, near 0 slippage trades on uncorrelated or tightly correlated assets. The protocol incentivizes fees instead of liquidity. Liquidity providers (LPs) are given incentives in the form of `token`, the amount received is calculated as follows;
+## Dystopia
+Dystopia allows low cost, near 0 slippage trades on uncorrelated or tightly correlated assets. The protocol incentivizes fees instead of liquidity. Liquidity providers (LPs) are given incentives in the form of `token`, the amount received is calculated as follows;
 
 * 100% of weekly distribution weighted on votes from ve-token holders
 
@@ -9,9 +9,9 @@ LPs with 0 ve* balance, will earn a maximum of 40%.
 
 ## AMM
 
-What differentiates GASLY's AMM;
+What differentiates Dystopia's AMM;
 
-GASLY AMMs are compatible with all the standard features as popularized by Uniswap V2, these include;
+Dystopia AMMs are compatible with all the standard features as popularized by Uniswap V2, these include;
 
 * Lazy LP management
 * Fungible LP positions
@@ -21,7 +21,7 @@ GASLY AMMs are compatible with all the standard features as popularized by Unisw
 * Direct LP rewards via `skim`
 * xy>=k
 
-GASLY adds on the following features;
+Dystopia adds on the following features;
 
 * 0 upkeep 30 minute TWAPs. This means no additional upkeep is required, you can quote directly from the pair
 * Fee split. Fees do not auto accrue, this allows external protocols to be able to profit from the fee claim

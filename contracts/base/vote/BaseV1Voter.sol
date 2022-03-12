@@ -51,7 +51,7 @@ contract BaseV1Voter is IVoter {
     constructor(address __ve, address _factory, address  _gauges, address _bribes) {
         _ve = __ve;
         factory = _factory;
-        base = ve(__ve).token();
+        base = IVe(__ve).token();
         gaugefactory = _gauges;
         bribefactory = _bribes;
         minter = msg.sender;
@@ -75,13 +75,13 @@ contract BaseV1Voter is IVoter {
     }
 
     function listing_fee() public view returns (uint) {
-        return (erc20(base).totalSupply() - erc20(_ve).totalSupply()) / 200;
+        return (IERC20(base).totalSupply() - IERC20(_ve).totalSupply()) / 200;
     }
 
     function reset(uint _tokenId) external {
-        require(ve(_ve).isApprovedOrOwner(msg.sender, _tokenId));
+        require(IVe(_ve).isApprovedOrOwner(msg.sender, _tokenId));
         _reset(_tokenId);
-        ve(_ve).abstain(_tokenId);
+        IVe(_ve).abstain(_tokenId);
     }
 
     function _reset(uint _tokenId) internal {
@@ -126,7 +126,7 @@ contract BaseV1Voter is IVoter {
     function _vote(uint _tokenId, address[] memory _poolVote, int256[] memory _weights) internal {
         _reset(_tokenId);
         uint _poolCnt = _poolVote.length;
-        int256 _weight = int256(ve(_ve).balanceOfNFT(_tokenId));
+        int256 _weight = int256(IVe(_ve).balanceOfNFT(_tokenId));
         int256 _totalVoteWeight = 0;
         int256 _totalWeight = 0;
         int256 _usedWeight = 0;
@@ -159,21 +159,21 @@ contract BaseV1Voter is IVoter {
                 emit Voted(msg.sender, _tokenId, _poolWeight);
             }
         }
-        if (_usedWeight > 0) ve(_ve).voting(_tokenId);
+        if (_usedWeight > 0) IVe(_ve).voting(_tokenId);
         totalWeight += uint256(_totalWeight);
         usedWeights[_tokenId] = uint256(_usedWeight);
     }
 
     function vote(uint tokenId, address[] calldata _poolVote, int256[] calldata _weights) external {
-        require(ve(_ve).isApprovedOrOwner(msg.sender, tokenId));
+        require(IVe(_ve).isApprovedOrOwner(msg.sender, tokenId));
         require(_poolVote.length == _weights.length);
         _vote(tokenId, _poolVote, _weights);
     }
 
     function whitelist(address _token, uint _tokenId) public {
         if (_tokenId > 0) {
-            require(msg.sender == ve(_ve).ownerOf(_tokenId));
-            require(ve(_ve).balanceOfNFT(_tokenId) > listing_fee());
+            require(msg.sender == IERC721(_ve).ownerOf(_tokenId));
+            require(IVe(_ve).balanceOfNFT(_tokenId) > listing_fee());
         } else {
             _safeTransferFrom(base, msg.sender, minter, listing_fee());
         }
@@ -189,12 +189,12 @@ contract BaseV1Voter is IVoter {
 
     function createGauge(address _pool) external returns (address) {
         require(gauges[_pool] == address(0x0), "exists");
-        require(IBaseV1Factory(factory).isPair(_pool), "!_pool");
-        (address tokenA, address tokenB) = IBaseV1Core(_pool).tokens();
+        require(IFactory(factory).isPair(_pool), "!_pool");
+        (address tokenA, address tokenB) = IPair(_pool).tokens();
         require(isWhitelisted[tokenA] && isWhitelisted[tokenB], "!whitelisted");
-        address _bribe = IBaseV1BribeFactory(bribefactory).createBribe();
-        address _gauge = IBaseV1GaugeFactory(gaugefactory).createGauge(_pool, _bribe, _ve);
-        erc20(base).approve(_gauge, type(uint).max);
+        address _bribe = IBribeFactory(bribefactory).createBribe();
+        address _gauge = IGaugeFactory(gaugefactory).createGauge(_pool, _bribe, _ve);
+        IERC20(base).approve(_gauge, type(uint).max);
         bribes[_gauge] = _bribe;
         gauges[_pool] = _gauge;
         poolForGauge[_gauge] = _pool;
@@ -207,7 +207,7 @@ contract BaseV1Voter is IVoter {
 
     function attachTokenToGauge(uint tokenId, address account) external {
         require(isGauge[msg.sender]);
-        if (tokenId > 0) ve(_ve).attach(tokenId);
+        if (tokenId > 0) IVe(_ve).attach(tokenId);
         emit Attach(account, msg.sender, tokenId);
     }
 
@@ -218,7 +218,7 @@ contract BaseV1Voter is IVoter {
 
     function detachTokenFromGauge(uint tokenId, address account) external {
         require(isGauge[msg.sender]);
-        if (tokenId > 0) ve(_ve).detach(tokenId);
+        if (tokenId > 0) IVe(_ve).detach(tokenId);
         emit Detach(account, msg.sender, tokenId);
     }
 
@@ -288,14 +288,14 @@ contract BaseV1Voter is IVoter {
     }
 
     function claimBribes(address[] memory _bribes, address[][] memory _tokens, uint _tokenId) external {
-        require(ve(_ve).isApprovedOrOwner(msg.sender, _tokenId));
+        require(IVe(_ve).isApprovedOrOwner(msg.sender, _tokenId));
         for (uint i = 0; i < _bribes.length; i++) {
             IBribe(_bribes[i]).getRewardForOwner(_tokenId, _tokens[i]);
         }
     }
 
     function claimFees(address[] memory _fees, address[][] memory _tokens, uint _tokenId) external {
-        require(ve(_ve).isApprovedOrOwner(msg.sender, _tokenId));
+        require(IVe(_ve).isApprovedOrOwner(msg.sender, _tokenId));
         for (uint i = 0; i < _fees.length; i++) {
             IBribe(_fees[i]).getRewardForOwner(_tokenId, _tokens[i]);
         }
@@ -341,7 +341,7 @@ contract BaseV1Voter is IVoter {
     function _safeTransferFrom(address token, address from, address to, uint256 value) internal {
         require(token.code.length > 0);
         (bool success, bytes memory data) =
-        token.call(abi.encodeWithSelector(erc20.transferFrom.selector, from, to, value));
+        token.call(abi.encodeWithSelector(IERC20.transferFrom.selector, from, to, value));
         require(success && (data.length == 0 || abi.decode(data, (bool))));
     }
 }

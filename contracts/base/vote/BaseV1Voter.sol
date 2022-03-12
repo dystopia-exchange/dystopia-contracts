@@ -153,6 +153,8 @@ contract BaseV1Voter is IVoter {
 
       if (isGauge[_gauge]) {
         int256 _poolWeight = _weights[i] * _weight / _totalVoteWeight;
+        require(votes[_tokenId][_pool] == 0);
+        require(_poolWeight != 0);
         _updateFor(_gauge);
 
         poolVote[_tokenId].push(_pool);

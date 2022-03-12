@@ -36,7 +36,6 @@ contract Gauge is IGauge {
 
   mapping(address => mapping(address => uint)) public lastEarn;
   mapping(address => mapping(address => uint)) public userRewardPerTokenStored;
-  mapping(address => mapping(address => uint)) public userRewards;
 
   mapping(address => uint) public tokenIds;
 
@@ -271,7 +270,6 @@ contract Gauge is IGauge {
       (rewardPerTokenStored[tokens[i]], lastUpdateTime[tokens[i]]) = _updateRewardPerToken(tokens[i]);
 
       uint _reward = earned(tokens[i], account);
-      userRewards[tokens[i]][account] = 0;
       lastEarn[tokens[i]][account] = block.timestamp;
       userRewardPerTokenStored[tokens[i]][account] = rewardPerTokenStored[tokens[i]];
       if (_reward > 0) _safeTransfer(tokens[i], account, _reward);
@@ -327,6 +325,9 @@ contract Gauge is IGauge {
     if (supplyNumCheckpoints == 0) {
       return (reward, _startTimestamp);
     }
+    if (rewardRate[token] == 0) {
+            return (reward, block.timestamp);
+    }
 
     uint _startIndex = getPriorSupplyIndex(_startTimestamp);
     uint _endIndex = Math.min(supplyNumCheckpoints-1, maxRuns);
@@ -357,7 +358,10 @@ contract Gauge is IGauge {
     if (supplyNumCheckpoints == 0) {
       return (reward, _startTimestamp);
     }
-
+    if (rewardRate[token] == 0) {
+      _writeRewardPerTokenCheckpoint(token, reward, block.timestamp);
+      return (reward, block.timestamp);
+    }
     uint _startIndex = getPriorSupplyIndex(_startTimestamp);
     uint _endIndex = supplyNumCheckpoints-1;
 
@@ -387,15 +391,15 @@ contract Gauge is IGauge {
 
   // earned is an estimation, it won't be exact till the supply > rewardPerToken calculations have run
   function earned(address token, address account) public view returns (uint) {
-    uint _startTimestamp = lastEarn[token][account];
+    uint _startTimestamp = Math.max(lastEarn[token][account], rewardPerTokenCheckpoints[token][0].timestamp);
     if (numCheckpoints[account] == 0) {
-      return userRewards[token][account];
+      return 0;
     }
 
     uint _startIndex = getPriorBalanceIndex(account, _startTimestamp);
     uint _endIndex = numCheckpoints[account]-1;
 
-    uint reward = userRewards[token][account];
+    uint reward = 0;
 
     if (_endIndex - _startIndex > 1) {
       for (uint i = _startIndex; i < _endIndex-1; i++) {
@@ -495,6 +499,8 @@ contract Gauge is IGauge {
 
   function notifyRewardAmount(address token, uint amount) external override lock {
     require(token != stake);
+    require(amount > 0);
+        if (rewardRate[token] == 0) _writeRewardPerTokenCheckpoint(token, 0, block.timestamp);
     (rewardPerTokenStored[token], lastUpdateTime[token]) = _updateRewardPerToken(token);
     _claimFees();
 

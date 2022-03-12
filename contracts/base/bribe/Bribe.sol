@@ -30,7 +30,6 @@ contract Bribe is IBribe{
 
   mapping(address => mapping(uint => uint)) public lastEarn;
   mapping(address => mapping(uint => uint)) public userRewardPerTokenStored;
-  mapping(address => mapping(uint => uint)) public userRewards;
 
   address[] public rewards;
   mapping(address => bool) public isReward;
@@ -289,6 +288,9 @@ contract Bribe is IBribe{
     if (supplyNumCheckpoints == 0) {
       return (reward, _startTimestamp);
     }
+    if (rewardRate[token] == 0) {
+            return (reward, block.timestamp);
+        }
 
     uint _startIndex = getPriorSupplyIndex(_startTimestamp);
     uint _endIndex = Math.min(supplyNumCheckpoints - 1, maxRuns);
@@ -319,7 +321,9 @@ contract Bribe is IBribe{
     if (supplyNumCheckpoints == 0) {
       return (reward, _startTimestamp);
     }
-
+    if (rewardRate[token] == 0) {
+            return (reward, block.timestamp);
+    }
     uint _startIndex = getPriorSupplyIndex(_startTimestamp);
     uint _endIndex = supplyNumCheckpoints - 1;
 
@@ -348,15 +352,15 @@ contract Bribe is IBribe{
   }
 
   function earned(address token, uint tokenId) public view returns (uint) {
-    uint _startTimestamp = lastEarn[token][tokenId];
+    uint _startTimestamp = Math.max(lastEarn[token][tokenId], rewardPerTokenCheckpoints[token][0].timestamp);
     if (numCheckpoints[tokenId] == 0) {
-      return userRewards[token][tokenId];
+      return 0;
     }
 
     uint _startIndex = getPriorBalanceIndex(tokenId, _startTimestamp);
     uint _endIndex = numCheckpoints[tokenId] - 1;
 
-    uint reward = userRewards[token][tokenId];
+    uint reward = 0;
 
     if (_endIndex - _startIndex > 1) {
       for (uint i = _startIndex; i < _endIndex - 1; i++) {
@@ -408,6 +412,8 @@ contract Bribe is IBribe{
   /// @dev Used to notify a gauge/bribe of a given reward,
   ///      this can create griefing attacks by extending rewards
   function notifyRewardAmount(address token, uint amount) external lock override {
+    require(amount > 0);
+    if (rewardRate[token] == 0) _writeRewardPerTokenCheckpoint(token, 0, block.timestamp);
     (rewardPerTokenStored[token], lastUpdateTime[token]) = _updateRewardPerToken(token);
 
     if (block.timestamp >= periodFinish[token]) {

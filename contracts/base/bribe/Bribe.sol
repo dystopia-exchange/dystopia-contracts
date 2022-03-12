@@ -10,7 +10,8 @@ import "../../interface/IVoter.sol";
 import "../../interface/IVe.sol";
 
 
-// Bribes pay out rewards for a given pool based on the votes that were received from the user (goes hand in hand with BaseV1Gauges.vote())
+// Bribes pay out rewards for a given pool based on the votes that
+//were received from the user (goes hand in hand with BaseV1Gauges.vote())
 contract Bribe is IBribe{
 
     address public immutable factory; // only factory can modify balances (since it only happens on vote())
@@ -72,7 +73,7 @@ contract Bribe is IBribe{
 
     constructor(address _factory) {
         factory = _factory;
-        _ve = IBaseV1Voter(_factory)._ve();
+        _ve = IVoter(_factory)._ve();
     }
 
     // simple re-entrancy check
@@ -233,7 +234,7 @@ contract Bribe is IBribe{
 
     // allows a user to claim rewards for a given token
     function getReward(uint tokenId, address[] memory tokens) external lock  {
-        require(ve(_ve).isApprovedOrOwner(msg.sender, tokenId));
+        require(IVe(_ve).isApprovedOrOwner(msg.sender, tokenId));
         for (uint i = 0; i < tokens.length; i++) {
             (rewardPerTokenStored[tokens[i]], lastUpdateTime[tokens[i]]) = _updateRewardPerToken(tokens[i]);
 
@@ -249,7 +250,7 @@ contract Bribe is IBribe{
     // used by BaseV1Voter to allow batched reward claims
     function getRewardForOwner(uint tokenId, address[] memory tokens) external lock  {
         require(msg.sender == factory);
-        address _owner = ve(_ve).ownerOf(tokenId);
+        address _owner = IERC721(_ve).ownerOf(tokenId);
         for (uint i = 0; i < tokens.length; i++) {
             (rewardPerTokenStored[tokens[i]], lastUpdateTime[tokens[i]]) = _updateRewardPerToken(tokens[i]);
 
@@ -374,7 +375,8 @@ contract Bribe is IBribe{
         return reward;
     }
 
-    // This is an external function, but internal notation is used since it can only be called "internally" from BaseV1Gauges
+    // This is an external function, but internal notation is used 
+    //since it can only be called "internally" from BaseV1Gauges
     function _deposit(uint amount, uint tokenId) external {
         require(msg.sender == factory);
         totalSupply += amount;
@@ -420,7 +422,7 @@ contract Bribe is IBribe{
             rewardRate[token] = (amount + _left) / DURATION;
         }
         require(rewardRate[token] > 0);
-        uint balance = erc20(token).balanceOf(address(this));
+        uint balance = IERC20(token).balanceOf(address(this));
         require(rewardRate[token] <= balance / DURATION, "Provided reward too high");
         periodFinish[token] = block.timestamp + DURATION;
         if (!isReward[token]) {
@@ -434,14 +436,14 @@ contract Bribe is IBribe{
     function _safeTransfer(address token, address to, uint256 value) internal {
         require(token.code.length > 0);
         (bool success, bytes memory data) =
-        token.call(abi.encodeWithSelector(erc20.transfer.selector, to, value));
+        token.call(abi.encodeWithSelector(IERC20.transfer.selector, to, value));
         require(success && (data.length == 0 || abi.decode(data, (bool))));
     }
 
     function _safeTransferFrom(address token, address from, address to, uint256 value) internal {
         require(token.code.length > 0);
         (bool success, bytes memory data) =
-        token.call(abi.encodeWithSelector(erc20.transferFrom.selector, from, to, value));
+        token.call(abi.encodeWithSelector(IERC20.transferFrom.selector, from, to, value));
         require(success && (data.length == 0 || abi.decode(data, (bool))));
     }
 }

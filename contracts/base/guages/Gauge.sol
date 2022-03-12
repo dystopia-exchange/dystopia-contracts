@@ -42,24 +42,6 @@ contract Gauge is IGauge {
     address[] public rewards;
     mapping(address => bool) public isReward;
 
-    /// @notice A checkpoint for marking balance
-    struct Checkpoint {
-        uint timestamp;
-        uint balanceOf;
-    }
-
-    /// @notice A checkpoint for marking reward rate
-    struct RewardPerTokenCheckpoint {
-        uint timestamp;
-        uint rewardPerToken;
-    }
-
-    /// @notice A checkpoint for marking supply
-    struct SupplyCheckpoint {
-        uint timestamp;
-        uint supply;
-    }
-
     /// @notice A record of balance checkpoints for each account, by index
     mapping (address => mapping (uint => Checkpoint)) public checkpoints;
     /// @notice The number of checkpoints for each account
@@ -103,11 +85,11 @@ contract Gauge is IGauge {
     }
 
     function _claimFees() internal returns (uint claimed0, uint claimed1) {
-        (claimed0, claimed1) = IBaseV1Core(stake).claimFees();
+        (claimed0, claimed1) = IPair(stake).claimFees();
         if (claimed0 > 0 || claimed1 > 0) {
             uint _fees0 = fees0 + claimed0;
             uint _fees1 = fees1 + claimed1;
-            (address _token0, address _token1) = IBaseV1Core(stake).tokens();
+            (address _token0, address _token1) = IPair(stake).tokens();
             if (_fees0 > IBribe(bribe).left(_token0) && _fees0 / DURATION > 0) {
                 fees0 = 0;
                 _safeApprove(_token0, bribe, _fees0);
@@ -277,7 +259,7 @@ contract Gauge is IGauge {
     function getReward(address account, address[] memory tokens) external lock {
         require(msg.sender == account || msg.sender == voter);
         _unlocked = 1;
-        Voter(voter).distribute(address(this));
+        IVoter(voter).distribute(address(this));
         _unlocked = 2;
 
         for (uint i = 0; i < tokens.length; i++) {
@@ -314,9 +296,9 @@ contract Gauge is IGauge {
         uint _balance = balanceOf[account];
         uint _derived = _balance * 40 / 100;
         uint _adjusted = 0;
-        uint _supply = erc20(_ve).totalSupply();
-        if (account == ve(_ve).ownerOf(_tokenId) && _supply > 0) {
-            _adjusted = ve(_ve).balanceOfNFT(_tokenId);
+        uint _supply = IERC20(_ve).totalSupply();
+        if (account == IERC721(_ve).ownerOf(_tokenId) && _supply > 0) {
+            _adjusted = IVe(_ve).balanceOfNFT(_tokenId);
             _adjusted = (totalSupply * _adjusted / _supply) * 60 / 100;
         }
         return Math.min((_derived + _adjusted), _balance);
@@ -429,7 +411,7 @@ contract Gauge is IGauge {
     }
 
     function depositAll(uint tokenId) external {
-        deposit(erc20(stake).balanceOf(msg.sender), tokenId);
+        deposit(IERC20(stake).balanceOf(msg.sender), tokenId);
     }
 
     function deposit(uint amount, uint tokenId) public lock {
@@ -440,10 +422,10 @@ contract Gauge is IGauge {
         balanceOf[msg.sender] += amount;
 
         if (tokenId > 0) {
-            require(ve(_ve).ownerOf(tokenId) == msg.sender);
+            require(IERC721(_ve).ownerOf(tokenId) == msg.sender);
             if (tokenIds[msg.sender] == 0) {
                 tokenIds[msg.sender] = tokenId;
-                Voter(voter).attachTokenToGauge(tokenId, msg.sender);
+                IVoter(voter).attachTokenToGauge(tokenId, msg.sender);
             }
             require(tokenIds[msg.sender] == tokenId);
         } else {
@@ -459,7 +441,7 @@ contract Gauge is IGauge {
         _writeCheckpoint(msg.sender, _derivedBalance);
         _writeSupplyCheckpoint();
 
-        Voter(voter).emitDeposit(tokenId, msg.sender, amount);
+        IVoter(voter).emitDeposit(tokenId, msg.sender, amount);
         emit Deposit(msg.sender, tokenId, amount);
     }
 
@@ -483,7 +465,7 @@ contract Gauge is IGauge {
         if (tokenId > 0) {
             require(tokenId == tokenIds[msg.sender]);
             tokenIds[msg.sender] = 0;
-            Voter(voter).detachTokenFromGauge(tokenId, msg.sender);
+            IVoter(voter).detachTokenFromGauge(tokenId, msg.sender);
         } else {
             tokenId = tokenIds[msg.sender];
         }
@@ -497,7 +479,7 @@ contract Gauge is IGauge {
         _writeCheckpoint(msg.sender, derivedBalances[msg.sender]);
         _writeSupplyCheckpoint();
 
-        Voter(voter).emitWithdraw(tokenId, msg.sender, amount);
+        IVoter(voter).emitWithdraw(tokenId, msg.sender, amount);
         emit Withdraw(msg.sender, tokenId, amount);
     }
 
@@ -525,7 +507,7 @@ contract Gauge is IGauge {
             rewardRate[token] = (amount + _left) / DURATION;
         }
         require(rewardRate[token] > 0);
-        uint balance = erc20(token).balanceOf(address(this));
+        uint balance = IERC20(token).balanceOf(address(this));
         require(rewardRate[token] <= balance / DURATION, "Provided reward too high");
         periodFinish[token] = block.timestamp + DURATION;
         if (!isReward[token]) {
@@ -539,21 +521,21 @@ contract Gauge is IGauge {
     function _safeTransfer(address token, address to, uint256 value) internal {
         require(token.code.length > 0);
         (bool success, bytes memory data) =
-        token.call(abi.encodeWithSelector(erc20.transfer.selector, to, value));
+        token.call(abi.encodeWithSelector(IERC20.transfer.selector, to, value));
         require(success && (data.length == 0 || abi.decode(data, (bool))));
     }
 
     function _safeTransferFrom(address token, address from, address to, uint256 value) internal {
         require(token.code.length > 0);
         (bool success, bytes memory data) =
-        token.call(abi.encodeWithSelector(erc20.transferFrom.selector, from, to, value));
+        token.call(abi.encodeWithSelector(IERC20.transferFrom.selector, from, to, value));
         require(success && (data.length == 0 || abi.decode(data, (bool))));
     }
 
     function _safeApprove(address token, address spender, uint256 value) internal {
         require(token.code.length > 0);
         (bool success, bytes memory data) =
-        token.call(abi.encodeWithSelector(erc20.approve.selector, spender, value));
+        token.call(abi.encodeWithSelector(IERC20.approve.selector, spender, value));
         require(success && (data.length == 0 || abi.decode(data, (bool))));
     }
 }

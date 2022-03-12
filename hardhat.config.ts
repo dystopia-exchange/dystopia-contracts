@@ -19,10 +19,11 @@ const argv = require('yargs/yargs')()
   .options({
     hardhatChainId: {
       type: "number",
-      default: 137
+      default: 80001
     },
     maticRpcUrl: {
       type: "string",
+      default: "https://polygon-mumbai.g.alchemy.com/v2/5pRr0lzXltpqOfMV92aaHImC69sKCcub"
     },
     ethRpcUrl: {
       type: "string",
@@ -36,7 +37,7 @@ const argv = require('yargs/yargs')()
     },
     privateKey: {
       type: "string",
-      default: "85bb5fa78d5c4ed1fde856e9d0d1fe19973d7a79ce9ed6c0358ee06a4550504e" // random account
+      default: "b55c9fcc2c60993e5c539f37ffd27d2058e7f77014823b461323db5eba817518" // random account
     },
     maticForkBlock: {
       type: "number",
@@ -46,28 +47,28 @@ const argv = require('yargs/yargs')()
 
 
 export default {
-  defaultNetwork: "hardhat",
+  defaultNetwork: "mumbai",
   networks: {
-    hardhat: {
-      allowUnlimitedContractSize: true,
-      chainId: argv.hardhatChainId,
-      timeout: 99999 * 2,
-      gas: argv.hardhatChainId === 137 ? 19_000_000 :
-          9_000_000,
-      forking: {
-        url:
-          argv.hardhatChainId === 137 ? argv.maticRpcUrl :
-              undefined,
-        blockNumber:
-          argv.hardhatChainId === 137 ? argv.maticForkBlock !== 0 ? argv.maticForkBlock : undefined :
-              undefined
-      },
-      accounts: {
-        mnemonic: "test test test test test test test test test test test junk",
-        path: "m/44'/60'/0'/0",
-        accountsBalance: "100000000000000000000000000000"
-      },
-    },
+    // hardhat: {
+    //   allowUnlimitedContractSize: true,
+    //   chainId: argv.hardhatChainId,
+    //   timeout: 99999 * 2,
+    //   gas: argv.hardhatChainId === 137 ? 19_000_000 :
+    //       9_000_000,
+    //   forking: {
+    //     url:
+    //       argv.hardhatChainId === 137 ? argv.maticRpcUrl :
+    //           undefined,
+    //     blockNumber:
+    //       argv.hardhatChainId === 137 ? argv.maticForkBlock !== 0 ? argv.maticForkBlock : undefined :
+    //           undefined
+    //   },
+    //   accounts: {
+    //     mnemonic: "test test test test test test test test test test test junk",
+    //     path: "m/44'/60'/0'/0",
+    //     accountsBalance: "100000000000000000000000000000"
+    //   },
+    // },
     matic: {
       url: argv.maticRpcUrl,
       timeout: 99999,
@@ -78,9 +79,10 @@ export default {
       accounts: [argv.privateKey],
     },
     mumbai: {
-      url: "https://polygon-mumbai.infura.io/v3/" + argv.infuraKey,
+      url: argv.maticRpcUrl,
       chainId: 80001,
-      gasPrice: 1,
+      timeout: 99999,
+      gasPrice: 100_000_000_000,
       accounts: [argv.privateKey],
     },
   },

@@ -244,7 +244,6 @@ contract Bribe is IBribe{
       (rewardPerTokenStored[tokens[i]], lastUpdateTime[tokens[i]]) = _updateRewardPerToken(tokens[i]);
 
       uint _reward = earned(tokens[i], tokenId);
-      userRewards[tokens[i]][tokenId] = 0;
       lastEarn[tokens[i]][tokenId] = block.timestamp;
       userRewardPerTokenStored[tokens[i]][tokenId] = rewardPerTokenStored[tokens[i]];
       if (_reward > 0) _safeTransfer(tokens[i], msg.sender, _reward);
@@ -261,7 +260,6 @@ contract Bribe is IBribe{
       (rewardPerTokenStored[tokens[i]], lastUpdateTime[tokens[i]]) = _updateRewardPerToken(tokens[i]);
 
       uint _reward = earned(tokens[i], tokenId);
-      userRewards[tokens[i]][tokenId] = 0;
       lastEarn[tokens[i]][tokenId] = block.timestamp;
       userRewardPerTokenStored[tokens[i]][tokenId] = rewardPerTokenStored[tokens[i]];
       if (_reward > 0) _safeTransfer(tokens[i], _owner, _reward);

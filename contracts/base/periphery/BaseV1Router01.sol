@@ -17,7 +17,7 @@ contract BaseV1Router01 {
   }
 
   address public immutable factory;
-  IWFTM public immutable wftm;
+  IWMATIC public immutable wmatic;
   uint internal constant MINIMUM_LIQUIDITY = 10 ** 3;
   bytes32 immutable pairCodeHash;
 
@@ -26,15 +26,15 @@ contract BaseV1Router01 {
     _;
   }
 
-  constructor(address _factory, address _wftm) {
+  constructor(address _factory, address _wmatic) {
     factory = _factory;
     pairCodeHash = IFactory(_factory).pairCodeHash();
-    wftm = IWFTM(_wftm);
+    wmatic = IWMATIC(_wmatic);
   }
 
   receive() external payable {
     // only accept ETH via fallback from the WETH contract
-    assert(msg.sender == address(wftm));
+    assert(msg.sender == address(wmatic));
   }
 
   function sortTokens(address tokenA, address tokenB) public pure returns (address token0, address token1) {
@@ -205,31 +205,31 @@ contract BaseV1Router01 {
     liquidity = IPair(pair).mint(to);
   }
 
-  function addLiquidityFTM(
+  function addLiquidityMATIC(
     address token,
     bool stable,
     uint amountTokenDesired,
     uint amountTokenMin,
-    uint amountFTMMin,
+    uint amountMATICMin,
     address to,
     uint deadline
-  ) external payable ensure(deadline) returns (uint amountToken, uint amountFTM, uint liquidity) {
-    (amountToken, amountFTM) = _addLiquidity(
+  ) external payable ensure(deadline) returns (uint amountToken, uint amountMATIC, uint liquidity) {
+    (amountToken, amountMATIC) = _addLiquidity(
       token,
-      address(wftm),
+      address(wmatic),
       stable,
       amountTokenDesired,
       msg.value,
       amountTokenMin,
-      amountFTMMin
+      amountMATICMin
     );
-    address pair = pairFor(token, address(wftm), stable);
+    address pair = pairFor(token, address(wmatic), stable);
     _safeTransferFrom(token, msg.sender, pair, amountToken);
-    wftm.deposit{value : amountFTM}();
-    assert(wftm.transfer(pair, amountFTM));
+    wmatic.deposit{value : amountMATIC}();
+    assert(wmatic.transfer(pair, amountMATIC));
     liquidity = IPair(pair).mint(to);
     // refund dust eth, if any
-    if (msg.value > amountFTM) _safeTransferFTM(msg.sender, msg.value - amountFTM);
+    if (msg.value > amountMATIC) _safeTransferMATIC(msg.sender, msg.value - amountMATIC);
   }
 
   // **** REMOVE LIQUIDITY ****
@@ -253,28 +253,28 @@ contract BaseV1Router01 {
     require(amountB >= amountBMin, 'BaseV1Router: INSUFFICIENT_B_AMOUNT');
   }
 
-  function removeLiquidityFTM(
+  function removeLiquidityMATIC(
     address token,
     bool stable,
     uint liquidity,
     uint amountTokenMin,
-    uint amountFTMMin,
+    uint amountMATICMin,
     address to,
     uint deadline
-  ) public ensure(deadline) returns (uint amountToken, uint amountFTM) {
-    (amountToken, amountFTM) = removeLiquidity(
+  ) public ensure(deadline) returns (uint amountToken, uint amountMATIC) {
+    (amountToken, amountMATIC) = removeLiquidity(
       token,
-      address(wftm),
+      address(wmatic),
       stable,
       liquidity,
       amountTokenMin,
-      amountFTMMin,
+      amountMATICMin,
       address(this),
       deadline
     );
     _safeTransfer(token, to, amountToken);
-    wftm.withdraw(amountFTM);
-    _safeTransferFTM(to, amountFTM);
+    wmatic.withdraw(amountMATIC);
+    _safeTransferMATIC(to, amountMATIC);
   }
 
   function removeLiquidityWithPermit(
@@ -297,20 +297,20 @@ contract BaseV1Router01 {
     (amountA, amountB) = removeLiquidity(tokenA, tokenB, stable, liquidity, amountAMin, amountBMin, to, deadline);
   }
 
-  function removeLiquidityFTMWithPermit(
+  function removeLiquidityMATICWithPermit(
     address token,
     bool stable,
     uint liquidity,
     uint amountTokenMin,
-    uint amountFTMMin,
+    uint amountMATICMin,
     address to,
     uint deadline,
     bool approveMax, uint8 v, bytes32 r, bytes32 s
-  ) external returns (uint amountToken, uint amountFTM) {
-    address pair = pairFor(token, address(wftm), stable);
+  ) external returns (uint amountToken, uint amountMATIC) {
+    address pair = pairFor(token, address(wmatic), stable);
     uint value = approveMax ? type(uint).max : liquidity;
     IPair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
-    (amountToken, amountFTM) = removeLiquidityFTM(token, stable, liquidity, amountTokenMin, amountFTMMin, to, deadline);
+    (amountToken, amountMATIC) = removeLiquidityMATIC(token, stable, liquidity, amountTokenMin, amountMATICMin, to, deadline);
   }
 
   // **** SWAP ****
@@ -363,34 +363,34 @@ contract BaseV1Router01 {
     _swap(amounts, routes, to);
   }
 
-  function swapExactFTMForTokens(uint amountOutMin, Route[] calldata routes, address to, uint deadline)
+  function swapExactMATICForTokens(uint amountOutMin, Route[] calldata routes, address to, uint deadline)
   external
   payable
   ensure(deadline)
   returns (uint[] memory amounts)
   {
-    require(routes[0].from == address(wftm), 'BaseV1Router: INVALID_PATH');
+    require(routes[0].from == address(wmatic), 'BaseV1Router: INVALID_PATH');
     amounts = getAmountsOut(msg.value, routes);
     require(amounts[amounts.length - 1] >= amountOutMin, 'BaseV1Router: INSUFFICIENT_OUTPUT_AMOUNT');
-    wftm.deposit{value : amounts[0]}();
-    assert(wftm.transfer(pairFor(routes[0].from, routes[0].to, routes[0].stable), amounts[0]));
+    wmatic.deposit{value : amounts[0]}();
+    assert(wmatic.transfer(pairFor(routes[0].from, routes[0].to, routes[0].stable), amounts[0]));
     _swap(amounts, routes, to);
   }
 
-  function swapExactTokensForFTM(uint amountIn, uint amountOutMin, Route[] calldata routes, address to, uint deadline)
+  function swapExactTokensForMATIC(uint amountIn, uint amountOutMin, Route[] calldata routes, address to, uint deadline)
   external
   ensure(deadline)
   returns (uint[] memory amounts)
   {
-    require(routes[routes.length - 1].to == address(wftm), 'BaseV1Router: INVALID_PATH');
+    require(routes[routes.length - 1].to == address(wmatic), 'BaseV1Router: INVALID_PATH');
     amounts = getAmountsOut(amountIn, routes);
     require(amounts[amounts.length - 1] >= amountOutMin, 'BaseV1Router: INSUFFICIENT_OUTPUT_AMOUNT');
     _safeTransferFrom(
       routes[0].from, msg.sender, pairFor(routes[0].from, routes[0].to, routes[0].stable), amounts[0]
     );
     _swap(amounts, routes, address(this));
-    wftm.withdraw(amounts[amounts.length - 1]);
-    _safeTransferFTM(to, amounts[amounts.length - 1]);
+    wmatic.withdraw(amounts[amounts.length - 1]);
+    _safeTransferMATIC(to, amounts[amounts.length - 1]);
   }
 
   function UNSAFE_swapExactTokensForTokens(
@@ -404,7 +404,7 @@ contract BaseV1Router01 {
     return amounts;
   }
 
-  function _safeTransferFTM(address to, uint value) internal {
+  function _safeTransferMATIC(address to, uint value) internal {
     (bool success,) = to.call{value : value}(new bytes(0));
     require(success, 'TransferHelper: ETH_TRANSFER_FAILED');
   }

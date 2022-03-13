@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.4;
 
-interface IWFTM {
+interface IWMATIC {
   function deposit() external payable returns (uint);
 
   function transfer(address to, uint value) external returns (bool);

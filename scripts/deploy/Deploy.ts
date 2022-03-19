@@ -2,7 +2,7 @@ import {ethers, web3} from "hardhat";
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
 import {Logger} from "tslog";
 import logSettings from "../../log_settings";
-import {ContractFactory, utils} from "ethers";
+import {BigNumber, ContractFactory, utils} from "ethers";
 import {Libraries} from "hardhat-deploy/dist/types";
 import {config as dotEnvConfig} from "dotenv";
 import {
@@ -13,6 +13,9 @@ import {
   BaseV1Minter,
   BaseV1Router01,
   BaseV1Voter,
+  Roots,
+  StakingRewards,
+  Token,
   Ve,
   VeDist
 } from "../../typechain";
@@ -88,6 +91,9 @@ export class Deploy {
   public static async deployBaseV1( signer: SignerWithAddress) {
     return (await Deploy.deployContract(signer,'BaseV1')) as BaseV1;
   }
+  public static async deployToken( signer: SignerWithAddress,name: string,symbol: string,decimal: number) {
+    return (await Deploy.deployContract(signer,'Token',name,symbol,decimal,signer.address)) as Token;
+  }
 
   public static async deployGaugeFactory( signer: SignerWithAddress) {
     return (await Deploy.deployContract(signer,'BaseV1GaugeFactory')) as BaseV1GaugeFactory;
@@ -148,6 +154,37 @@ export class Deploy {
       veDist,
     )) as BaseV1Minter;
   }
+  public static async deployStakingRewards(
+    signer: SignerWithAddress,
+    pair: string,
+    token: string
+  ) {
+    return (await Deploy.deployContract(
+      signer,
+      'StakingRewards',
+      pair,
+      token,
+    )) as StakingRewards;
+  }
+  public static async deployRoots(
+    signer: SignerWithAddress,
+    d0:  BigNumber,
+    d1:  BigNumber,
+    st:boolean,
+    a1:string,
+    a2:string
+  ) {
+    return (await Deploy.deployContract(
+      signer,
+      'roots',
+      d0,
+      d1,
+      st,
+      a1,
+      a2
+    )) as Roots;
+  }
+
 
   // ************** VERIFY **********************
 

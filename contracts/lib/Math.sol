@@ -24,4 +24,16 @@ library Math {
       z = 1;
     }
   }
+    function cbrt(uint256 n) internal pure returns (uint256) { unchecked {
+        uint256 x = 0;
+        for (uint256 y = 1 << 255; y > 0; y >>= 3) {
+            x <<= 1;
+            uint256 z = 3 * x * (x + 1) + 1;
+            if (n / y >= z) {
+                n -= y * z;
+                x += 1;
+            }
+        }
+        return x;
+    }}
 }

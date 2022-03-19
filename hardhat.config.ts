@@ -19,11 +19,11 @@ const argv = require('yargs/yargs')()
   .options({
     hardhatChainId: {
       type: "number",
-      default: 80001
+      default: 137
     },
     maticRpcUrl: {
       type: "string",
-      default: "https://polygon-mumbai.g.alchemy.com/v2/5pRr0lzXltpqOfMV92aaHImC69sKCcub"
+      default: "https://polygon-mainnet.g.alchemy.com/v2/w1soB9MQ2-iqzJAEk433PgO-qEU6nKE9"
     },
     ethRpcUrl: {
       type: "string",
@@ -47,28 +47,28 @@ const argv = require('yargs/yargs')()
 
 
 export default {
-  defaultNetwork: "mumbai",
+  defaultNetwork: "hardhat",
   networks: {
-    // hardhat: {
-    //   allowUnlimitedContractSize: true,
-    //   chainId: argv.hardhatChainId,
-    //   timeout: 99999 * 2,
-    //   gas: argv.hardhatChainId === 137 ? 19_000_000 :
-    //       9_000_000,
-    //   forking: {
-    //     url:
-    //       argv.hardhatChainId === 137 ? argv.maticRpcUrl :
-    //           undefined,
-    //     blockNumber:
-    //       argv.hardhatChainId === 137 ? argv.maticForkBlock !== 0 ? argv.maticForkBlock : undefined :
-    //           undefined
-    //   },
-    //   accounts: {
-    //     mnemonic: "test test test test test test test test test test test junk",
-    //     path: "m/44'/60'/0'/0",
-    //     accountsBalance: "100000000000000000000000000000"
-    //   },
-    // },
+    hardhat: {
+      allowUnlimitedContractSize: true,
+      chainId: argv.hardhatChainId,
+      timeout: 99999 * 2,
+      gas: argv.hardhatChainId === 137 ? 19_000_000 :
+          9_000_000,
+      forking: {
+        url:
+          argv.hardhatChainId === 137 ? argv.maticRpcUrl :
+              undefined,
+        blockNumber:
+          argv.hardhatChainId === 137 ? argv.maticForkBlock !== 0 ? argv.maticForkBlock : undefined :
+              undefined
+      },
+      accounts: {
+        mnemonic: "test test test test test test test test test test test junk",
+        path: "m/44'/60'/0'/0",
+        accountsBalance: "100000000000000000000000000000"
+      },
+    },
     matic: {
       url: argv.maticRpcUrl,
       timeout: 99999,

@@ -10,6 +10,7 @@
     "build": "npm run clean && npm run compile",
     "clean": "npx hardhat clean",
     "compile": "npx hardhat compile",
+    "deploy": "npx hardhat run ./scripts/deploy/base/Setup.ts",
     "test": "npm run build && npx hardhat test",
     "coverage": "npm run build && npx cross-env NODE_OPTIONS=\"--max_old_space_size=8192\" hardhat coverage --temp artifacts --max-memory 4096",
     "slither": "npm run build && slither .",
@@ -75,6 +76,6 @@
     "yargs": "^17.2.1"
   },
   "engines": {
-    "node": "^14.18.1"
+    "node": "^14.17.3"
   }
 }

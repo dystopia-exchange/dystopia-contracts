@@ -2,7 +2,7 @@ import {ethers, web3} from "hardhat";
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
 import {Logger} from "tslog";
 import logSettings from "../../log_settings";
-import {BigNumber, ContractFactory, utils} from "ethers";
+import {BigNumber, Contract, ContractFactory, utils} from "ethers";
 import {Libraries} from "hardhat-deploy/dist/types";
 import {config as dotEnvConfig} from "dotenv";
 import {
@@ -46,6 +46,29 @@ export class Deploy {
 
   constructor(signer: SignerWithAddress) {
     signer = signer;
+  }
+  
+  // ************ CONTRACT CONNECTION **************************
+
+  public static async connectContract<T extends ContractFactory>(
+    signer: SignerWithAddress,
+    name: string,
+    address: string
+  ) {
+    const _factory = (await ethers.getContractFactory(
+      name,
+      signer
+    )) as T;
+    const instance = _factory.connect(signer);
+    return instance.attach(address);
+  }
+
+  public static async connectInterface<T extends Contract>(
+    signer: SignerWithAddress,
+    name: string,
+    address: string
+  ) {
+    return ethers.getContractAt(name, address, signer);
   }
 
   public static async deployContract<T extends ContractFactory>(
@@ -245,6 +268,7 @@ export class Deploy {
       log.info('error proxy verify ' + adr + e);
     }
   }
+
 
     // ************** ADDRESSES **********************
 

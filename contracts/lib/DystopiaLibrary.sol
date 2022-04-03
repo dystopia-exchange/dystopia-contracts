@@ -30,7 +30,7 @@ library DystopiaLibrary {
         hex"ff",
         factory,
         keccak256(abi.encodePacked(token0, token1, stable)),
-        hex"e18a34eb0e04b04f7a0ac29a6e80748dca96319b42c54d679cb821dca90c6303" // init code hash
+        hex"db868886fa0a8b0a09c64b8b4388eb7104dd74fceab8b8e98a929ed4eaf54406" // init code hash
       )))));
   }
 

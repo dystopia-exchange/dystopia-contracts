@@ -1,24 +1,24 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.4;
+pragma solidity ^0.7.6;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/Utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../interface/IPair.sol";
 import "../interface/IRouter.sol";
+import "../interface/IRouterOld.sol";
 import "../interface/IFactory.sol";
 import "../lib/DystopiaLibrary.sol";
 
 
 
-// Migrator helps you migrate your existing LP tokens to  LP ones
 contract MigratorQuickSwap {
     using SafeERC20 for IERC20;
 
-    IRouter public oldRouter;
+    IRouterOld public oldRouter;
     IRouter public router;
 
-    constructor(IRouter _oldRouter, IRouter _router) {
+    constructor(IRouterOld _oldRouter, IRouter _router) {
         oldRouter = _oldRouter;
         router = _router;
     }
@@ -80,27 +80,40 @@ contract MigratorQuickSwap {
         uint256 liquidity,
         uint256 amountAMin,
         uint256 amountBMin
-    ) internal returns (uint256 amountA, uint256 amountB) {
+    ) public returns (uint256 amountA, uint256 amountB) {
         IPair pair = IPair(pairForOldRouter(tokenA, tokenB));
         pair.transferFrom(msg.sender, address(pair), liquidity);
         (uint256 amount0, uint256 amount1) = pair.burn(address(this));
-        (address token0,) = oldRouter.sortTokens(tokenA, tokenB);
+        (address token0,) = DystopiaLibrary.sortTokens(tokenA, tokenB);
         (amountA, amountB) = tokenA == token0 ? (amount0, amount1) : (amount1, amount0);
         require(amountA >= amountAMin, "Migrator: INSUFFICIENT_A_AMOUNT");
         require(amountB >= amountBMin, "Migrator: INSUFFICIENT_B_AMOUNT");
     }
 
     // calculates the CREATE2 address for a pair without making any external calls
-    function pairForOldRouter(address tokenA, address tokenB) internal view returns (address pair) {
-        (address token0, address token1) = oldRouter.sortTokens(tokenA, tokenB);
-        pair = address(uint(keccak256(abi.encodePacked(
-                hex"ff",
-                oldRouter.factory(),
-                keccak256(abi.encodePacked(token0, token1)),
-                // Init code hash. It would be specific each exchange(different for quickswap, dfyn, etc).
-                // So when deploying Migrator, change it.
-                hex"96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f"
-            ))));   
+  function pairForOldRouter(address tokenA, address tokenB)
+        public
+        view
+        returns (address pair)
+    {
+        (address token0, address token1) = DystopiaLibrary.sortTokens(
+            tokenA,
+            tokenB
+        );
+        pair = address(
+            uint256(
+                keccak256(
+                    abi.encodePacked(
+                        hex"ff",
+                        oldRouter.factory(),
+                        keccak256(abi.encodePacked(token0, token1)),
+                        // Init code hash. It would be specific each exchange(different for quickswap, dfyn, etc).
+                        // So when deploying Migrator, change it.
+                        hex"96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f"
+                    )
+                )
+            )
+        );
     }
 
     function addLiquidity(

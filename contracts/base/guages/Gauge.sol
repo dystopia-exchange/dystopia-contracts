@@ -359,7 +359,6 @@ contract Gauge is IGauge {
       return (reward, _startTimestamp);
     }
     if (rewardRate[token] == 0) {
-      _writeRewardPerTokenCheckpoint(token, reward, block.timestamp);
       return (reward, block.timestamp);
     }
     uint _startIndex = getPriorSupplyIndex(_startTimestamp);

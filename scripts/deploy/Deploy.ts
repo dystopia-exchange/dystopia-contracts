@@ -1,7 +1,8 @@
 import {ethers, web3} from "hardhat";
+import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
 import {Logger} from "tslog";
 import logSettings from "../../log_settings";
-import {ContractFactory, utils, Wallet} from "ethers";
+import {BigNumber, Contract, ContractFactory, utils} from "ethers";
 import {Libraries} from "hardhat-deploy/dist/types";
 import {config as dotEnvConfig} from "dotenv";
 import {
@@ -12,13 +13,18 @@ import {
   BaseV1Minter,
   BaseV1Router01,
   BaseV1Voter,
+  Roots,
+  StakingRewards,
+  Token,
   Ve,
   VeDist
 } from "../../typechain";
+import axios from "axios";
 
 // tslint:disable-next-line:no-var-requires
 const hre = require("hardhat");
 const log: Logger = new Logger(logSettings);
+require("dotenv").config();
 
 
 dotEnvConfig();
@@ -28,6 +34,7 @@ const argv = require('yargs/yargs')()
   .options({
     networkScanKey: {
       type: "string",
+      default:process.env.NETWORK_SCAN_KEY
     },
   }).argv;
 
@@ -37,20 +44,41 @@ const libraries = new Map<string, string>([
 
 export class Deploy {
 
-  readonly signer: Wallet
+  constructor(signer: SignerWithAddress) {
+    signer = signer;
+  }
+  
+  // ************ CONTRACT CONNECTION **************************
 
-
-  constructor(signer: Wallet) {
-    this.signer = signer;
+  public static async connectContract<T extends ContractFactory>(
+    signer: SignerWithAddress,
+    name: string,
+    address: string
+  ) {
+    const _factory = (await ethers.getContractFactory(
+      name,
+      signer
+    )) as T;
+    const instance = _factory.connect(signer);
+    return instance.attach(address);
   }
 
-  public async deployContract<T extends ContractFactory>(
+  public static async connectInterface<T extends Contract>(
+    signer: SignerWithAddress,
+    name: string,
+    address: string
+  ) {
+    return ethers.getContractAt(name, address, signer);
+  }
+
+  public static async deployContract<T extends ContractFactory>(
+    signer: SignerWithAddress,
     name: string,
     // tslint:disable-next-line:no-any
     ...args: any[]
   ) {
     log.info(`Deploying ${name}`);
-    log.info("Account balance: " + utils.formatUnits(await this.signer.getBalance(), 18));
+    log.info("Account balance: " + utils.formatUnits(await signer.getBalance(), 18));
 
     const gasPrice = await web3.eth.getGasPrice();
     log.info("Gas price: " + gasPrice);
@@ -58,20 +86,20 @@ export class Deploy {
     let _factory;
     if (lib) {
       log.info('DEPLOY LIBRARY', lib, 'for', name);
-      const libAddress = (await this.deployContract(lib)).address;
+      const libAddress = (await Deploy.deployContract(signer,lib)).address;
       const librariesObj: Libraries = {};
       librariesObj[lib] = libAddress;
       _factory = (await ethers.getContractFactory(
         name,
         {
-          signer: this.signer,
+          signer: signer,
           libraries: librariesObj
         }
       )) as T;
     } else {
       _factory = (await ethers.getContractFactory(
         name,
-        this.signer
+        signer
       )) as T;
     }
     const instance = await _factory.deploy(...args);
@@ -83,44 +111,50 @@ export class Deploy {
     return _factory.attach(receipt.contractAddress);
   }
 
-  public async deployBaseV1() {
-    return (await this.deployContract('BaseV1')) as BaseV1;
+  public static async deployBaseV1( signer: SignerWithAddress) {
+    return (await Deploy.deployContract(signer,'BaseV1')) as BaseV1;
+  }
+  public static async deployToken( signer: SignerWithAddress,name: string,symbol: string,decimal: number) {
+    return (await Deploy.deployContract(signer,'Token',name,symbol,decimal,signer.address)) as Token;
   }
 
-  public async deployGaugeFactory() {
-    return (await this.deployContract('BaseV1GaugeFactory')) as BaseV1GaugeFactory;
+  public static async deployGaugeFactory( signer: SignerWithAddress) {
+    return (await Deploy.deployContract(signer,'BaseV1GaugeFactory')) as BaseV1GaugeFactory;
   }
 
-  public async deployBribeFactory() {
-    return (await this.deployContract('BaseV1BribeFactory')) as BaseV1BribeFactory;
+  public static async deployBribeFactory( signer: SignerWithAddress) {
+    return (await Deploy.deployContract(signer,'BaseV1BribeFactory')) as BaseV1BribeFactory;
   }
 
-  public async deployBaseV1Factory() {
-    return (await this.deployContract('BaseV1Factory')) as BaseV1Factory;
+  public static async deployBaseV1Factory( signer: SignerWithAddress) {
+    return (await Deploy.deployContract(signer,'BaseV1Factory')) as BaseV1Factory;
   }
 
-  public async deployBaseV1Router01(
+  public static async deployBaseV1Router01(
+    signer: SignerWithAddress,
     factory: string,
     networkToken: string,
   ) {
-    return (await this.deployContract('BaseV1Router01', factory, networkToken)) as BaseV1Router01;
+    return (await Deploy.deployContract(signer,'BaseV1Router01', factory, networkToken)) as BaseV1Router01;
   }
 
-  public async deployVe(token: string) {
-    return (await this.deployContract('Ve', token)) as Ve;
+  public static async deployVe( signer: SignerWithAddress,token: string) {
+    return (await Deploy.deployContract(signer,'Ve', token)) as Ve;
   }
 
-  public async deployVeDist(ve: string) {
-    return (await this.deployContract('VeDist', ve)) as VeDist;
+  public static async deployVeDist( signer: SignerWithAddress,ve: string) {
+    return (await Deploy.deployContract(signer,'VeDist', ve)) as VeDist;
   }
 
-  public async deployBaseV1Voter(
+  public static async deployBaseV1Voter(
+    signer: SignerWithAddress,
     ve: string,
     factory: string,
     gauges: string,
     bribes: string,
   ) {
-    return (await this.deployContract(
+    return (await Deploy.deployContract(
+      signer,
       'BaseV1Voter',
       ve,
       factory,
@@ -129,16 +163,149 @@ export class Deploy {
     )) as BaseV1Voter;
   }
 
-  public async deployBaseV1Minter(
+  public static async deployBaseV1Minter(
+    signer: SignerWithAddress,
     voter: string,
     ve: string,
     veDist: string
   ) {
-    return (await this.deployContract(
+    return (await Deploy.deployContract(
+      signer,
       'BaseV1Minter',
       voter,
       ve,
       veDist,
     )) as BaseV1Minter;
   }
+  public static async deployStakingRewards(
+    signer: SignerWithAddress,
+    pair: string,
+    token: string
+  ) {
+    return (await Deploy.deployContract(
+      signer,
+      'StakingRewards',
+      pair,
+      token,
+    )) as StakingRewards;
+  }
+  public static async deployRoots(
+    signer: SignerWithAddress,
+    d0:  BigNumber,
+    d1:  BigNumber,
+    st:boolean,
+    a1:string,
+    a2:string
+  ) {
+    return (await Deploy.deployContract(
+      signer,
+      'roots',
+      d0,
+      d1,
+      st,
+      a1,
+      a2
+    )) as Roots;
+  }
+
+
+  // ************** VERIFY **********************
+
+  public static async verify(address: string) {
+    try {
+      await hre.run("verify:verify", {
+        address
+      })
+    } catch (e) {
+      log.info('error verify ' + e);
+    }
+  }
+
+  // tslint:disable-next-line:no-any
+  public static async verifyWithArgs(address: string, args: any[]) {
+    try {
+      await hre.run("verify:verify", {
+        address, constructorArguments: args
+      })
+    } catch (e) {
+      log.info('error verify ' + e);
+    }
+  }
+
+  // tslint:disable-next-line:no-any
+  public static async verifyWithContractName(address: string, contractPath: string, args?: any[]) {
+    try {
+      await hre.run("verify:verify", {
+        address, contract: contractPath, constructorArguments: args
+      })
+    } catch (e) {
+      log.info('error verify ' + e);
+    }
+  }
+
+  // tslint:disable-next-line:no-any
+  public static async verifyWithArgsAndContractName(address: string, args: any[], contractPath: string) {
+    try {
+      await hre.run("verify:verify", {
+        address, constructorArguments: args, contract: contractPath
+      })
+    } catch (e) {
+      log.info('error verify ' + e);
+    }
+  }
+
+
+  public static async verifyProxy(adr: string) {
+    try {
+
+      const resp =
+        await axios.post(
+          (await Deploy.getNetworkScanUrl()) +
+          `?module=contract&action=verifyproxycontract&apikey=${argv.networkScanKey}`,
+          `address=${adr}`);
+      // log.info("proxy verify resp", resp.data);
+    } catch (e) {
+      log.info('error proxy verify ' + adr + e);
+    }
+  }
+
+
+    // ************** ADDRESSES **********************
+
+    public static async getNetworkScanUrl(): Promise<string> {
+      const net = (await ethers.provider.getNetwork());
+      if (net.name === 'ropsten') {
+        return 'https://api-ropsten.etherscan.io/api';
+      } else if (net.name === 'kovan') {
+        return 'https://api-kovan.etherscan.io/api';
+      } else if (net.name === 'rinkeby') {
+        return 'https://api-rinkeby.etherscan.io/api';
+      } else if (net.name === 'ethereum') {
+        return 'https://api.etherscan.io/api';
+      } else if (net.name === 'matic') {
+        return 'https://api.polygonscan.com/api'
+      } else if (net.chainId === 80001) {
+        return 'https://api-testnet.polygonscan.com/api'
+      } else if (net.chainId === 250) {
+        return 'https://api.ftmscan.com//api'
+      } else {
+        throw Error('network not found ' + net);
+      }
+    }
+      // ****************** WAIT ******************
+
+  public static async delay(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+    public static async wait(blocks: number) {
+      const start = ethers.provider.blockNumber;
+      while (true) {
+        log.info('wait 10sec');
+        await Deploy.delay(10000);
+        if (ethers.provider.blockNumber >= start + blocks) {
+          break;
+        }
+      }
+    }
 }

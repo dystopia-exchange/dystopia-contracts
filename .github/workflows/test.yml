@@ -31,4 +31,5 @@ jobs:
         env:
           NODE_OPTIONS: --max_old_space_size=4096
           MUMBAI_RPC_URL: ${{secrets.MUMBAI_RPC_URL}}
+          MATIC_RPC_URL: ${{secrets.MATIC_RPC_URL}}
       - uses: codecov/codecov-action@v2

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.13;
 
 /// @title Base64
 /// @notice Provides a function for encoding some bytes in base64

@@ -1,4 +1,6 @@
-pragma solidity >=0.6.2;
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.8.13;
 
 interface IRouterOld {
     function factory() external pure returns (address);

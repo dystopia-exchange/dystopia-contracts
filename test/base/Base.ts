@@ -571,7 +571,7 @@ describe("core", function () {
     const route = {from:ust.address, to:mim.address, stable:true}
 
     let metadata = await pair.metadata()
-    const roots = await ethers.getContractFactory("roots");
+    const roots = await ethers.getContractFactory("Calculation");
     let root = await roots.deploy(metadata.dec0, metadata.dec1, metadata.st, metadata.t0, metadata.t1);
     await root.deployed();
 

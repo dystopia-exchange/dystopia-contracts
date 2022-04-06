@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.13;
 
 interface IPair {
 
@@ -10,8 +10,6 @@ interface IPair {
     uint reserve0Cumulative;
     uint reserve1Cumulative;
   }
-
-  function transferFrom(address src, address dst, uint amount) external returns (bool);
 
   function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external;
 

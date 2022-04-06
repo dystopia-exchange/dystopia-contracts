@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.13;
 
 import "../../lib/Base64.sol";
 import "../../interface/IERC20.sol";

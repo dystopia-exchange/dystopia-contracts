@@ -4,7 +4,6 @@ import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-web3";
 import "@nomiclabs/hardhat-solhint";
-import '@openzeppelin/hardhat-upgrades';
 import "@typechain/hardhat";
 import "hardhat-contract-sizer";
 import "hardhat-gas-reporter";
@@ -19,18 +18,17 @@ const argv = require('yargs/yargs')()
   .options({
     hardhatChainId: {
       type: "number",
-      default: 137
+      default: 80001
     },
     maticRpcUrl: {
       type: "string",
-      default: "https://polygon-mainnet.g.alchemy.com/v2/w1soB9MQ2-iqzJAEk433PgO-qEU6nKE9"
+    },
+    mumbaiRpcUrl: {
+      type: "string",
     },
     ethRpcUrl: {
       type: "string",
       default: ''
-    },
-    infuraKey: {
-      type: "string",
     },
     networkScanKey: {
       type: "string",
@@ -43,6 +41,9 @@ const argv = require('yargs/yargs')()
       type: "number",
       default: 23945980
     },
+    mumbaiForkBlock: {
+      type: "number",
+    },
   }).argv;
 
 
@@ -54,14 +55,17 @@ export default {
       chainId: argv.hardhatChainId,
       timeout: 99999 * 2,
       gas: argv.hardhatChainId === 137 ? 19_000_000 :
+        argv.hardhatChainId === 80001 ? 19_000_000 :
           9_000_000,
       forking: {
         url:
           argv.hardhatChainId === 137 ? argv.maticRpcUrl :
+          argv.hardhatChainId === 80001 ? argv.mumbaiRpcUrl :
               undefined,
         blockNumber:
-          argv.hardhatChainId === 137 ? argv.maticForkBlock !== 0 ? argv.maticForkBlock : undefined :
-              undefined
+            argv.hardhatChainId === 137 ? argv.maticForkBlock !== 0 ? argv.maticForkBlock : undefined :
+              argv.hardhatChainId === 80001 ? argv.mumbaiForkBlock !== 0 ? argv.mumbaiForkBlock : undefined :
+                undefined
       },
       accounts: {
         mnemonic: "test test test test test test test test test test test junk",
@@ -79,7 +83,7 @@ export default {
       accounts: [argv.privateKey],
     },
     mumbai: {
-      url: argv.maticRpcUrl,
+      url: argv.mumbaiRpcUrl,
       chainId: 80001,
       timeout: 99999,
       gasPrice: 100_000_000_000,
@@ -92,11 +96,11 @@ export default {
   solidity: {
     compilers: [
       {
-        version: "0.8.4",
+        version: "0.8.13",
         settings: {
           optimizer: {
             enabled: true,
-            runs: 1000,
+            runs: 200,
           }
         }
       },

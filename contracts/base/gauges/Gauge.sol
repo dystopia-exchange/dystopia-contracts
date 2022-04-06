@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.13;
 
 import "../../interface/IGauge.sol";
 import "../../interface/IPair.sol";
@@ -46,17 +46,17 @@ contract Gauge is IGauge {
   mapping(address => bool) public isReward;
 
   /// @notice A record of balance checkpoints for each account, by index
-  mapping (address => mapping (uint => Checkpoint)) public checkpoints;
+  mapping(address => mapping(uint => Checkpoint)) public checkpoints;
   /// @notice The number of checkpoints for each account
-  mapping (address => uint) public numCheckpoints;
+  mapping(address => uint) public numCheckpoints;
   /// @notice A record of balance checkpoints for each token, by index
-  mapping (uint => SupplyCheckpoint) public supplyCheckpoints;
+  mapping(uint => SupplyCheckpoint) public supplyCheckpoints;
   /// @notice The number of checkpoints
   uint public supplyNumCheckpoints;
   /// @notice A record of balance checkpoints for each token, by index
-  mapping (address => mapping (uint => RewardPerTokenCheckpoint)) public rewardPerTokenCheckpoints;
+  mapping(address => mapping(uint => RewardPerTokenCheckpoint)) public rewardPerTokenCheckpoints;
   /// @notice The number of checkpoints for each token
-  mapping (address => uint) public rewardPerTokenNumCheckpoints;
+  mapping(address => uint) public rewardPerTokenNumCheckpoints;
 
   uint public fees0;
   uint public fees1;
@@ -67,7 +67,7 @@ contract Gauge is IGauge {
   event ClaimFees(address indexed from, uint claimed0, uint claimed1);
   event ClaimRewards(address indexed from, address indexed reward, uint amount);
 
-  constructor(address _stake, address _bribe, address  __ve, address _voter) {
+  constructor(address _stake, address _bribe, address __ve, address _voter) {
     stake = _stake;
     bribe = _bribe;
     _ve = __ve;
@@ -137,7 +137,8 @@ contract Gauge is IGauge {
     uint lower = 0;
     uint upper = nCheckpoints - 1;
     while (upper > lower) {
-      uint center = upper - (upper - lower) / 2; // ceil, avoiding overflow
+      uint center = upper - (upper - lower) / 2;
+      // ceil, avoiding overflow
       Checkpoint memory cp = checkpoints[account][center];
       if (cp.timestamp == timestamp) {
         return center;
@@ -169,7 +170,8 @@ contract Gauge is IGauge {
     uint lower = 0;
     uint upper = nCheckpoints - 1;
     while (upper > lower) {
-      uint center = upper - (upper - lower) / 2; // ceil, avoiding overflow
+      uint center = upper - (upper - lower) / 2;
+      // ceil, avoiding overflow
       SupplyCheckpoint memory cp = supplyCheckpoints[center];
       if (cp.timestamp == timestamp) {
         return center;
@@ -185,7 +187,7 @@ contract Gauge is IGauge {
   function getPriorRewardPerToken(address token, uint timestamp) public view returns (uint, uint) {
     uint nCheckpoints = rewardPerTokenNumCheckpoints[token];
     if (nCheckpoints == 0) {
-      return (0,0);
+      return (0, 0);
     }
 
     // First check most recent balance
@@ -196,13 +198,14 @@ contract Gauge is IGauge {
 
     // Next check implicit zero balance
     if (rewardPerTokenCheckpoints[token][0].timestamp > timestamp) {
-      return (0,0);
+      return (0, 0);
     }
 
     uint lower = 0;
     uint upper = nCheckpoints - 1;
     while (upper > lower) {
-      uint center = upper - (upper - lower) / 2; // ceil, avoiding overflow
+      uint center = upper - (upper - lower) / 2;
+      // ceil, avoiding overflow
       RewardPerTokenCheckpoint memory cp = rewardPerTokenCheckpoints[token][center];
       if (cp.timestamp == timestamp) {
         return (cp.rewardPerToken, cp.timestamp);
@@ -315,7 +318,7 @@ contract Gauge is IGauge {
   }
 
   function batchRewardPerToken(address token, uint maxRuns) external {
-    (rewardPerTokenStored[token], lastUpdateTime[token])  = _batchRewardPerToken(token, maxRuns);
+    (rewardPerTokenStored[token], lastUpdateTime[token]) = _batchRewardPerToken(token, maxRuns);
   }
 
   function _batchRewardPerToken(address token, uint maxRuns) internal returns (uint, uint) {
@@ -326,16 +329,16 @@ contract Gauge is IGauge {
       return (reward, _startTimestamp);
     }
     if (rewardRate[token] == 0) {
-            return (reward, block.timestamp);
+      return (reward, block.timestamp);
     }
 
     uint _startIndex = getPriorSupplyIndex(_startTimestamp);
-    uint _endIndex = Math.min(supplyNumCheckpoints-1, maxRuns);
+    uint _endIndex = Math.min(supplyNumCheckpoints - 1, maxRuns);
 
     for (uint i = _startIndex; i < _endIndex; i++) {
       SupplyCheckpoint memory sp0 = supplyCheckpoints[i];
       if (sp0.supply > 0) {
-        SupplyCheckpoint memory sp1 = supplyCheckpoints[i+1];
+        SupplyCheckpoint memory sp1 = supplyCheckpoints[i + 1];
         (uint _reward, uint _endTime) = _calcRewardPerToken(token, sp1.timestamp, sp0.timestamp, sp0.supply, _startTimestamp);
         reward += _reward;
         _writeRewardPerTokenCheckpoint(token, reward, _endTime);
@@ -362,13 +365,13 @@ contract Gauge is IGauge {
       return (reward, block.timestamp);
     }
     uint _startIndex = getPriorSupplyIndex(_startTimestamp);
-    uint _endIndex = supplyNumCheckpoints-1;
+    uint _endIndex = supplyNumCheckpoints - 1;
 
     if (_endIndex - _startIndex > 1) {
-      for (uint i = _startIndex; i < _endIndex-1; i++) {
+      for (uint i = _startIndex; i < _endIndex - 1; i++) {
         SupplyCheckpoint memory sp0 = supplyCheckpoints[i];
         if (sp0.supply > 0) {
-          SupplyCheckpoint memory sp1 = supplyCheckpoints[i+1];
+          SupplyCheckpoint memory sp1 = supplyCheckpoints[i + 1];
           (uint _reward, uint _endTime) = _calcRewardPerToken(token, sp1.timestamp, sp0.timestamp, sp0.supply, _startTimestamp);
           reward += _reward;
           _writeRewardPerTokenCheckpoint(token, reward, _endTime);
@@ -396,14 +399,14 @@ contract Gauge is IGauge {
     }
 
     uint _startIndex = getPriorBalanceIndex(account, _startTimestamp);
-    uint _endIndex = numCheckpoints[account]-1;
+    uint _endIndex = numCheckpoints[account] - 1;
 
     uint reward = 0;
 
     if (_endIndex - _startIndex > 1) {
-      for (uint i = _startIndex; i < _endIndex-1; i++) {
+      for (uint i = _startIndex; i < _endIndex - 1; i++) {
         Checkpoint memory cp0 = checkpoints[account][i];
-        Checkpoint memory cp1 = checkpoints[account][i+1];
+        Checkpoint memory cp1 = checkpoints[account][i + 1];
         (uint _rewardPerTokenStored0,) = getPriorRewardPerToken(token, cp0.timestamp);
         (uint _rewardPerTokenStored1,) = getPriorRewardPerToken(token, cp1.timestamp);
         reward += cp0.balanceOf * (_rewardPerTokenStored1 - _rewardPerTokenStored0) / PRECISION;
@@ -499,7 +502,7 @@ contract Gauge is IGauge {
   function notifyRewardAmount(address token, uint amount) external override lock {
     require(token != stake);
     require(amount > 0);
-        if (rewardRate[token] == 0) _writeRewardPerTokenCheckpoint(token, 0, block.timestamp);
+    if (rewardRate[token] == 0) _writeRewardPerTokenCheckpoint(token, 0, block.timestamp);
     (rewardPerTokenStored[token], lastUpdateTime[token]) = _updateRewardPerToken(token);
     _claimFees();
 

@@ -55,9 +55,9 @@ const claimants = [
   "0x0070dF68e2C13df22F55324edd56f2075eB6b8bB",
   "0x0070dF68e2C13df22F55324edd56f2075eB6b8bB",
   "0x0070dF68e2C13df22F55324edd56f2075eB6b8bB",
-  "0x0070dF68e2C13df22F55324edd56f2075eB6b8bB",
-  "0x0070dF68e2C13df22F55324edd56f2075eB6b8bB",
-  "0x0070dF68e2C13df22F55324edd56f2075eB6b8bB",
+  "0x1be1C7FCbF41c91Cb3e484eAE2CE432B4733Ad2d",
+  "0x1be1C7FCbF41c91Cb3e484eAE2CE432B4733Ad2d",
+  "0x1be1C7FCbF41c91Cb3e484eAE2CE432B4733Ad2d",
   "0x111731A388743a75CF60CCA7b140C58e41D83635",
   "0x0edfcc1b8d082cd46d13db694b849d7d8151c6d5",
   "0xD0Bb8e4E4Dd5FDCD5D54f78263F5Ec8f33da4C95",
@@ -99,15 +99,28 @@ const minterMax = BigNumber.from("100000000000000000000000000");
 async function main() {
   const signer = (await ethers.getSigners())[0];
   const core = await Deploy.deployCore(signer, MaticTestnetAddresses.WMATIC_TOKEN, voterTokens, claimants, claimantsAmounts, minterMax)
-  console.log(core);
-  writeFileSync('tmp/core.txt', JSON.stringify(core));
+
+  const data = ''
+    + 'token: ' + core.token.address + '\n'
+    + 'gaugesFactory: ' + core.gaugesFactory.address + '\n'
+    + 'bribesFactory: ' + core.bribesFactory.address + '\n'
+    + 'factory: ' + core.factory.address + '\n'
+    + 'router: ' + core.router.address + '\n'
+    + 've: ' + core.ve.address + '\n'
+    + 'veDist: ' + core.veDist.address + '\n'
+    + 'voter: ' + core.voter.address + '\n'
+    + 'minter: ' + core.minter.address + '\n'
+    + 'treasury: ' + core.treasury.address + '\n'
+
+  console.log(data);
+  writeFileSync('tmp/core.txt', data);
 
   await Misc.wait(5);
 
   await Verify.verify(core.token.address);
   await Verify.verify(core.gaugesFactory.address);
   await Verify.verify(core.bribesFactory.address);
-  await Verify.verify(core.factory.address);
+  await Verify.verifyWithArgs(core.factory.address, [core.treasury.address]);
   await Verify.verifyWithArgs(core.router.address, [core.factory.address, MaticTestnetAddresses.WMATIC_TOKEN]);
   await Verify.verifyWithArgs(core.ve.address, [core.token.address]);
   await Verify.verifyWithArgs(core.veDist.address, [core.ve.address]);

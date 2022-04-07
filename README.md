@@ -143,7 +143,7 @@ function distribute(address token) external
 | :--- | :--- | :--- |
 
 
-### Mumbai mumbai deployment
+### Mumbai deployment
 
 | Name | Address |
 | :--- | :--- |

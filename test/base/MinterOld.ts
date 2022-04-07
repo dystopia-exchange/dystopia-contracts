@@ -1,6 +1,8 @@
+/* tslint:disable:variable-name no-shadowed-variable ban-types no-var-requires no-any */
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { network } from "hardhat";
 import { BaseV1, BaseV1Minter, Token, Ve, VeDist } from "../../typechain";
+import {Deploy} from "../../scripts/deploy/Deploy";
 
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
@@ -41,8 +43,9 @@ describe("minter", function () {
     const vecontract = await ethers.getContractFactory("Ve");
     ve = await vecontract.deploy(ve_underlying.address);
     await ve_underlying.mint(owner.address, ethers.BigNumber.from("10000000000000000000000000"));
+    const treasury = await Deploy.deployGovernanceTreasury(owner);
     const BaseV1Factory = await ethers.getContractFactory("BaseV1Factory");
-    const factory = await BaseV1Factory.deploy();
+    const factory = await BaseV1Factory.deploy(treasury.address);
     await factory.deployed();
     const BaseV1Router = await ethers.getContractFactory("BaseV1Router01");
     const router = await BaseV1Router.deploy(factory.address, owner.address);

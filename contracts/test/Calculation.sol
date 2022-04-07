@@ -7,7 +7,7 @@ import "../lib/Math.sol";
 
 contract Calculation {
 
-  uint internal constant SWAP_FEE = 400;
+  uint internal constant SWAP_FEE = 1000;
 
   uint immutable decimals0;
   uint immutable decimals1;

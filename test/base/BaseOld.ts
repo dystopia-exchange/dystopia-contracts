@@ -1,8 +1,25 @@
-import { Ve, VeDist ,IERC20, BaseV1Factory, BaseV1Router01, BaseV1Pair, BaseV1GaugeFactory, Gauge, Bribe, BaseV1Minter, BaseV1, StakingRewards, Token} from "../../typechain";
+/* tslint:disable:variable-name no-shadowed-variable ban-types no-var-requires no-any */
+import {
+  BaseV1,
+  BaseV1Factory,
+  BaseV1GaugeFactory,
+  BaseV1Minter,
+  BaseV1Pair,
+  BaseV1Router01,
+  Bribe,
+  Gauge,
+  GovernanceTreasury__factory,
+  StakingRewards,
+  Token,
+  Ve,
+  VeDist
+} from "../../typechain";
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
-import { network } from "hardhat";
-const { expect } = require("chai");
-const { ethers } = require("hardhat");
+import {network} from "hardhat";
+import {Deploy} from "../../scripts/deploy/Deploy";
+
+const {expect} = require("chai");
+const {ethers} = require("hardhat");
 
 // function getCreate2Address(
 //   factoryAddress,
@@ -23,32 +40,32 @@ const { ethers } = require("hardhat");
 describe("core", function () {
 
   let token;
-  let token0:String;
-  let token1:String;
-  let ust:Token;
-  let mim:Token;
-  let dai:Token;
-  let ve_underlying:BaseV1;
-  let late_reward:Token;
-  let ve:Ve;
-  let factory:BaseV1Factory;
-  let router:BaseV1Router01;
-  let pair:BaseV1Pair;
-  let pair2:BaseV1Pair;
-  let pair3:BaseV1Pair;
-  let owner:SignerWithAddress;
-  let gauge_factory:any;
-  let gauge:Gauge;
-  let gauge2:Gauge;
-  let gauge3:Gauge;
-  let bribe:Bribe;
-  let bribe2:Bribe;
-  let bribe3:Bribe;
-  let minter:BaseV1Minter;
-  let ve_dist:VeDist;
-  let staking:StakingRewards;
-  let owner2:SignerWithAddress;
-  let owner3:SignerWithAddress;
+  let token0: String;
+  let token1: String;
+  let ust: Token;
+  let mim: Token;
+  let dai: Token;
+  let ve_underlying: BaseV1;
+  let late_reward: Token;
+  let ve: Ve;
+  let factory: BaseV1Factory;
+  let router: BaseV1Router01;
+  let pair: BaseV1Pair;
+  let pair2: BaseV1Pair;
+  let pair3: BaseV1Pair;
+  let owner: SignerWithAddress;
+  let gauge_factory: any;
+  let gauge: Gauge;
+  let gauge2: Gauge;
+  let gauge3: Gauge;
+  let bribe: Bribe;
+  let bribe2: Bribe;
+  let bribe3: Bribe;
+  let minter: BaseV1Minter;
+  let ve_dist: VeDist;
+  let staking: StakingRewards;
+  let owner2: SignerWithAddress;
+  let owner3: SignerWithAddress;
   let vecontract;
   let gauges_factory;
 
@@ -146,8 +163,9 @@ describe("core", function () {
   });
 
   it("deploy BaseV1Factory and test pair length", async function () {
+    const treasury = await Deploy.deployGovernanceTreasury(owner);
     const BaseV1Factory = await ethers.getContractFactory("BaseV1Factory");
-    factory = await BaseV1Factory.deploy();
+    factory = await BaseV1Factory.deploy(treasury.address);
     await factory.deployed();
 
     expect(await factory.allPairsLength()).to.equal(0);
@@ -220,7 +238,7 @@ describe("core", function () {
     await ust.transfer(pair.address, ust_1);
     await mim.transfer(pair.address, mim_1);
     await pair.mint(owner.address);
-    expect(await pair.getAmountOut(ust_1, ust.address)).to.equal(ethers.BigNumber.from("979882796577459656"));
+    expect(await pair.getAmountOut(ust_1, ust.address)).to.equal(ethers.BigNumber.from("981279784441768894"));
     const output = await router.getAmountOut(ust_1, ust.address, mim.address);
     expect(await pair.getAmountOut(ust_1, ust.address)).to.equal(output.amount);
     expect(output.stable).to.equal(true);
@@ -234,7 +252,7 @@ describe("core", function () {
     await ust.connect(owner2).transfer(pair.address, ust_1);
     await mim.connect(owner2).transfer(pair.address, mim_1);
     await pair.connect(owner2).mint(owner2.address);
-    expect(await pair.connect(owner2).getAmountOut(ust_1, ust.address)).to.equal(ethers.BigNumber.from("989893477802328545"));
+    expect(await pair.connect(owner2).getAmountOut(ust_1, ust.address)).to.equal(ethers.BigNumber.from("991348206217938259"));
   });
 
   it("BaseV1Router01 addLiquidity", async function () {
@@ -285,8 +303,9 @@ describe("core", function () {
   });
 
   it("BaseV1Router01 pair1 getAmountsOut & swapExactTokensForTokens", async function () {
+    const treasury = await factory.treasury();
     const ust_1 = ethers.BigNumber.from("1000000");
-    const route = {from:ust.address, to:mim.address, stable:true}
+    const route = {from: ust.address, to: mim.address, stable: true}
 
     expect((await router.getAmountsOut(ust_1, [route]))[1]).to.be.equal(await pair.getAmountOut(ust_1, ust.address));
 
@@ -296,15 +315,19 @@ describe("core", function () {
     await ust.approve(router.address, ust_1);
     await router.swapExactTokensForTokens(ust_1, expected_output[1], [route], owner.address, Date.now());
     const fees = await pair.fees()
-    expect(await ust.balanceOf(fees)).to.be.equal(2500);
+    expect(await ust.balanceOf(fees)).to.be.equal(500);
+    expect(await ust.balanceOf(treasury)).to.be.equal(500);
     const b = await ust.balanceOf(owner.address);
     await pair.claimFees();
     expect(await ust.balanceOf(owner.address)).to.be.above(b);
+    const b2 = await ust.balanceOf(owner.address);
+    await GovernanceTreasury__factory.connect(treasury, owner).claim([ust.address]);
+    expect(await ust.balanceOf(owner.address)).to.be.above(b2);
   });
 
   it("BaseV1Router01 pair1 getAmountsOut & swapExactTokensForTokens owner2", async function () {
     const ust_1 = ethers.BigNumber.from("1000000");
-    const route = {from:ust.address, to:mim.address, stable:true}
+    const route = {from: ust.address, to: mim.address, stable: true}
 
     expect((await router.getAmountsOut(ust_1, [route]))[1]).to.be.equal(await pair.getAmountOut(ust_1, ust.address));
 
@@ -314,7 +337,7 @@ describe("core", function () {
     await ust.connect(owner2).approve(router.address, ust_1);
     await router.connect(owner2).swapExactTokensForTokens(ust_1, expected_output[1], [route], owner2.address, Date.now());
     const fees = await pair.fees()
-    expect(await ust.balanceOf(fees)).to.be.equal(2501);
+    expect(await ust.balanceOf(fees)).to.be.equal(501);
     const b = await ust.balanceOf(owner.address);
     await pair.connect(owner2).claimFees();
     expect(await ust.balanceOf(owner.address)).to.be.equal(b);
@@ -322,7 +345,7 @@ describe("core", function () {
 
   it("BaseV1Router01 pair2 getAmountsOut & swapExactTokensForTokens", async function () {
     const ust_1 = ethers.BigNumber.from("1000000");
-    const route = {from:ust.address, to:mim.address, stable:false}
+    const route = {from: ust.address, to: mim.address, stable: false}
 
     expect((await router.getAmountsOut(ust_1, [route]))[1]).to.be.equal(await pair2.getAmountOut(ust_1, ust.address));
 
@@ -335,7 +358,7 @@ describe("core", function () {
 
   it("BaseV1Router01 pair3 getAmountsOut & swapExactTokensForTokens", async function () {
     const mim_1000000 = ethers.BigNumber.from("1000000000000000000000000");
-    const route = {from:mim.address, to:dai.address, stable:true}
+    const route = {from: mim.address, to: dai.address, stable: true}
 
     expect((await router.getAmountsOut(mim_1000000, [route]))[1]).to.be.equal(await pair3.getAmountOut(mim_1000000, mim.address));
 
@@ -371,7 +394,7 @@ describe("core", function () {
     minter = await BaseV1Minter.deploy(gauge_factory.address, ve.address, ve_dist.address);
     await minter.deployed();
     await ve_dist.setDepositor(minter.address);
-    await gauge_factory.initialize([ust.address, mim.address, dai.address, ve_underlying.address],minter.address);
+    await gauge_factory.initialize([ust.address, mim.address, dai.address, ve_underlying.address], minter.address);
   });
 
   it("deploy BaseV1Factory gauge", async function () {
@@ -383,7 +406,7 @@ describe("core", function () {
     await gauge_factory.createGauge(pair3.address);
     expect(await gauge_factory.gauges(pair.address)).to.not.equal(0x0000000000000000000000000000000000000000);
 
-    let sr = await ethers.getContractFactory("StakingRewards");
+    const sr = await ethers.getContractFactory("StakingRewards");
     staking = await sr.deploy(pair.address, ve_underlying.address);
 
     const gauge_address = await gauge_factory.gauges(pair.address);
@@ -522,8 +545,8 @@ describe("core", function () {
   });
 
   it("gauge vote & bribe balanceOf", async function () {
-    await gauge_factory.vote(1, [pair.address, pair2.address], [5000,5000]);
-    await gauge_factory.vote(4, [pair.address, pair2.address], [500000,500000]);
+    await gauge_factory.vote(1, [pair.address, pair2.address], [5000, 5000]);
+    await gauge_factory.vote(4, [pair.address, pair2.address], [500000, 500000]);
     console.log(await gauge_factory.usedWeights(1));
     console.log(await gauge_factory.usedWeights(4));
     expect(await gauge_factory.totalWeight()).to.not.equal(0);
@@ -568,11 +591,11 @@ describe("core", function () {
 
   it("BaseV1Router01 pair1 getAmountsOut & swapExactTokensForTokens", async function () {
     const ust_1 = ethers.BigNumber.from("1000000");
-    const route = {from:ust.address, to:mim.address, stable:true}
+    const route = {from: ust.address, to: mim.address, stable: true}
 
-    let metadata = await pair.metadata()
+    const metadata = await pair.metadata()
     const roots = await ethers.getContractFactory("Calculation");
-    let root = await roots.deploy(metadata.dec0, metadata.dec1, metadata.st, metadata.t0, metadata.t1);
+    const root = await roots.deploy(metadata.dec0, metadata.dec1, metadata.st, metadata.t0, metadata.t1);
     await root.deployed();
 
     const before = await mim.balanceOf(owner.address);
@@ -585,7 +608,7 @@ describe("core", function () {
 
   it("BaseV1Router01 pair2 getAmountsOut & swapExactTokensForTokens", async function () {
     const ust_1 = ethers.BigNumber.from("1000000");
-    const route = {from:ust.address, to:mim.address, stable:false}
+    const route = {from: ust.address, to: mim.address, stable: false}
 
     const before = await mim.balanceOf(owner.address);
     const expected_output_pair = await pair.getAmountOut(ust_1, ust.address);
@@ -597,7 +620,7 @@ describe("core", function () {
 
   it("BaseV1Router01 pair1 getAmountsOut & swapExactTokensForTokens", async function () {
     const mim_1 = ethers.BigNumber.from("1000000000000000000");
-    const route = {from:mim.address, to:ust.address, stable:true}
+    const route = {from: mim.address, to: ust.address, stable: true}
 
     const before = await ust.balanceOf(owner.address);
     const expected_output_pair = await pair.getAmountOut(mim_1, mim.address);
@@ -609,7 +632,7 @@ describe("core", function () {
 
   it("BaseV1Router01 pair2 getAmountsOut & swapExactTokensForTokens", async function () {
     const mim_1 = ethers.BigNumber.from("1000000000000000000");
-    const route = {from:mim.address, to:ust.address, stable:false}
+    const route = {from: mim.address, to: ust.address, stable: false}
 
     const before = await ust.balanceOf(owner.address);
     const expected_output = await router.getAmountsOut(mim_1, [route]);
@@ -619,7 +642,11 @@ describe("core", function () {
 
   it("BaseV1Router01 pair1>pair2 getAmountsOut & swapExactTokensForTokens", async function () {
     const mim_1 = ethers.BigNumber.from("1000000000000000000");
-    const route = [{from:mim.address, to:ust.address, stable:false},{from:ust.address, to:mim.address, stable:true}]
+    const route = [{from: mim.address, to: ust.address, stable: false}, {
+      from: ust.address,
+      to: mim.address,
+      stable: true
+    }]
 
     const before = (await mim.balanceOf(owner.address)).sub(mim_1);
 
@@ -647,7 +674,7 @@ describe("core", function () {
   it("minter mint", async function () {
     console.log(await ve_dist.last_token_time());
     console.log(await ve_dist.timestamp());
-    await minter.initialize([owner.address],[ethers.BigNumber.from("1000000000000000000")], ethers.BigNumber.from("1000000000000000000"));
+    await minter.initialize([owner.address], [ethers.BigNumber.from("1000000000000000000")], ethers.BigNumber.from("1000000000000000000"));
     await minter.update_period();
     await gauge_factory.updateGauge(gauge.address);
     console.log(await ve_underlying.balanceOf(ve_dist.address));
@@ -752,7 +779,7 @@ describe("core", function () {
     await gauge_factory.claimFees([bribe.address], [[dai.address]], 1);
     const supply = await ve.totalSupply();
     expect(supply).to.be.above(0);
-    await network.provider.send("evm_increaseTime", [4*365*86400])
+    await network.provider.send("evm_increaseTime", [4 * 365 * 86400])
     await network.provider.send("evm_mine")
     expect(await ve.balanceOfNFT(1)).to.be.equal(0);
     expect(await ve.totalSupply()).to.be.equal(0);
@@ -855,7 +882,7 @@ describe("core", function () {
     await pair.approve(gauge.address, pair_1000);
     await gauge.deposit(pair_1000, 0);
     await late_reward.approve(gauge.address, await late_reward.balanceOf(owner.address));
-    await gauge.notifyRewardAmount(late_reward.address,await late_reward.balanceOf(owner.address));
+    await gauge.notifyRewardAmount(late_reward.address, await late_reward.balanceOf(owner.address));
 
     await network.provider.send("evm_increaseTime", [604800])
     await network.provider.send("evm_mine")
@@ -872,8 +899,8 @@ describe("core", function () {
     const pair_1000 = ethers.BigNumber.from("1000000000");
     await pair.approve(gauge.address, pair_1000);
     await gauge.deposit(pair_1000, 0);
-    await ve_underlying.approve(gauge.address,await ve_underlying.balanceOf(owner.address));
-    await gauge.notifyRewardAmount(ve_underlying.address,await ve_underlying.balanceOf(owner.address));
+    await ve_underlying.approve(gauge.address, await ve_underlying.balanceOf(owner.address));
+    await gauge.notifyRewardAmount(ve_underlying.address, await ve_underlying.balanceOf(owner.address));
 
     await network.provider.send("evm_increaseTime", [604800])
     await network.provider.send("evm_mine")

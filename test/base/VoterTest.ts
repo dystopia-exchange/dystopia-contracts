@@ -276,9 +276,6 @@ describe("voter tests", function () {
 
   it("gauge vote & bribe balanceOf", async function () {
     await core.voter.vote(1, [mimUstPair.address, mimDaiPair.address], [5000, 5000]);
-    await core.voter.vote(2, [mimUstPair.address, mimDaiPair.address], [500000, 500000]);
-    console.log(await core.voter.usedWeights(1));
-    console.log(await core.voter.usedWeights(4));
     expect(await core.voter.totalWeight()).to.not.equal(0);
     expect(await bribeMimUst.balanceOf(1)).to.not.equal(0);
   });
@@ -303,19 +300,6 @@ describe("voter tests", function () {
     expect(await core.voter.usedWeights(1)).to.equal(await core.voter.votes(1, mimUstPair.address));
     await core.voter.poke(1);
     expect(await core.voter.usedWeights(1)).to.equal(await core.voter.votes(1, mimUstPair.address));
-  });
-
-  it("gauge distribute based on voting", async function () {
-    await core.voter.vote(2, [mimUstPair.address], [5000]);
-
-    await TimeUtils.advanceBlocksOnTs(60 * 60 * 24 * 365 * 4);
-    await core.ve.withdraw(1);
-
-
-    await core.token.approve(core.voter.address, pair1000);
-    await core.voter.notifyRewardAmount(pair1000);
-    await core.voter.updateAll();
-    await core.voter.distro();
   });
 
   it("bribe claim rewards", async function () {

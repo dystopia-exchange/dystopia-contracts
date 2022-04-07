@@ -231,7 +231,8 @@ export class Deploy {
       ve,
       veDist,
       voter,
-      minter
+      minter,
+      treasury
     );
   }
 

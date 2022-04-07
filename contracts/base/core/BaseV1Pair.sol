@@ -33,8 +33,8 @@ contract BaseV1Pair is IERC20, IPair {
   mapping(address => uint) public nonces;
 
   uint internal constant MINIMUM_LIQUIDITY = 10 ** 3;
-  /// @dev 0.25% swap fee
-  uint internal constant SWAP_FEE = 400;
+  /// @dev 0.1% swap fee
+  uint internal constant SWAP_FEE = 1000;
   /// @dev 50% of swap fee
   uint internal constant TREASURY_FEE = 2;
 

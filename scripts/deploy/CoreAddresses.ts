@@ -3,7 +3,7 @@ import {
   BaseV1BribeFactory,
   BaseV1Factory,
   BaseV1GaugeFactory, BaseV1Minter,
-  BaseV1Router01, BaseV1Voter, Ve, VeDist
+  BaseV1Router01, BaseV1Voter, GovernanceTreasury, Ve, VeDist
 } from "../../typechain";
 
 export class CoreAddresses {
@@ -17,9 +17,10 @@ export class CoreAddresses {
   readonly veDist: VeDist;
   readonly voter: BaseV1Voter;
   readonly minter: BaseV1Minter;
+  readonly treasury: GovernanceTreasury;
 
 
-  constructor(token: BaseV1, gaugesFactory: BaseV1GaugeFactory, bribesFactory: BaseV1BribeFactory, factory: BaseV1Factory, router: BaseV1Router01, ve: Ve, veDist: VeDist, voter: BaseV1Voter, minter: BaseV1Minter) {
+  constructor(token: BaseV1, gaugesFactory: BaseV1GaugeFactory, bribesFactory: BaseV1BribeFactory, factory: BaseV1Factory, router: BaseV1Router01, ve: Ve, veDist: VeDist, voter: BaseV1Voter, minter: BaseV1Minter, treasury: GovernanceTreasury) {
     this.token = token;
     this.gaugesFactory = gaugesFactory;
     this.bribesFactory = bribesFactory;
@@ -29,5 +30,6 @@ export class CoreAddresses {
     this.veDist = veDist;
     this.voter = voter;
     this.minter = minter;
+    this.treasury = treasury;
   }
 }

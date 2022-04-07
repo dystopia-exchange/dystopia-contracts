@@ -14,12 +14,12 @@ import {
   BaseV1Router01,
   BaseV1Voter,
   Calculation,
+  GovernanceTreasury,
   StakingRewards,
   Token,
   Ve,
   VeDist
 } from "../../typechain";
-import {MaticTestnetAddresses} from "../addresses/MaticTestnetAddresses";
 import {Misc} from "../Misc";
 import {CoreAddresses} from "./CoreAddresses";
 
@@ -103,8 +103,12 @@ export class Deploy {
     return (await Deploy.deployContract(signer, 'BaseV1BribeFactory')) as BaseV1BribeFactory;
   }
 
-  public static async deployBaseV1Factory(signer: SignerWithAddress) {
-    return (await Deploy.deployContract(signer, 'BaseV1Factory')) as BaseV1Factory;
+  public static async deployBaseV1Factory(signer: SignerWithAddress, treasury: string) {
+    return (await Deploy.deployContract(signer, 'BaseV1Factory', treasury)) as BaseV1Factory;
+  }
+
+  public static async deployGovernanceTreasury(signer: SignerWithAddress) {
+    return (await Deploy.deployContract(signer, 'GovernanceTreasury')) as GovernanceTreasury;
   }
 
   public static async deployBaseV1Router01(
@@ -195,10 +199,11 @@ export class Deploy {
     minterClaimantsAmounts: BigNumber[],
     minterMax: BigNumber
   ) {
-    const token = await Deploy.deployBaseV1(signer)
+    const treasury = await Deploy.deployGovernanceTreasury(signer);
+    const token = await Deploy.deployBaseV1(signer);
     const gaugesFactory = await Deploy.deployGaugeFactory(signer);
     const bribesFactory = await Deploy.deployBribeFactory(signer);
-    const baseFactory = await Deploy.deployBaseV1Factory(signer);
+    const baseFactory = await Deploy.deployBaseV1Factory(signer, treasury.address);
 
     const router = await Deploy.deployBaseV1Router01(signer, baseFactory.address, networkToken);
     const ve = await Deploy.deployVe(signer, token.address);

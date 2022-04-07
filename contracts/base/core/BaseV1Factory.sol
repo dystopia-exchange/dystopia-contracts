@@ -10,6 +10,7 @@ contract BaseV1Factory is IFactory {
   bool public override isPaused;
   address public pauser;
   address public pendingPauser;
+  address public immutable override treasury;
 
   mapping(address => mapping(address => mapping(bool => address))) public override getPair;
   address[] public allPairs;
@@ -28,9 +29,10 @@ contract BaseV1Factory is IFactory {
     uint allPairsLength
   );
 
-  constructor() {
+  constructor(address _treasury) {
     pauser = msg.sender;
     isPaused = false;
+    treasury = _treasury;
   }
 
   function allPairsLength() external view returns (uint) {

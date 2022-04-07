@@ -7,6 +7,8 @@ import "../lib/Math.sol";
 
 contract Calculation {
 
+  uint internal constant SWAP_FEE = 400;
+
   uint immutable decimals0;
   uint immutable decimals1;
   bool immutable stable;
@@ -47,7 +49,7 @@ contract Calculation {
   }
 
   function getAmountOutNewton(uint amountIn, address tokenIn, uint _reserve0, uint _reserve1) external view returns (uint) {
-    amountIn -= amountIn / 10000;
+    amountIn -= amountIn / SWAP_FEE;
     // remove fee from amount received
     if (stable) {
       uint xy = _k(_reserve0, _reserve1);
@@ -124,7 +126,7 @@ contract Calculation {
   }
 
   function getAmountOutClosedForm(uint amountIn, address tokenIn, uint _reserve0, uint _reserve1) external view returns (uint) {
-    amountIn -= amountIn / 10000;
+    amountIn -= amountIn / SWAP_FEE;
     // remove fee from amount received
     if (stable) {
       _reserve0 = _reserve0 * 1e18 / decimals0;

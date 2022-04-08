@@ -86,7 +86,7 @@ export default {
       url: argv.mumbaiRpcUrl,
       chainId: 80001,
       timeout: 99999,
-      gasPrice: 100_000_000_000,
+      // gasPrice: 100_000_000_000,
       accounts: [argv.privateKey],
     },
   },

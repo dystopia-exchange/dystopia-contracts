@@ -238,7 +238,7 @@ describe("core", function () {
     await ust.transfer(pair.address, ust_1);
     await mim.transfer(pair.address, mim_1);
     await pair.mint(owner.address);
-    expect(await pair.getAmountOut(ust_1, ust.address)).to.equal(ethers.BigNumber.from("981279784441768894"));
+    expect(await pair.getAmountOut(ust_1, ust.address)).to.equal(ethers.BigNumber.from("981745351048687212"));
     const output = await router.getAmountOut(ust_1, ust.address, mim.address);
     expect(await pair.getAmountOut(ust_1, ust.address)).to.equal(output.amount);
     expect(output.stable).to.equal(true);
@@ -252,7 +252,7 @@ describe("core", function () {
     await ust.connect(owner2).transfer(pair.address, ust_1);
     await mim.connect(owner2).transfer(pair.address, mim_1);
     await pair.connect(owner2).mint(owner2.address);
-    expect(await pair.connect(owner2).getAmountOut(ust_1, ust.address)).to.equal(ethers.BigNumber.from("991348206217938259"));
+    expect(await pair.connect(owner2).getAmountOut(ust_1, ust.address)).to.equal(ethers.BigNumber.from("991833071663219513"));
   });
 
   it("BaseV1Router01 addLiquidity", async function () {
@@ -315,8 +315,8 @@ describe("core", function () {
     await ust.approve(router.address, ust_1);
     await router.swapExactTokensForTokens(ust_1, expected_output[1], [route], owner.address, Date.now());
     const fees = await pair.fees()
-    expect(await ust.balanceOf(fees)).to.be.equal(500);
-    expect(await ust.balanceOf(treasury)).to.be.equal(500);
+    expect(await ust.balanceOf(fees)).to.be.equal(250);
+    expect(await ust.balanceOf(treasury)).to.be.equal(250);
     const b = await ust.balanceOf(owner.address);
     await pair.claimFees();
     expect(await ust.balanceOf(owner.address)).to.be.above(b);
@@ -337,7 +337,7 @@ describe("core", function () {
     await ust.connect(owner2).approve(router.address, ust_1);
     await router.connect(owner2).swapExactTokensForTokens(ust_1, expected_output[1], [route], owner2.address, Date.now());
     const fees = await pair.fees()
-    expect(await ust.balanceOf(fees)).to.be.equal(501);
+    expect(await ust.balanceOf(fees)).to.be.equal(251);
     const b = await ust.balanceOf(owner.address);
     await pair.connect(owner2).claimFees();
     expect(await ust.balanceOf(owner.address)).to.be.equal(b);

@@ -151,8 +151,33 @@ describe("emission tests", function () {
 
     expect(await core.token.balanceOf(core.minter.address)).is.eq(0);
     // not exact amount coz veDYST balance fluctuation during time
-    TestHelper.closer(await core.token.balanceOf(core.veDist.address), parseUnits('961622'), parseUnits('1000'));
-    TestHelper.closer(await core.token.balanceOf(core.voter.address), parseUnits('1014098'), parseUnits('1000'));
+    TestHelper.closer(await core.token.balanceOf(core.veDist.address), parseUnits('961622'), parseUnits('3000'));
+    TestHelper.closer(await core.token.balanceOf(core.voter.address), parseUnits('1014098'), parseUnits('3000'));
+  });
+
+  it("update period twice", async function () {
+    await TimeUtils.advanceBlocksOnTs(WEEK * 2);
+    expect(await core.token.balanceOf(core.minter.address)).is.eq(0);
+    expect(await core.token.balanceOf(core.veDist.address)).is.eq(0);
+    expect(await core.token.balanceOf(core.voter.address)).is.eq(0);
+
+    await core.minter.update_period();
+
+    expect(await core.token.balanceOf(core.minter.address)).is.eq(0);
+    // not exact amount coz veDYST balance fluctuation during time
+    const veDistBal = await core.token.balanceOf(core.veDist.address);
+    const voterBal = await core.token.balanceOf(core.voter.address);
+    TestHelper.closer(veDistBal, parseUnits('258628'), parseUnits('3000'));
+    TestHelper.closer(voterBal, parseUnits('262134'), parseUnits('3000'));
+
+    await TimeUtils.advanceBlocksOnTs(WEEK);
+
+    await core.minter.update_period();
+
+    expect(await core.token.balanceOf(core.minter.address)).is.eq(0);
+    // not exact amount coz veDYST balance fluctuation during time
+    TestHelper.closer((await core.token.balanceOf(core.veDist.address)).sub(veDistBal), parseUnits('100'), parseUnits('50'));
+    TestHelper.closer((await core.token.balanceOf(core.voter.address)).sub(voterBal), parseUnits('258000'), parseUnits('1000'));
   });
 
   it("update period and distribute reward to voter and veDist", async function () {
@@ -167,8 +192,8 @@ describe("emission tests", function () {
     // minter without enough token should distribute everything to veDist and voter
     expect(await core.token.balanceOf(core.minter.address)).is.eq(0);
     // not exact amount coz veDYST balance fluctuation during time
-    TestHelper.closer(await core.token.balanceOf(core.veDist.address), parseUnits('258628'), parseUnits('1000'));
-    TestHelper.closer(await core.token.balanceOf(core.voter.address), parseUnits('262134'), parseUnits('1000'));
+    TestHelper.closer(await core.token.balanceOf(core.veDist.address), parseUnits('258628'), parseUnits('3000'));
+    TestHelper.closer(await core.token.balanceOf(core.voter.address), parseUnits('262134'), parseUnits('3000'));
 
     // ------------ CHECK CLAIM VE ----------
 
@@ -191,7 +216,7 @@ describe("emission tests", function () {
 
     // voter has some dust after distribution
     TestHelper.closer(await core.token.balanceOf(core.voter.address), parseUnits('0'), parseUnits('100'));
-    TestHelper.closer(await core.token.balanceOf(gaugeMimUst.address), parseUnits('262134'), parseUnits('1000'));
+    TestHelper.closer(await core.token.balanceOf(gaugeMimUst.address), parseUnits('262134'), parseUnits('3000'));
 
     expect(await core.token.balanceOf(owner.address)).is.eq(0);
 
@@ -203,7 +228,7 @@ describe("emission tests", function () {
     await TimeUtils.advanceBlocksOnTs(WEEK);
 
     await gaugeMimUst.getReward(owner.address, [core.token.address]);
-    TestHelper.closer(await core.token.balanceOf(owner.address), parseUnits('262134'), parseUnits('1000'));
+    TestHelper.closer(await core.token.balanceOf(owner.address), parseUnits('262134'), parseUnits('3000'));
   });
 
 });

@@ -40,8 +40,6 @@ describe("emission tests", function () {
   let mim: Token;
   let dai: Token;
   let mimUstPair: BaseV1Pair;
-  let mimDaiPair: BaseV1Pair;
-  let ustDaiPair: BaseV1Pair;
 
   let gaugeMimUst: Gauge;
 
@@ -73,24 +71,6 @@ describe("emission tests", function () {
       ust.address,
       parseUnits('1'),
       parseUnits('1', 6),
-      true
-    );
-    mimDaiPair = await TestHelper.addLiquidity(
-      core,
-      owner,
-      mim.address,
-      dai.address,
-      parseUnits('1'),
-      parseUnits('1'),
-      true
-    );
-    ustDaiPair = await TestHelper.addLiquidity(
-      core,
-      owner,
-      ust.address,
-      dai.address,
-      parseUnits('1', 6),
-      parseUnits('1'),
       true
     );
 

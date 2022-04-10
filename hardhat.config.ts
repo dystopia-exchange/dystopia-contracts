@@ -30,6 +30,10 @@ const argv = require('yargs/yargs')()
       type: "string",
       default: ''
     },
+    ftmRpcUrl: {
+      type: "string",
+      default: ''
+    },
     networkScanKey: {
       type: "string",
     },
@@ -87,6 +91,12 @@ export default {
       chainId: 80001,
       timeout: 99999,
       // gasPrice: 100_000_000_000,
+      accounts: [argv.privateKey],
+    },
+    ftm: {
+      url: argv.ftmRpcUrl,
+      chainId: 250,
+      timeout: 99999,
       accounts: [argv.privateKey],
     },
   },

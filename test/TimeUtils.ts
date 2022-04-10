@@ -32,8 +32,9 @@ export class TimeUtils {
     }
   }
 
-  public static async setBlock(blockNumber: number) {
-    await ethers.provider.send('evm_setNextBlockTimestamp', [blockNumber]);
+  public static async setNextBlockTime(ts: number) {
+    await ethers.provider.send('evm_setNextBlockTimestamp', [ts]);
+    await ethers.provider.send('evm_mine', []);
   }
 
   public static async snapshot() {

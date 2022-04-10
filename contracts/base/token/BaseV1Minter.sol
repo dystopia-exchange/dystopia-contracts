@@ -25,13 +25,14 @@ contract BaseV1Minter is IMinter {
   IVoter public immutable _voter;
   IVe public immutable _ve;
   IVeDist public immutable _ve_dist;
-  uint public weekly = 20000000e18;
+  uint public weekly = 5_000_000e18;
+  uint public initial_stub_circulation_supply;
   uint public active_period;
   uint internal constant lock = 86400 * 7 * 52 * 4;
 
   address internal initializer;
 
-  event Mint(address indexed sender, uint weekly, uint circulating_supply, uint circulating_emission);
+  event Mint(address indexed sender, uint weekly, uint growth, uint circulating_supply, uint circulating_emission);
 
   constructor(
     address __voter, // the voting & distribution system
@@ -52,40 +53,76 @@ contract BaseV1Minter is IMinter {
   function initialize(
     address[] memory claimants,
     uint[] memory amounts,
-    uint max
+    uint total_amount
   ) external {
     require(initializer == msg.sender);
-    _token.mint(address(this), max);
+    _token.mint(address(this), total_amount);
+    // 20% of minted will be a stub circulation supply for a warming up period
+    initial_stub_circulation_supply = total_amount / 5;
     _token.approve(address(_ve), type(uint).max);
+    uint sum;
     for (uint i = 0; i < claimants.length; i++) {
       _ve.create_lock_for(amounts[i], lock, claimants[i]);
+      sum += amounts[i];
     }
+    require(sum == total_amount, "Wrong total_amount");
     initializer = address(0);
     active_period = (block.timestamp + week) / week * week;
   }
 
-  /// @dev Calculate circulating supply as total token supply - locked supply
-  function circulating_supply() public view returns (uint) {
-    return _token.totalSupply() - IUnderlying(address(_ve)).totalSupply();
+  /// @dev Calculate circulating supply as total token supply - locked supply - veDist balance - minter balance
+  function circulating_supply() external view returns (uint) {
+    return _circulating_supply();
+  }
+
+  function _circulating_supply() internal view returns (uint) {
+    return _token.totalSupply() - IUnderlying(address(_ve)).totalSupply()
+    // exclude veDist token balance from circulation - users unable to claim them without lock
+    // late claim will lead to wrong circulation supply calculation
+    - _token.balanceOf(address(_ve_dist))
+    // exclude balance on minter, it is obviously locked
+    - _token.balanceOf(address(this));
+  }
+
+  function _circulating_supply_adjusted() internal view returns (uint) {
+    // we need a stub supply for cover initial gap when huge amount of tokens was distributed and locked
+    return Math.max(_circulating_supply(), initial_stub_circulation_supply);
   }
 
   /// @dev Emission calculation is 2% of available supply to mint adjusted by circulating / total supply
-  function calculate_emission() public view returns (uint) {
-    return weekly * emission * circulating_supply() / target_base / _token.totalSupply();
+  function calculate_emission() external view returns (uint) {
+    return _calculate_emission();
+  }
+
+  function _calculate_emission() internal view returns (uint) {
+    // use adjusted circulation supply for avoid first weeks gaps
+    return weekly * emission * _circulating_supply_adjusted() / target_base / _token.totalSupply();
   }
 
   /// @dev Weekly emission takes the max of calculated (aka target) emission versus circulating tail end emission
-  function weekly_emission() public view returns (uint) {
-    return Math.max(calculate_emission(), circulating_emission());
+  function weekly_emission() external view returns (uint) {
+    return _weekly_emission();
+  }
+
+  function _weekly_emission() internal view returns (uint) {
+    return Math.max(_calculate_emission(), _circulating_emission());
   }
 
   /// @dev Calculates tail end (infinity) emissions as 0.2% of total supply
-  function circulating_emission() public view returns (uint) {
-    return circulating_supply() * tail_emission / tail_base;
+  function circulating_emission() external view returns (uint) {
+    return _circulating_emission();
+  }
+
+  function _circulating_emission() internal view returns (uint) {
+    return _circulating_supply() * tail_emission / tail_base;
   }
 
   /// @dev Calculate inflation and adjust ve balances accordingly
-  function calculate_growth(uint _minted) public view returns (uint) {
+  function calculate_growth(uint _minted) external view returns (uint) {
+    return _calculate_growth(_minted);
+  }
+
+  function _calculate_growth(uint _minted) internal view returns (uint) {
     return IUnderlying(address(_ve)).totalSupply() * _minted / _token.totalSupply();
   }
 
@@ -95,10 +132,16 @@ contract BaseV1Minter is IMinter {
     if (block.timestamp >= _period + week && initializer == address(0)) {// only trigger if new week
       _period = block.timestamp / week * week;
       active_period = _period;
-      weekly = weekly_emission();
+      uint _weekly = _weekly_emission();
+      // slightly decrease weekly emission
+      weekly = weekly * emission / target_base;
+      // decrease stub supply every week until reach nearly zero amount
+      if (initial_stub_circulation_supply > 100) {
+        initial_stub_circulation_supply -= initial_stub_circulation_supply / 10;
+      }
 
-      uint _growth = calculate_growth(weekly);
-      uint _required = _growth + weekly;
+      uint _growth = _calculate_growth(_weekly);
+      uint _required = _growth + _weekly;
       uint _balanceOf = _token.balanceOf(address(this));
       if (_balanceOf < _required) {
         _token.mint(address(this), _required - _balanceOf);
@@ -110,10 +153,10 @@ contract BaseV1Minter is IMinter {
       // checkpoint supply
       _ve_dist.checkpoint_total_supply();
 
-      _token.approve(address(_voter), weekly);
-      _voter.notifyRewardAmount(weekly);
+      _token.approve(address(_voter), _weekly);
+      _voter.notifyRewardAmount(_weekly);
 
-      emit Mint(msg.sender, weekly, circulating_supply(), circulating_emission());
+      emit Mint(msg.sender, _weekly, _growth, _circulating_supply(), _circulating_emission());
     }
     return _period;
   }

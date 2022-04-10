@@ -67,7 +67,7 @@ describe("voter tests", function () {
       [MaticTestnetAddresses.WMATIC_TOKEN, ust.address, mim.address, dai.address],
       [owner.address, owner2.address],
       [utils.parseUnits('100'), utils.parseUnits('100')],
-      utils.parseUnits('1000')
+      utils.parseUnits('200')
     );
 
     mimUstPair = await TestHelper.addLiquidity(

@@ -182,7 +182,7 @@ describe("emission tests", function () {
     // ------------ CHECK CLAIM VE ----------
 
     const toClaim = await core.veDist.claimable(1);
-    TestHelper.closer(toClaim, parseUnits('193894'), parseUnits('1000'));
+    TestHelper.closer(toClaim, parseUnits('200000'), parseUnits('10000'));
 
     expect(await core.token.balanceOf(owner.address)).is.eq(0, "before the first update we should have 0 DYST");
     const veBalance = (await core.ve.locked(1)).amount;

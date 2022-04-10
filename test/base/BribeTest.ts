@@ -42,11 +42,9 @@ describe("bribe tests", function () {
 
   let gaugeMimUst: Gauge;
   let gaugeMimDai: Gauge;
-  let gaugeUstDai: Gauge;
 
   let bribeMimUst: Bribe;
   let bribeMimDai: Bribe;
-  let bribeUstDai: Bribe;
 
   let staking: StakingRewards;
 
@@ -73,7 +71,8 @@ describe("bribe tests", function () {
     );
 
     mimUstPair = await TestHelper.addLiquidity(
-      core,
+      core.factory,
+      core.router,
       owner,
       mim.address,
       ust.address,
@@ -82,7 +81,8 @@ describe("bribe tests", function () {
       true
     );
     mimDaiPair = await TestHelper.addLiquidity(
-      core,
+      core.factory,
+      core.router,
       owner,
       mim.address,
       dai.address,
@@ -91,7 +91,8 @@ describe("bribe tests", function () {
       true
     );
     ustDaiPair = await TestHelper.addLiquidity(
-      core,
+      core.factory,
+      core.router,
       owner,
       ust.address,
       dai.address,
@@ -105,7 +106,6 @@ describe("bribe tests", function () {
     await core.token.approve(core.voter.address, BigNumber.from("1500000000000000000000000"));
     await core.voter.createGauge(mimUstPair.address);
     await core.voter.createGauge(mimDaiPair.address);
-    await core.voter.createGauge(ustDaiPair.address);
     expect(await core.voter.gauges(mimUstPair.address)).to.not.equal(0x0000000000000000000000000000000000000000);
 
     const sr = await ethers.getContractFactory("StakingRewards");
@@ -117,20 +117,14 @@ describe("bribe tests", function () {
     const gaugeMimDaiAddress2 = await core.voter.gauges(mimDaiPair.address);
     const bribeMimDaiAddress2 = await core.voter.bribes(gaugeMimDaiAddress2);
 
-    const gaugeUstDaiAddress3 = await core.voter.gauges(ustDaiPair.address);
-    const bribeUstDaiAddress3 = await core.voter.bribes(gaugeUstDaiAddress3);
-
     gaugeMimUst = Gauge__factory.connect(gaugeMimUstAddress, owner);
     gaugeMimDai = Gauge__factory.connect(gaugeMimDaiAddress2, owner);
-    gaugeUstDai = Gauge__factory.connect(gaugeUstDaiAddress3, owner);
 
     bribeMimUst = Bribe__factory.connect(bribeMimUstAddress, owner);
     bribeMimDai = Bribe__factory.connect(bribeMimDaiAddress2, owner);
-    bribeUstDai = Bribe__factory.connect(bribeUstDaiAddress3, owner);
 
-    await TestHelper.depositToGauge(owner, gaugeMimUst, mimUstPair, amount1000At6, 0);
-    await TestHelper.depositToGauge(owner, gaugeMimDai, mimDaiPair, amount1000At6, 0);
-    await TestHelper.depositToGauge(owner, gaugeUstDai, ustDaiPair, amount1000At6, 0);
+    await TestHelper.depositToGauge(owner, gaugeMimUst, mimUstPair, amount1000At6, 1);
+    await TestHelper.depositToGauge(owner, gaugeMimDai, mimDaiPair, amount1000At6, 1);
 
     await mimUstPair.approve(staking.address, amount1000At6);
     await staking.stake(amount1000At6);
@@ -152,10 +146,115 @@ describe("bribe tests", function () {
     await TimeUtils.rollback(snapshot);
   });
 
-  it("test", async function () {
+  it("whitelist new token", async function () {
+    const mockToken = await Deploy.deployContract(owner, 'Token', 'MOCK', 'MOCK', 10, owner.address) as Token;
+    await mockToken.mint(owner.address, utils.parseUnits('1000000000000', 10));
+    await core.voter.whitelist(mockToken.address, 1);
+    expect(await core.voter.isWhitelisted(mockToken.address)).is.eq(true);
+  });
+
+  it("getPriorBalanceIndex for unknown token return 0", async function () {
+    expect(await bribeMimDai.getPriorBalanceIndex(99, 0)).is.eq(0);
+  });
+
+  it("getPriorBalanceIndex test", async function () {
+    await core.voter.vote(1, [mimUstPair.address], [100])
+    await TimeUtils.advanceBlocksOnTs(1);
+    await core.voter.reset(1);
+    await TimeUtils.advanceBlocksOnTs(1);
+    await core.voter.vote(1, [mimUstPair.address], [100]);
+
+    const checkPointN = await bribeMimUst.numCheckpoints(1);
+    expect(checkPointN).is.not.eq(0);
+    const checkPoint = await bribeMimUst.checkpoints(1, checkPointN.sub(2));
+    console.log("checkpoint timestamp", checkPoint.timestamp.toString())
+    console.log("checkpoint bal", checkPoint.balanceOf.toString())
+    expect(await bribeMimUst.getPriorBalanceIndex(1, checkPoint.timestamp)).is.eq(1);
+    expect(await bribeMimUst.getPriorBalanceIndex(1, checkPoint.timestamp.add(1))).is.eq(1);
+    expect(await bribeMimUst.getPriorBalanceIndex(1, checkPoint.timestamp.sub(1))).is.eq(0);
+  });
+
+  it("getPriorSupplyIndex for empty bribe", async function () {
+    await core.voter.createGauge(ustDaiPair.address);
+    const gauge = await core.voter.gauges(ustDaiPair.address);
+    const bribe = await core.voter.bribes(gauge);
+
+    expect(await Bribe__factory.connect(bribe, owner).getPriorSupplyIndex(0)).is.eq(0);
+  });
+
+  it("getPriorSupplyIndex test", async function () {
+    await core.voter.vote(1, [mimUstPair.address], [100])
+    await TimeUtils.advanceBlocksOnTs(1);
+    await core.voter.reset(1);
+    await TimeUtils.advanceBlocksOnTs(1);
+    await core.voter.vote(1, [mimUstPair.address], [100]);
+
+    const n = await bribeMimUst.supplyNumCheckpoints();
+    expect(n).is.not.eq(0);
+    const checkpoint = await bribeMimUst.supplyCheckpoints(n.sub(2));
+    expect(await bribeMimUst.getPriorSupplyIndex(checkpoint.timestamp)).is.eq(1);
+    expect(await bribeMimUst.getPriorSupplyIndex(checkpoint.timestamp.add(1))).is.eq(1);
+    expect(await bribeMimUst.getPriorSupplyIndex(checkpoint.timestamp.sub(1))).is.eq(0);
+  });
 
 
+  it("custom reward test", async function () {
 
+    await bribeMimUst.batchRewardPerToken(mim.address, 3);
+
+    await core.voter.vote(1, [mimUstPair.address], [100]);
+    await mim.approve(bribeMimUst.address, parseUnits('100'));
+    await bribeMimUst.notifyRewardAmount(mim.address, parseUnits('1'))
+    await TimeUtils.advanceBlocksOnTs(1);
+
+    await core.voter.reset(1);
+
+    await bribeMimUst.batchRewardPerToken(mim.address, 3);
+    await bribeMimUst.notifyRewardAmount(mim.address, parseUnits('1'))
+    await TimeUtils.advanceBlocksOnTs(1);
+
+    await core.voter.vote(1, [mimUstPair.address], [100]);
+
+    await bribeMimUst.notifyRewardAmount(mim.address, parseUnits('10'))
+    await TimeUtils.advanceBlocksOnTs(1);
+
+    await core.voter.reset(1);
+    await TimeUtils.advanceBlocksOnTs(1);
+    await core.voter.vote(1, [mimUstPair.address], [100]);
+
+    expect(bribeMimUst.supplyNumCheckpoints()).is.not.eq(0);
+    expect(bribeMimUst.rewardRate(mim.address)).is.not.eq(0);
+
+    await bribeMimUst.batchRewardPerToken(mim.address, 3);
+    await bribeMimUst.batchRewardPerToken(mim.address, 3);
+
+    const n = await bribeMimUst.rewardPerTokenNumCheckpoints(mim.address);
+    expect(n).is.not.eq(0);
+    const checkpoint = await bribeMimUst.rewardPerTokenCheckpoints(mim.address, n.sub(1));
+    const c = await bribeMimUst.getPriorRewardPerToken(mim.address, checkpoint.timestamp);
+    expect(c[1]).is.not.eq(0);
+    expect(c[1]).is.not.eq(0);
+    expect(await bribeMimUst.rewardsListLength()).is.eq(1);
+    expect(await bribeMimUst.left(mim.address)).is.not.eq(0);
+  });
+
+
+  it("getRewardForOwner through voter", async function () {
+    await core.voter.vote(1, [mimUstPair.address], [100]);
+    await mim.approve(bribeMimUst.address, parseUnits('100'));
+    await bribeMimUst.notifyRewardAmount(mim.address, parseUnits('10'))
+
+    const balanceBefore = await mim.balanceOf(owner.address);
+    await core.voter.claimBribes([bribeMimUst.address], [[mim.address]], 1);
+    expect((await mim.balanceOf(owner.address)).sub(balanceBefore)).is.not.eq(0);
+  });
+
+  it("reward per token for empty bribe", async function () {
+    await core.voter.createGauge(ustDaiPair.address);
+    const gauge = await core.voter.gauges(ustDaiPair.address);
+    const bribe = await core.voter.bribes(gauge);
+
+    expect(await Bribe__factory.connect(bribe, owner).rewardPerToken(mim.address)).is.eq(0);
   });
 
 

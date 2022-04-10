@@ -1,7 +1,14 @@
-import {CoreAddresses} from "../scripts/deploy/CoreAddresses";
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
 import {BigNumber, utils} from "ethers";
-import {BaseV1Pair, BaseV1Pair__factory, Gauge, IERC20__factory, Token} from "../typechain";
+import {
+  BaseV1Factory,
+  BaseV1Pair,
+  BaseV1Pair__factory,
+  BaseV1Router01,
+  Gauge,
+  IERC20__factory,
+  Token
+} from "../typechain";
 import chai from "chai";
 import {Deploy} from "../scripts/deploy/Deploy";
 
@@ -10,7 +17,8 @@ const {expect} = chai;
 export class TestHelper {
 
   public static async addLiquidity(
-    core: CoreAddresses,
+    factory: BaseV1Factory,
+    router: BaseV1Router01,
     owner: SignerWithAddress,
     tokenA: string,
     tokenB: string,
@@ -20,10 +28,10 @@ export class TestHelper {
   ) {
     TestHelper.gte(await IERC20__factory.connect(tokenA, owner).balanceOf(owner.address), tokenAAmount);
     TestHelper.gte(await IERC20__factory.connect(tokenB, owner).balanceOf(owner.address), tokenBAmount);
-    await IERC20__factory.connect(tokenA, owner).approve(core.router.address, tokenAAmount);
-    await IERC20__factory.connect(tokenB, owner).approve(core.router.address, tokenBAmount);
-    await core.router.connect(owner).addLiquidity(tokenA, tokenB, stable, tokenAAmount, tokenBAmount, 0, 0, owner.address, Date.now());
-    const address = await core.factory.getPair(tokenA, tokenB, stable);
+    await IERC20__factory.connect(tokenA, owner).approve(router.address, tokenAAmount);
+    await IERC20__factory.connect(tokenB, owner).approve(router.address, tokenBAmount);
+    await router.connect(owner).addLiquidity(tokenA, tokenB, stable, tokenAAmount, tokenBAmount, 0, 0, owner.address, Date.now());
+    const address = await factory.getPair(tokenA, tokenB, stable);
     return BaseV1Pair__factory.connect(address, owner);
   }
 

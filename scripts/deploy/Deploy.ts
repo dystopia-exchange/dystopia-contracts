@@ -2,7 +2,7 @@ import {ethers, web3} from "hardhat";
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
 import {Logger} from "tslog";
 import logSettings from "../../log_settings";
-import {BigNumber, Contract, ContractFactory, utils} from "ethers";
+import {BigNumber, ContractFactory, utils} from "ethers";
 import {Libraries} from "hardhat-deploy/dist/types";
 import {config as dotEnvConfig} from "dotenv";
 import {
@@ -13,18 +13,19 @@ import {
   BaseV1Minter,
   BaseV1Router01,
   BaseV1Voter,
-  Roots,
+  Calculation,
+  GovernanceTreasury,
   StakingRewards,
   Token,
   Ve,
   VeDist
 } from "../../typechain";
-import axios from "axios";
+import {Misc} from "../Misc";
+import {CoreAddresses} from "./CoreAddresses";
 
 // tslint:disable-next-line:no-var-requires
 const hre = require("hardhat");
 const log: Logger = new Logger(logSettings);
-require("dotenv").config();
 
 
 dotEnvConfig();
@@ -34,7 +35,7 @@ const argv = require('yargs/yargs')()
   .options({
     networkScanKey: {
       type: "string",
-      default:process.env.NETWORK_SCAN_KEY
+      default: process.env.NETWORK_SCAN_KEY
     },
   }).argv;
 
@@ -44,32 +45,7 @@ const libraries = new Map<string, string>([
 
 export class Deploy {
 
-  constructor(signer: SignerWithAddress) {
-    signer = signer;
-  }
-  
   // ************ CONTRACT CONNECTION **************************
-
-  public static async connectContract<T extends ContractFactory>(
-    signer: SignerWithAddress,
-    name: string,
-    address: string
-  ) {
-    const _factory = (await ethers.getContractFactory(
-      name,
-      signer
-    )) as T;
-    const instance = _factory.connect(signer);
-    return instance.attach(address);
-  }
-
-  public static async connectInterface<T extends Contract>(
-    signer: SignerWithAddress,
-    name: string,
-    address: string
-  ) {
-    return ethers.getContractAt(name, address, signer);
-  }
 
   public static async deployContract<T extends ContractFactory>(
     signer: SignerWithAddress,
@@ -86,13 +62,13 @@ export class Deploy {
     let _factory;
     if (lib) {
       log.info('DEPLOY LIBRARY', lib, 'for', name);
-      const libAddress = (await Deploy.deployContract(signer,lib)).address;
+      const libAddress = (await Deploy.deployContract(signer, lib)).address;
       const librariesObj: Libraries = {};
       librariesObj[lib] = libAddress;
       _factory = (await ethers.getContractFactory(
         name,
         {
-          signer: signer,
+          signer,
           libraries: librariesObj
         }
       )) as T;
@@ -111,23 +87,28 @@ export class Deploy {
     return _factory.attach(receipt.contractAddress);
   }
 
-  public static async deployBaseV1( signer: SignerWithAddress) {
-    return (await Deploy.deployContract(signer,'BaseV1')) as BaseV1;
-  }
-  public static async deployToken( signer: SignerWithAddress,name: string,symbol: string,decimal: number) {
-    return (await Deploy.deployContract(signer,'Token',name,symbol,decimal,signer.address)) as Token;
+  public static async deployBaseV1(signer: SignerWithAddress) {
+    return (await Deploy.deployContract(signer, 'BaseV1')) as BaseV1;
   }
 
-  public static async deployGaugeFactory( signer: SignerWithAddress) {
-    return (await Deploy.deployContract(signer,'BaseV1GaugeFactory')) as BaseV1GaugeFactory;
+  public static async deployToken(signer: SignerWithAddress, name: string, symbol: string, decimal: number) {
+    return (await Deploy.deployContract(signer, 'Token', name, symbol, decimal, signer.address)) as Token;
   }
 
-  public static async deployBribeFactory( signer: SignerWithAddress) {
-    return (await Deploy.deployContract(signer,'BaseV1BribeFactory')) as BaseV1BribeFactory;
+  public static async deployGaugeFactory(signer: SignerWithAddress) {
+    return (await Deploy.deployContract(signer, 'BaseV1GaugeFactory')) as BaseV1GaugeFactory;
   }
 
-  public static async deployBaseV1Factory( signer: SignerWithAddress) {
-    return (await Deploy.deployContract(signer,'BaseV1Factory')) as BaseV1Factory;
+  public static async deployBribeFactory(signer: SignerWithAddress) {
+    return (await Deploy.deployContract(signer, 'BaseV1BribeFactory')) as BaseV1BribeFactory;
+  }
+
+  public static async deployBaseV1Factory(signer: SignerWithAddress, treasury: string) {
+    return (await Deploy.deployContract(signer, 'BaseV1Factory', treasury)) as BaseV1Factory;
+  }
+
+  public static async deployGovernanceTreasury(signer: SignerWithAddress) {
+    return (await Deploy.deployContract(signer, 'GovernanceTreasury')) as GovernanceTreasury;
   }
 
   public static async deployBaseV1Router01(
@@ -135,15 +116,15 @@ export class Deploy {
     factory: string,
     networkToken: string,
   ) {
-    return (await Deploy.deployContract(signer,'BaseV1Router01', factory, networkToken)) as BaseV1Router01;
+    return (await Deploy.deployContract(signer, 'BaseV1Router01', factory, networkToken)) as BaseV1Router01;
   }
 
-  public static async deployVe( signer: SignerWithAddress,token: string) {
-    return (await Deploy.deployContract(signer,'Ve', token)) as Ve;
+  public static async deployVe(signer: SignerWithAddress, token: string) {
+    return (await Deploy.deployContract(signer, 'Ve', token)) as Ve;
   }
 
-  public static async deployVeDist( signer: SignerWithAddress,ve: string) {
-    return (await Deploy.deployContract(signer,'VeDist', ve)) as VeDist;
+  public static async deployVeDist(signer: SignerWithAddress, ve: string) {
+    return (await Deploy.deployContract(signer, 'VeDist', ve)) as VeDist;
   }
 
   public static async deployBaseV1Voter(
@@ -177,6 +158,7 @@ export class Deploy {
       veDist,
     )) as BaseV1Minter;
   }
+
   public static async deployStakingRewards(
     signer: SignerWithAddress,
     pair: string,
@@ -189,123 +171,69 @@ export class Deploy {
       token,
     )) as StakingRewards;
   }
-  public static async deployRoots(
+
+  public static async deployCalculation(
     signer: SignerWithAddress,
-    d0:  BigNumber,
-    d1:  BigNumber,
-    st:boolean,
-    a1:string,
-    a2:string
+    d0: BigNumber,
+    d1: BigNumber,
+    st: boolean,
+    a1: string,
+    a2: string
   ) {
     return (await Deploy.deployContract(
       signer,
-      'roots',
+      'Calculation',
       d0,
       d1,
       st,
       a1,
       a2
-    )) as Roots;
+    )) as Calculation;
   }
 
+  public static async deployCore(
+    signer: SignerWithAddress,
+    networkToken: string,
+    voterTokens: string[],
+    minterClaimants: string[],
+    minterClaimantsAmounts: BigNumber[],
+    minterMax: BigNumber
+  ) {
+    const treasury = await Deploy.deployGovernanceTreasury(signer);
+    const token = await Deploy.deployBaseV1(signer);
+    const gaugesFactory = await Deploy.deployGaugeFactory(signer);
+    const bribesFactory = await Deploy.deployBribeFactory(signer);
+    const baseFactory = await Deploy.deployBaseV1Factory(signer, treasury.address);
 
-  // ************** VERIFY **********************
+    const router = await Deploy.deployBaseV1Router01(signer, baseFactory.address, networkToken);
+    const ve = await Deploy.deployVe(signer, token.address);
+    const veDist = await Deploy.deployVeDist(signer, ve.address);
+    const voter = await Deploy.deployBaseV1Voter(signer, ve.address, baseFactory.address, gaugesFactory.address, bribesFactory.address);
+    const minter = await Deploy.deployBaseV1Minter(signer, voter.address, ve.address, veDist.address);
 
-  public static async verify(address: string) {
-    try {
-      await hre.run("verify:verify", {
-        address
-      })
-    } catch (e) {
-      log.info('error verify ' + e);
-    }
+    await Misc.runAndWait(() => token.setMinter(minter.address));
+    await Misc.runAndWait(() => ve.setVoter(voter.address));
+    await Misc.runAndWait(() => veDist.setDepositor(minter.address));
+
+    await Misc.runAndWait(() => voter.initialize(voterTokens, minter.address));
+    await Misc.runAndWait(() => minter.initialize(
+      minterClaimants,
+      minterClaimantsAmounts,
+      minterMax
+    ));
+
+    return new CoreAddresses(
+      token,
+      gaugesFactory,
+      bribesFactory,
+      baseFactory,
+      router,
+      ve,
+      veDist,
+      voter,
+      minter,
+      treasury
+    );
   }
 
-  // tslint:disable-next-line:no-any
-  public static async verifyWithArgs(address: string, args: any[]) {
-    try {
-      await hre.run("verify:verify", {
-        address, constructorArguments: args
-      })
-    } catch (e) {
-      log.info('error verify ' + e);
-    }
-  }
-
-  // tslint:disable-next-line:no-any
-  public static async verifyWithContractName(address: string, contractPath: string, args?: any[]) {
-    try {
-      await hre.run("verify:verify", {
-        address, contract: contractPath, constructorArguments: args
-      })
-    } catch (e) {
-      log.info('error verify ' + e);
-    }
-  }
-
-  // tslint:disable-next-line:no-any
-  public static async verifyWithArgsAndContractName(address: string, args: any[], contractPath: string) {
-    try {
-      await hre.run("verify:verify", {
-        address, constructorArguments: args, contract: contractPath
-      })
-    } catch (e) {
-      log.info('error verify ' + e);
-    }
-  }
-
-
-  public static async verifyProxy(adr: string) {
-    try {
-
-      const resp =
-        await axios.post(
-          (await Deploy.getNetworkScanUrl()) +
-          `?module=contract&action=verifyproxycontract&apikey=${argv.networkScanKey}`,
-          `address=${adr}`);
-      // log.info("proxy verify resp", resp.data);
-    } catch (e) {
-      log.info('error proxy verify ' + adr + e);
-    }
-  }
-
-
-    // ************** ADDRESSES **********************
-
-    public static async getNetworkScanUrl(): Promise<string> {
-      const net = (await ethers.provider.getNetwork());
-      if (net.name === 'ropsten') {
-        return 'https://api-ropsten.etherscan.io/api';
-      } else if (net.name === 'kovan') {
-        return 'https://api-kovan.etherscan.io/api';
-      } else if (net.name === 'rinkeby') {
-        return 'https://api-rinkeby.etherscan.io/api';
-      } else if (net.name === 'ethereum') {
-        return 'https://api.etherscan.io/api';
-      } else if (net.name === 'matic') {
-        return 'https://api.polygonscan.com/api'
-      } else if (net.chainId === 80001) {
-        return 'https://api-testnet.polygonscan.com/api'
-      } else if (net.chainId === 250) {
-        return 'https://api.ftmscan.com//api'
-      } else {
-        throw Error('network not found ' + net);
-      }
-    }
-      // ****************** WAIT ******************
-
-  public static async delay(ms: number) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
-
-    public static async wait(blocks: number) {
-      const start = ethers.provider.blockNumber;
-      while (true) {
-        log.info('wait 10sec');
-        await Deploy.delay(10000);
-        if (ethers.provider.blockNumber >= start + blocks) {
-          break;
-        }
-      }
-    }
 }

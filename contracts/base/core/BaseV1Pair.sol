@@ -33,11 +33,16 @@ contract BaseV1Pair is IERC20, IPair {
   mapping(address => uint) public nonces;
 
   uint internal constant MINIMUM_LIQUIDITY = 10 ** 3;
+  /// @dev 0.1% swap fee
+  uint internal constant SWAP_FEE = 2000;
+  /// @dev 50% of swap fee
+  uint internal constant TREASURY_FEE = 2;
 
   address public immutable token0;
   address public immutable token1;
   address public immutable fees;
   address immutable factory;
+  address immutable treasury;
 
   /// @dev Capture oracle reading every 30 minutes
   uint constant periodSize = 1800;
@@ -68,6 +73,7 @@ contract BaseV1Pair is IERC20, IPair {
   mapping(address => uint) public claimable0;
   mapping(address => uint) public claimable1;
 
+  event Treasury(address indexed sender, uint amount0, uint amount1);
   event Fees(address indexed sender, uint amount0, uint amount1);
   event Mint(address indexed sender, uint amount0, uint amount1);
   event Burn(address indexed sender, uint amount0, uint amount1, address indexed to);
@@ -84,6 +90,7 @@ contract BaseV1Pair is IERC20, IPair {
 
   constructor() {
     factory = msg.sender;
+    treasury = IFactory(msg.sender).treasury();
     (address _token0, address _token1, bool _stable) = IFactory(msg.sender).getInitializable();
     (token0, token1, stable) = (_token0, _token1, _stable);
     fees = address(new BaseV1Fees(_token0, _token1));
@@ -153,24 +160,36 @@ contract BaseV1Pair is IERC20, IPair {
 
   /// @dev Accrue fees on token0
   function _update0(uint amount) internal {
-    // transfer the fees out to BaseV1Fees
-    _safeTransfer(token0, fees, amount);
+    uint toTreasury = amount / TREASURY_FEE;
+    uint toFees = amount - toTreasury;
+
+    // transfer the fees out to BaseV1Fees and Treasury
+    _safeTransfer(token0, treasury, toTreasury);
+    _safeTransfer(token0, fees, toFees);
     // 1e18 adjustment is removed during claim
-    uint256 _ratio = amount * 1e18 / totalSupply;
+    uint256 _ratio = toFees * 1e18 / totalSupply;
     if (_ratio > 0) {
       index0 += _ratio;
     }
-    emit Fees(msg.sender, amount, 0);
+    // keep the same structure of events for compatability
+    emit Treasury(msg.sender, toTreasury, 0);
+    emit Fees(msg.sender, toFees, 0);
   }
 
   /// @dev Accrue fees on token1
   function _update1(uint amount) internal {
-    _safeTransfer(token1, fees, amount);
-    uint256 _ratio = amount * 1e18 / totalSupply;
+    uint toTreasury = amount / TREASURY_FEE;
+    uint toFees = amount - toTreasury;
+
+    _safeTransfer(token1, treasury, toTreasury);
+    _safeTransfer(token1, fees, toFees);
+    uint256 _ratio = toFees * 1e18 / totalSupply;
     if (_ratio > 0) {
       index1 += _ratio;
     }
-    emit Fees(msg.sender, 0, amount);
+    // keep the same structure of events for compatability
+    emit Treasury(msg.sender, 0, toTreasury);
+    emit Fees(msg.sender, 0, toFees);
   }
 
   /// @dev This function MUST be called on any balance changes,
@@ -400,11 +419,11 @@ contract BaseV1Pair is IERC20, IPair {
     {// scope for reserve{0,1}Adjusted, avoids stack too deep errors
       (address _token0, address _token1) = (token0, token1);
       // accrue fees for token0 and move them out of pool
-      if (amount0In > 0) _update0(amount0In / 10000);
+      if (amount0In > 0) _update0(amount0In / SWAP_FEE);
       // accrue fees for token1 and move them out of pool
-      if (amount1In > 0) _update1(amount1In / 10000);
+      if (amount1In > 0) _update1(amount1In / SWAP_FEE);
       // since we removed tokens, we need to reconfirm balances,
-      // can also simply use previous balance - amountIn/ 10000,
+      // can also simply use previous balance - amountIn/ SWAP_FEE,
       // but doing balanceOf again as safety check
       _balance0 = IERC20(_token0).balanceOf(address(this));
       _balance1 = IERC20(_token1).balanceOf(address(this));
@@ -464,7 +483,7 @@ contract BaseV1Pair is IERC20, IPair {
   function getAmountOut(uint amountIn, address tokenIn) external view override returns (uint) {
     (uint _reserve0, uint _reserve1) = (reserve0, reserve1);
     // remove fee from amount received
-    amountIn -= amountIn / 10000;
+    amountIn -= amountIn / SWAP_FEE;
     return _getAmountOut(amountIn, tokenIn, _reserve0, _reserve1);
   }
 

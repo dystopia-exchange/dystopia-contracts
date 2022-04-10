@@ -1,6 +1,8 @@
+/* tslint:disable:variable-name no-shadowed-variable ban-types no-var-requires no-any */
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { network } from "hardhat";
 import { BaseV1, BaseV1Minter, Token, Ve, VeDist } from "../../typechain";
+import {Deploy} from "../../scripts/deploy/Deploy";
 
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
@@ -41,8 +43,9 @@ describe("minter", function () {
     const vecontract = await ethers.getContractFactory("Ve");
     ve = await vecontract.deploy(ve_underlying.address);
     await ve_underlying.mint(owner.address, ethers.BigNumber.from("10000000000000000000000000"));
+    const treasury = await Deploy.deployGovernanceTreasury(owner);
     const BaseV1Factory = await ethers.getContractFactory("BaseV1Factory");
-    const factory = await BaseV1Factory.deploy();
+    const factory = await BaseV1Factory.deploy(treasury.address);
     await factory.deployed();
     const BaseV1Router = await ethers.getContractFactory("BaseV1Router01");
     const router = await BaseV1Router.deploy(factory.address, owner.address);
@@ -88,27 +91,27 @@ describe("minter", function () {
   });
 
   it("initialize veNFT", async function () {
-    await minter.initialize([owner.address],[ethers.BigNumber.from("1000000000000000000000000")], ethers.BigNumber.from("20000000000000000000000000"))
+    await minter.initialize([owner.address],[ethers.BigNumber.from("1000000000000000000000000")], ethers.BigNumber.from("1000000000000000000000000"))
     expect(await ve.ownerOf(2)).to.equal(owner.address);
     expect(await ve.ownerOf(3)).to.equal("0x0000000000000000000000000000000000000000");
     await network.provider.send("evm_mine")
-    expect(await ve_underlying.balanceOf(minter.address)).to.equal(ethers.BigNumber.from("19000000000000000000000000"));
+    expect(await ve_underlying.balanceOf(minter.address)).to.equal(ethers.BigNumber.from("0"));
   });
 
   it("minter weekly distribute", async function () {
     await minter.update_period();
-    expect(await minter.weekly()).to.equal(ethers.BigNumber.from("20000000000000000000000000"));
+    expect(await minter.weekly()).to.equal(ethers.BigNumber.from("5000000000000000000000000"));
     await network.provider.send("evm_increaseTime", [86400 * 7])
     await network.provider.send("evm_mine")
     await minter.update_period();
     expect(await ve_dist.claimable(1)).to.equal(0);
-    expect(await minter.weekly()).to.equal(ethers.BigNumber.from("20000000000000000000000000"));
+    expect(await minter.weekly()).to.equal(ethers.BigNumber.from("5000000000000000000000000"));
     await network.provider.send("evm_increaseTime", [86400 * 7])
     await network.provider.send("evm_mine")
     await minter.update_period();
     const claimable = await ve_dist.claimable(1);
     console.log(claimable)
-    expect(claimable).to.be.above(ethers.BigNumber.from("200039145118808654"));
+    expect(claimable).to.be.above(ethers.BigNumber.from("160075078022969338"));
     const before = await ve.balanceOfNFT(1);
     await ve_dist.claim(1);
     const after = await ve.balanceOfNFT(1);

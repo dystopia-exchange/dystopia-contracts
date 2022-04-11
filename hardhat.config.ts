@@ -22,9 +22,11 @@ const argv = require('yargs/yargs')()
     },
     maticRpcUrl: {
       type: "string",
+      default:process.env.MATIC_RPC_URL
     },
     mumbaiRpcUrl: {
       type: "string",
+      default:process.env.MUMBAI_RPC_URL
     },
     ethRpcUrl: {
       type: "string",
@@ -36,10 +38,11 @@ const argv = require('yargs/yargs')()
     },
     networkScanKey: {
       type: "string",
+      default: process.env.NETWORK_SCAN_KEY
     },
     privateKey: {
       type: "string",
-      default: "b55c9fcc2c60993e5c539f37ffd27d2058e7f77014823b461323db5eba817518" // random account
+      default: process.env.PRIVATE_KEY // random account
     },
     maticForkBlock: {
       type: "number",

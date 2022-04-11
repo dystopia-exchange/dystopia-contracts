@@ -34,5 +34,5 @@ jobs:
           MATIC_RPC_URL: ${{secrets.MATIC_RPC_URL}}
       - uses: codecov/codecov-action@v2
         with:
-          token: ${{secrets:CODECOV_TOKEN}}
+          token: ${{secrets.CODECOV_TOKEN}}
           fail_ci_if_error: true

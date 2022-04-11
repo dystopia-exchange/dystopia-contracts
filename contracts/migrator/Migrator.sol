@@ -7,17 +7,33 @@ import "../interface/IRouter.sol";
 import "../interface/IRouterOld.sol";
 import "../interface/IFactory.sol";
 import "../interface/IERC20.sol";
+import "../interface/IUniswapV2Factory.sol";
 
-contract MigratorQuickSwap {
+contract Migrator {
 
-  IRouterOld public oldRouter;
+  IUniswapV2Factory public oldFactory;
   IRouter public router;
   bytes32 public pairInitHashCode;
 
-  constructor(IRouterOld _oldRouter, IRouter _router, bytes32 _pairInitHashCode) {
-    oldRouter = _oldRouter;
+  constructor(IUniswapV2Factory _oldFactory, IRouter _router) {
+    oldFactory = _oldFactory;
     router = _router;
-    pairInitHashCode = _pairInitHashCode;
+  }
+
+  function getOldPair(address tokenA, address tokenB) external view returns (address) {
+    return oldFactory.getPair(tokenA, tokenB);
+  }
+
+  function getAmountsFromLiquidityForOldPair(
+    address tokenA,
+    address tokenB,
+    uint liquidity
+  ) external view returns (uint, uint){
+    uint balanceA = IERC20(tokenA).balanceOf(address(this));
+    uint balanceB = IERC20(tokenB).balanceOf(address(this));
+    address pair = oldFactory.getPair(tokenA, tokenB);
+    uint _totalSupply = IERC20(pair).totalSupply();
+    return (liquidity * balanceA / _totalSupply, liquidity * balanceB / _totalSupply);
   }
 
   function migrateWithPermit(
@@ -32,7 +48,7 @@ contract MigratorQuickSwap {
     bytes32 r,
     bytes32 s
   ) public {
-    IPair pair = IPair(pairForOldRouter(tokenA, tokenB));
+    IPair pair = IPair(oldFactory.getPair(tokenA, tokenB));
     pair.permit(msg.sender, address(this), liquidity, deadline, v, r, s);
 
     migrate(tokenA, tokenB, stable, liquidity, amountAMin, amountBMin, deadline);
@@ -78,39 +94,13 @@ contract MigratorQuickSwap {
     uint256 amountAMin,
     uint256 amountBMin
   ) public returns (uint256 amountA, uint256 amountB) {
-    IPair pair = IPair(pairForOldRouter(tokenA, tokenB));
+    IPair pair = IPair(oldFactory.getPair(tokenA, tokenB));
     IERC20(address(pair)).transferFrom(msg.sender, address(pair), liquidity);
     (uint256 amount0, uint256 amount1) = pair.burn(address(this));
     (address token0,) = sortTokens(tokenA, tokenB);
     (amountA, amountB) = tokenA == token0 ? (amount0, amount1) : (amount1, amount0);
     require(amountA >= amountAMin, "Migrator: INSUFFICIENT_A_AMOUNT");
     require(amountB >= amountBMin, "Migrator: INSUFFICIENT_B_AMOUNT");
-  }
-
-  // calculates the CREATE2 address for a pair without making any external calls
-  function pairForOldRouter(address tokenA, address tokenB)
-  public
-  view
-  returns (address pair)
-  {
-    (address token0, address token1) = sortTokens(
-      tokenA,
-      tokenB
-    );
-    pair = address(
-      uint160(
-        uint(
-          keccak256(
-            abi.encodePacked(
-              hex"ff",
-              oldRouter.factory(),
-              keccak256(abi.encodePacked(token0, token1)),
-              pairInitHashCode
-            )
-          )
-        )
-      )
-    );
   }
 
   function addLiquidity(
@@ -170,8 +160,8 @@ contract MigratorQuickSwap {
 
   // given some amount of an asset and pair reserves, returns an equivalent amount of the other asset
   function quoteLiquidity(uint amountA, uint reserveA, uint reserveB) internal pure returns (uint amountB) {
-    require(amountA > 0, "DystopiaLibrary: INSUFFICIENT_AMOUNT");
-    require(reserveA > 0 && reserveB > 0, "DystopiaLibrary: INSUFFICIENT_LIQUIDITY");
+    require(amountA > 0, "INSUFFICIENT_AMOUNT");
+    require(reserveA > 0 && reserveB > 0, "INSUFFICIENT_LIQUIDITY");
     amountB = amountA * (reserveB) / reserveA;
   }
 

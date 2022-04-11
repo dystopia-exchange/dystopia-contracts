@@ -38,8 +38,8 @@ contract BaseV1Pair is IERC20, IPair {
   /// @dev 50% of swap fee
   uint internal constant TREASURY_FEE = 2;
 
-  address public immutable token0;
-  address public immutable token1;
+  address public immutable override token0;
+  address public immutable override token1;
   address public immutable fees;
   address immutable factory;
   address immutable treasury;
@@ -106,6 +106,16 @@ contract BaseV1Pair is IERC20, IPair {
     decimals1 = 10 ** IUnderlying(_token1).decimals();
 
     observations.push(Observation(block.timestamp, 0, 0));
+
+    DOMAIN_SEPARATOR = keccak256(
+      abi.encode(
+        keccak256('EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)'),
+        keccak256(bytes(name)),
+        keccak256('1'),
+        block.chainid,
+        address(this)
+      )
+    );
   }
 
   /// @dev Simple re-entrancy check
@@ -548,15 +558,6 @@ contract BaseV1Pair is IERC20, IPair {
     bytes32 s
   ) external override {
     require(deadline >= block.timestamp, 'BaseV1: EXPIRED');
-    DOMAIN_SEPARATOR = keccak256(
-      abi.encode(
-        keccak256('EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)'),
-        keccak256(bytes(name)),
-        keccak256('1'),
-        block.chainid,
-        address(this)
-      )
-    );
     bytes32 digest = keccak256(
       abi.encodePacked(
         '\x19\x01',

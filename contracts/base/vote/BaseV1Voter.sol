@@ -183,11 +183,12 @@ contract BaseV1Voter is IVoter {
   }
 
   function whitelist(address _token, uint _tokenId) public {
+    uint _listingFee = listing_fee();
     if (_tokenId > 0) {
-      require(msg.sender == IERC721(_ve).ownerOf(_tokenId));
-      require(IVe(_ve).balanceOfNFT(_tokenId) > listing_fee());
-    } else {
-      _safeTransferFrom(base, msg.sender, minter, listing_fee());
+      require(msg.sender == IERC721(_ve).ownerOf(_tokenId), "!owner");
+      require(IVe(_ve).balanceOfNFT(_tokenId) > _listingFee, "!power");
+    } else if (_listingFee > 0) {
+      _safeTransferFrom(base, msg.sender, minter, _listingFee);
     }
 
     _whitelist(_token);

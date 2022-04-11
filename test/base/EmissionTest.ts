@@ -65,7 +65,8 @@ describe("emission tests", function () {
     // -------------- create pairs ---------------------
 
     mimUstPair = await TestHelper.addLiquidity(
-      core,
+      core.factory,
+      core.router,
       owner,
       mim.address,
       ust.address,
@@ -246,7 +247,8 @@ async function emissionLoop(
     initial
   );
   const pair = await TestHelper.addLiquidity(
-    core,
+    core.factory,
+    core.router,
     owner,
     mim.address,
     ust.address,
@@ -274,7 +276,8 @@ async function emissionLoop(
     // update period inside
     const tx = await gauge.getReward(owner.address, [core.token.address]);
     const receipt = await tx.wait(1);
-    const log = receipt.events?.find(l => l.topics[0] === BaseV1Minter__factory.createInterface().getEventTopic('Mint'));
+    // tslint:disable-next-line
+    const log = receipt.events?.find((l: any) => l.topics[0] === BaseV1Minter__factory.createInterface().getEventTopic('Mint'));
     let weekly = '-1';
     let growth = '-1';
     if (log) {

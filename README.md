@@ -1,4 +1,7 @@
 ## Dystopia
+[![codecov](https://codecov.io/gh/dystopia-exchange/dystopia-contracts/branch/master/graph/badge.svg?token=U94WAFLRT7)](https://codecov.io/gh/dystopia-exchange/dystopia-contracts)
+
+
 Dystopia allows low cost, near 0 slippage trades on uncorrelated or tightly correlated assets. The protocol incentivizes fees instead of liquidity. Liquidity providers (LPs) are given incentives in the form of `token`, the amount received is calculated as follows;
 
 * 100% of weekly distribution weighted on votes from ve-token holders

@@ -9,10 +9,11 @@ import "../../interface/IERC721.sol";
 import "../../interface/IVoter.sol";
 import "../../interface/IVe.sol";
 
+import "hardhat/console.sol";
 
 /// @title Bribes pay out rewards for a given pool based on the votes
 ///        that were received from the user (goes hand in hand with BaseV1Gauges.vote())
-contract Bribe is IBribe{
+contract Bribe is IBribe {
 
   /// @dev Only factory can modify balances (since it only happens on vote())
   address public immutable factory;
@@ -287,8 +288,8 @@ contract Bribe is IBribe{
       return (reward, _startTimestamp);
     }
     if (rewardRate[token] == 0) {
-            return (reward, block.timestamp);
-        }
+      return (reward, block.timestamp);
+    }
 
     uint _startIndex = getPriorSupplyIndex(_startTimestamp);
     uint _endIndex = Math.min(supplyNumCheckpoints - 1, maxRuns);
@@ -320,7 +321,7 @@ contract Bribe is IBribe{
       return (reward, _startTimestamp);
     }
     if (rewardRate[token] == 0) {
-            return (reward, block.timestamp);
+      return (reward, block.timestamp);
     }
     uint _startIndex = getPriorSupplyIndex(_startTimestamp);
     uint _endIndex = supplyNumCheckpoints - 1;

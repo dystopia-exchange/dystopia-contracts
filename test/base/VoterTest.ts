@@ -71,7 +71,8 @@ describe("voter tests", function () {
     );
 
     mimUstPair = await TestHelper.addLiquidity(
-      core,
+      core.factory,
+      core.router,
       owner,
       mim.address,
       ust.address,
@@ -80,7 +81,8 @@ describe("voter tests", function () {
       true
     );
     mimDaiPair = await TestHelper.addLiquidity(
-      core,
+      core.factory,
+      core.router,
       owner,
       mim.address,
       dai.address,
@@ -89,7 +91,8 @@ describe("voter tests", function () {
       true
     );
     ustDaiPair = await TestHelper.addLiquidity(
-      core,
+      core.factory,
+      core.router,
       owner,
       ust.address,
       dai.address,
@@ -171,7 +174,8 @@ describe("voter tests", function () {
   it("deposit/withdraw and check", async function () {
 
     await TestHelper.addLiquidity(
-      core,
+      core.factory,
+      core.router,
       owner2,
       mim.address,
       ust.address,

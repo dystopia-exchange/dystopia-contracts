@@ -67,10 +67,15 @@ export class TestHelper {
     owner: SignerWithAddress,
     pair: BaseV1Pair,
     spender: string,
-    amount: BigNumber
+    amount: BigNumber,
+    deadline = '99999999999'
   ) {
     const name = await pair.name()
     const nonce = await pair.nonces(owner.address)
+
+    console.log('permit name', name)
+    console.log('permit nonce', nonce.toString())
+    console.log('permit amount', amount.toString())
 
     const signature = await owner._signTypedData(
       {
@@ -108,7 +113,7 @@ export class TestHelper {
         spender,
         value: amount.toString(),
         nonce: nonce.toHexString(),
-        deadline: '99999999999'
+        deadline
       }
     );
 

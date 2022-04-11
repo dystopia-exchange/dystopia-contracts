@@ -4,7 +4,6 @@ import {Logger} from "tslog";
 import logSettings from "../../log_settings";
 import {BigNumber, ContractFactory, utils} from "ethers";
 import {Libraries} from "hardhat-deploy/dist/types";
-import {config as dotEnvConfig} from "dotenv";
 import {
   BaseV1,
   BaseV1BribeFactory,
@@ -14,7 +13,6 @@ import {
   BaseV1Router01,
   BaseV1Voter,
   GovernanceTreasury,
-  StakingRewards,
   Token,
   Ve,
   VeDist
@@ -22,21 +20,7 @@ import {
 import {Misc} from "../Misc";
 import {CoreAddresses} from "./CoreAddresses";
 
-// tslint:disable-next-line:no-var-requires
-const hre = require("hardhat");
 const log: Logger = new Logger(logSettings);
-
-
-dotEnvConfig();
-// tslint:disable-next-line:no-var-requires
-const argv = require('yargs/yargs')()
-  .env('')
-  .options({
-    networkScanKey: {
-      type: "string",
-      default: process.env.NETWORK_SCAN_KEY
-    },
-  }).argv;
 
 const libraries = new Map<string, string>([
   ['', '']
@@ -156,19 +140,6 @@ export class Deploy {
       ve,
       veDist,
     )) as BaseV1Minter;
-  }
-
-  public static async deployStakingRewards(
-    signer: SignerWithAddress,
-    pair: string,
-    token: string
-  ) {
-    return (await Deploy.deployContract(
-      signer,
-      'StakingRewards',
-      pair,
-      token,
-    )) as StakingRewards;
   }
 
   public static async deployCore(

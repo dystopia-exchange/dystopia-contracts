@@ -280,5 +280,32 @@ describe("router tests", function () {
     );
   });
 
+  it("swapExactMATICForTokens test", async function () {
+    await mim.approve(router.address, parseUnits('10'));
+
+    await router.addLiquidityMATIC(
+      mim.address,
+      true,
+      parseUnits('1'),
+      0,
+      parseUnits('1'),
+      owner.address,
+      99999999999,
+      {value: parseUnits('10')}
+    );
+
+    await router.swapExactMATICForTokens(
+      0,
+      [{
+        from: MaticTestnetAddresses.WMATIC_TOKEN,
+        to: mim.address,
+        stable: true,
+      }],
+      owner.address,
+      99999999999,
+      {value: parseUnits('0.1')}
+    );
+  });
+
 
 });

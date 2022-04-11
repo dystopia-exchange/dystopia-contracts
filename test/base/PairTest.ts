@@ -8,6 +8,7 @@ import {TestHelper} from "../TestHelper";
 import {BigNumber, utils} from "ethers";
 import {MaticTestnetAddresses} from "../../scripts/addresses/MaticTestnetAddresses";
 import {parseUnits} from "ethers/lib/utils";
+import {Misc} from "../../scripts/Misc";
 
 const {expect} = chai;
 
@@ -154,6 +155,17 @@ describe("pair tests", function () {
     await pair.sync();
     expect(await pair.reserve0()).is.not.eq(0);
     expect(await pair.reserve1()).is.not.eq(0);
+  });
+
+  it("metadata test", async function () {
+    const d = await pair.metadata();
+    expect(d.dec0).is.not.eq(0);
+    expect(d.dec1).is.not.eq(0);
+    expect(d.r0).is.not.eq(0);
+    expect(d.r1).is.not.eq(0);
+    expect(d.st).is.eq(true);
+    expect(d.t0).is.not.eq(Misc.ZERO_ADDRESS);
+    expect(d.t1).is.not.eq(Misc.ZERO_ADDRESS);
   });
 
 });

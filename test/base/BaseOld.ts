@@ -21,22 +21,6 @@ import {Deploy} from "../../scripts/deploy/Deploy";
 const {expect} = require("chai");
 const {ethers} = require("hardhat");
 
-// function getCreate2Address(
-//   factoryAddress,
-//   [tokenA, tokenB],
-//   bytecode
-// ) {
-//   const [token0, token1] = tokenA < tokenB ? [tokenA, tokenB] : [tokenB, tokenA]
-//   const create2Inputs = [
-//     '0xff',
-//     factoryAddress,
-//     keccak256(solidityPack(['address', 'address'], [token0, token1])),
-//     keccak256(bytecode)
-//   ]
-//   const sanitizedInputs = `0x${create2Inputs.map(i => i.slice(2)).join('')}`
-//   return getAddress(`0x${keccak256(sanitizedInputs).slice(-40)}`)
-// }
-
 describe("core", function () {
 
   let token;
@@ -592,11 +576,6 @@ describe("core", function () {
   it("BaseV1Router01 pair1 getAmountsOut & swapExactTokensForTokens", async function () {
     const ust_1 = ethers.BigNumber.from("1000000");
     const route = {from: ust.address, to: mim.address, stable: true}
-
-    const metadata = await pair.metadata()
-    const roots = await ethers.getContractFactory("Calculation");
-    const root = await roots.deploy(metadata.dec0, metadata.dec1, metadata.st, metadata.t0, metadata.t1);
-    await root.deployed();
 
     const before = await mim.balanceOf(owner.address);
     const expected_output_pair = await pair.getAmountOut(ust_1, ust.address);

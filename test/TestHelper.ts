@@ -11,6 +11,7 @@ import {
 } from "../typechain";
 import chai from "chai";
 import {Deploy} from "../scripts/deploy/Deploy";
+import {ethers} from "hardhat";
 
 const {expect} = chai;
 
@@ -60,6 +61,58 @@ export class TestHelper {
     await dai.mint(owner.address, utils.parseUnits('1000000000000'));
 
     return [ust, mim, dai];
+  }
+
+  public static async permitForPair(
+    owner: SignerWithAddress,
+    pair: BaseV1Pair,
+    spender: string,
+    amount: BigNumber
+  ) {
+    const name = await pair.name()
+    const nonce = await pair.nonces(owner.address)
+
+    const signature = await owner._signTypedData(
+      {
+        name,
+        version: '1',
+        chainId: '80001',
+        verifyingContract: pair.address
+      },
+      {
+        "Permit": [
+          {
+            "name": "owner",
+            "type": "address"
+          },
+          {
+            "name": "spender",
+            "type": "address"
+          },
+          {
+            "name": "value",
+            "type": "uint256"
+          },
+          {
+            "name": "nonce",
+            "type": "uint256"
+          },
+          {
+            "name": "deadline",
+            "type": "uint256"
+          }
+        ]
+      },
+      {
+        owner: owner.address,
+        spender,
+        value: amount.toString(),
+        nonce: nonce.toHexString(),
+        deadline: '99999999999'
+      }
+    );
+
+    return ethers.utils.splitSignature(signature);
   }
 
   public static gte(actual: BigNumber, expected: BigNumber) {

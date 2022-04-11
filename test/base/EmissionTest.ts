@@ -114,6 +114,12 @@ describe("emission tests", function () {
     await TimeUtils.rollback(snapshot);
   });
 
+  it("gauge deposit/withdraw all test", async function () {
+    await mimUstPair.approve(gaugeMimUst.address, parseUnits('999999999999'));
+    await gaugeMimUst.depositAll(0);
+    await gaugeMimUst.withdrawAll();
+  });
+
   it("early update period should do nothing", async function () {
     expect(await core.token.balanceOf(core.minter.address)).is.eq(0);
     expect(await core.token.balanceOf(core.veDist.address)).is.eq(0);
@@ -183,7 +189,7 @@ describe("emission tests", function () {
     // ------------ CHECK CLAIM VE ----------
 
     const toClaim = await core.veDist.claimable(1);
-    TestHelper.closer(toClaim, parseUnits('200000'), parseUnits('10000'));
+    TestHelper.closer(toClaim, parseUnits('200000'), parseUnits('20000'));
 
     expect(await core.token.balanceOf(owner.address)).is.eq(0, "before the first update we should have 0 DYST");
     const veBalance = (await core.ve.locked(1)).amount;
@@ -197,6 +203,7 @@ describe("emission tests", function () {
     expect(await core.token.balanceOf(gaugeMimUst.address)).is.eq(0);
 
     // distribute DYST to all gauges
+    await core.voter["distribute()"]();
     await core.voter.distro();
 
     // voter has some dust after distribution

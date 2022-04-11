@@ -157,6 +157,10 @@ describe("voter tests", function () {
     expect(await core.voter.length()).to.equal(3);
   });
 
+  it("gauge rewardsListLength", async function () {
+    expect(await gaugeMimDai.rewardsListLength()).to.equal(0);
+  });
+
   it("veNFT gauge manipulate", async function () {
     expect(await gaugeMimUst.tokenIds(owner.address)).to.equal(0);
     await mimUstPair.approve(gaugeMimUst.address, pair1000);
@@ -318,6 +322,10 @@ describe("voter tests", function () {
     await bribeMimUst.getReward(1, [mim.address, ust.address]);
 
     await core.voter.distributeFees([gaugeMimUst.address]);
+  });
+
+  it("distribute gauge", async function () {
+    await core.voter["distribute(address[])"]([gaugeMimUst.address]);
   });
 
 });

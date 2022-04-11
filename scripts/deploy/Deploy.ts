@@ -13,7 +13,6 @@ import {
   BaseV1Minter,
   BaseV1Router01,
   BaseV1Voter,
-  Calculation,
   GovernanceTreasury,
   StakingRewards,
   Token,
@@ -170,25 +169,6 @@ export class Deploy {
       pair,
       token,
     )) as StakingRewards;
-  }
-
-  public static async deployCalculation(
-    signer: SignerWithAddress,
-    d0: BigNumber,
-    d1: BigNumber,
-    st: boolean,
-    a1: string,
-    a2: string
-  ) {
-    return (await Deploy.deployContract(
-      signer,
-      'Calculation',
-      d0,
-      d1,
-      st,
-      a1,
-      a2
-    )) as Calculation;
   }
 
   public static async deployCore(

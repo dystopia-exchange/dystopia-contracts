@@ -2,11 +2,9 @@
 
 pragma solidity ^0.8.13;
 
-import "../../lib/SafeERC20.sol";
 import "../../interface/IERC20.sol";
 
 contract GovernanceTreasury {
-  using SafeERC20 for IERC20;
 
   address public owner;
   address public pendingOwner;
@@ -33,9 +31,16 @@ contract GovernanceTreasury {
       address token = tokens[i];
       uint balance = IERC20(token).balanceOf(address(this));
       require(balance != 0, "Zero balance");
-      IERC20(token).safeTransfer(msg.sender, balance);
+      _safeTransfer(token, msg.sender, balance);
       emit Claimed(msg.sender, token, balance);
     }
+  }
+
+  function _safeTransfer(address token, address to, uint256 value) internal {
+    require(token.code.length > 0);
+    (bool success, bytes memory data) =
+    token.call(abi.encodeWithSelector(IERC20.transfer.selector, to, value));
+    require(success && (data.length == 0 || abi.decode(data, (bool))));
   }
 
 }

@@ -83,6 +83,14 @@ contract BaseV1Router01 {
     return amountStable > amountVolatile ? (amountStable, true) : (amountVolatile, false);
   }
 
+  function getExactAmountOut(uint amountIn, address tokenIn, address tokenOut, bool stable) external view returns (uint) {
+    address pair = pairFor(tokenIn, tokenOut, stable);
+    if (IFactory(factory).isPair(pair)) {
+      return IPair(pair).getAmountOut(amountIn, tokenIn);
+    }
+    return 0;
+  }
+
   // performs chained getAmountOut calculations on any number of pairs
   function getAmountsOut(uint amountIn, Route[] memory routes) public view returns (uint[] memory amounts) {
     require(routes.length >= 1, 'BaseV1Router: INVALID_PATH');
@@ -313,6 +321,48 @@ contract BaseV1Router01 {
     (amountToken, amountMATIC) = removeLiquidityMATIC(token, stable, liquidity, amountTokenMin, amountMATICMin, to, deadline);
   }
 
+  function removeLiquidityMATICSupportingFeeOnTransferTokens(
+    address token,
+    bool stable,
+    uint liquidity,
+    uint amountTokenMin,
+    uint amountFTMMin,
+    address to,
+    uint deadline
+  ) public ensure(deadline) returns (uint amountToken, uint amountFTM) {
+    (amountToken, amountFTM) = removeLiquidity(
+      token,
+      address(wmatic),
+      stable,
+      liquidity,
+      amountTokenMin,
+      amountFTMMin,
+      address(this),
+      deadline
+    );
+    _safeTransfer(token, to, IERC20(token).balanceOf(address(this)));
+    wmatic.withdraw(amountFTM);
+    _safeTransferMATIC(to, amountFTM);
+  }
+
+  function removeLiquidityMATICWithPermitSupportingFeeOnTransferTokens(
+    address token,
+    bool stable,
+    uint liquidity,
+    uint amountTokenMin,
+    uint amountFTMMin,
+    address to,
+    uint deadline,
+    bool approveMax, uint8 v, bytes32 r, bytes32 s
+  ) external returns (uint amountToken, uint amountFTM) {
+    address pair = pairFor(token, address(wmatic), stable);
+    uint value = approveMax ? type(uint).max : liquidity;
+    IPair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
+    (amountToken, amountFTM) = removeLiquidityMATICSupportingFeeOnTransferTokens(
+      token, stable, liquidity, amountTokenMin, amountFTMMin, to, deadline
+    );
+  }
+
   // **** SWAP ****
   // requires the initial amount to have already been sent to the first pair
   function _swap(uint[] memory amounts, Route[] memory routes, address _to) internal virtual {
@@ -324,6 +374,26 @@ contract BaseV1Router01 {
       IPair(pairFor(routes[i].from, routes[i].to, routes[i].stable)).swap(
         amount0Out, amount1Out, to, new bytes(0)
       );
+    }
+  }
+
+  function _swapSupportingFeeOnTransferTokens(Route[] memory routes, address _to) internal virtual {
+    for (uint i; i < routes.length; i++) {
+      (address input, address output) = (routes[i].from, routes[i].to);
+      (address token0,) = sortTokens(input, output);
+      IPair pair = IPair(pairFor(routes[i].from, routes[i].to, routes[i].stable));
+      uint amountInput;
+      uint amountOutput;
+      {// scope to avoid stack too deep errors
+        (uint reserve0, uint reserve1,) = pair.getReserves();
+        uint reserveInput = input == token0 ? reserve0 : reserve1;
+        amountInput = IERC20(input).balanceOf(address(pair)) - reserveInput;
+        //(amountOutput,) = getAmountOut(amountInput, input, output, stable);
+        amountOutput = pair.getAmountOut(amountInput, input);
+      }
+      (uint amount0Out, uint amount1Out) = input == token0 ? (uint(0), amountOutput) : (amountOutput, uint(0));
+      address to = i < routes.length - 1 ? pairFor(routes[i + 1].from, routes[i + 1].to, routes[i + 1].stable) : _to;
+      pair.swap(amount0Out, amount1Out, to, new bytes(0));
     }
   }
 
@@ -391,6 +461,70 @@ contract BaseV1Router01 {
     _swap(amounts, routes, address(this));
     wmatic.withdraw(amounts[amounts.length - 1]);
     _safeTransferMATIC(to, amounts[amounts.length - 1]);
+  }
+
+  function swapExactTokensForTokensSupportingFeeOnTransferTokens(
+    uint amountIn,
+    uint amountOutMin,
+    Route[] calldata routes,
+    address to,
+    uint deadline
+  ) external ensure(deadline) {
+    _safeTransferFrom(
+      routes[0].from,
+      msg.sender,
+      pairFor(routes[0].from, routes[0].to, routes[0].stable),
+      amountIn
+    );
+    uint balanceBefore = IERC20(routes[routes.length - 1].to).balanceOf(to);
+    _swapSupportingFeeOnTransferTokens(routes, to);
+    require(
+      IERC20(routes[routes.length - 1].to).balanceOf(to) - balanceBefore >= amountOutMin,
+      'BaseV1Router: INSUFFICIENT_OUTPUT_AMOUNT'
+    );
+  }
+
+  function swapExactMATICForTokensSupportingFeeOnTransferTokens(
+    uint amountOutMin,
+    Route[] calldata routes,
+    address to,
+    uint deadline
+  )
+  external
+  payable
+  ensure(deadline)
+  {
+    require(routes[0].from == address(wmatic), 'BaseV1Router: INVALID_PATH');
+    uint amountIn = msg.value;
+    wmatic.deposit{value : amountIn}();
+    assert(wmatic.transfer(pairFor(routes[0].from, routes[0].to, routes[0].stable), amountIn));
+    uint balanceBefore = IERC20(routes[routes.length - 1].to).balanceOf(to);
+    _swapSupportingFeeOnTransferTokens(routes, to);
+    require(
+      IERC20(routes[routes.length - 1].to).balanceOf(to) - balanceBefore >= amountOutMin,
+      'BaseV1Router: INSUFFICIENT_OUTPUT_AMOUNT'
+    );
+  }
+
+  function swapExactTokensForMATICSupportingFeeOnTransferTokens(
+    uint amountIn,
+    uint amountOutMin,
+    Route[] calldata routes,
+    address to,
+    uint deadline
+  )
+  external
+  ensure(deadline)
+  {
+    require(routes[routes.length - 1].to == address(wmatic), 'BaseV1Router: INVALID_PATH');
+    _safeTransferFrom(
+      routes[0].from, msg.sender, pairFor(routes[0].from, routes[0].to, routes[0].stable), amountIn
+    );
+    _swapSupportingFeeOnTransferTokens(routes, address(this));
+    uint amountOut = IERC20(address(wmatic)).balanceOf(address(this));
+    require(amountOut >= amountOutMin, 'BaseV1Router: INSUFFICIENT_OUTPUT_AMOUNT');
+    wmatic.withdraw(amountOut);
+    _safeTransferMATIC(to, amountOut);
   }
 
   function UNSAFE_swapExactTokensForTokens(

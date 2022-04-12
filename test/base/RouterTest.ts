@@ -1,4 +1,10 @@
-import {BaseV1Factory, BaseV1Pair__factory, BaseV1Router01, Token} from "../../typechain";
+import {
+  BaseV1Factory,
+  BaseV1Pair__factory,
+  BaseV1Router01,
+  Token,
+  TokenWithFee
+} from "../../typechain";
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
 import {ethers} from "hardhat";
 import chai from "chai";
@@ -24,6 +30,7 @@ describe("router tests", function () {
   let ust: Token;
   let mim: Token;
   let dai: Token;
+  let tokenWithFee: TokenWithFee;
 
 
   before(async function () {
@@ -36,6 +43,9 @@ describe("router tests", function () {
     await ust.transfer(owner2.address, utils.parseUnits('100', 6));
     await mim.transfer(owner2.address, utils.parseUnits('100'));
     await dai.transfer(owner2.address, utils.parseUnits('100'));
+
+    tokenWithFee = await Deploy.deployContract(owner, 'TokenWithFee', 'TWF', 'TWF', 18, owner.address) as TokenWithFee;
+    await tokenWithFee.mint(owner.address, utils.parseUnits('1000000000000'));
   });
 
   after(async function () {
@@ -307,5 +317,170 @@ describe("router tests", function () {
     );
   });
 
+  it("add/remove liquidity with fee token test", async function () {
+    await tokenWithFee.approve(router.address, parseUnits('10'));
+    const maticBalance = await owner.getBalance();
+    const tokenBalance = await tokenWithFee.balanceOf(owner.address);
+
+    await router.addLiquidityMATIC(
+      tokenWithFee.address,
+      true,
+      parseUnits('1'),
+      0,
+      parseUnits('1'),
+      owner.address,
+      99999999999,
+      {value: parseUnits('1')}
+    );
+
+    const pairAdr = await factory.getPair(tokenWithFee.address, MaticTestnetAddresses.WMATIC_TOKEN, true);
+    const pair = BaseV1Pair__factory.connect(pairAdr, owner);
+    const pairBal = await pair.balanceOf(owner.address);
+
+    const {
+      v,
+      r,
+      s
+    } = await TestHelper.permitForPair(owner, pair, router.address, pairBal);
+
+    await router.removeLiquidityMATICWithPermitSupportingFeeOnTransferTokens(
+      tokenWithFee.address,
+      true,
+      pairBal,
+      0,
+      0,
+      owner.address,
+      99999999999,
+      false, v, r, s
+    );
+
+    const maticBalanceAfter = await owner.getBalance();
+    const tokenBalanceAfter = await tokenWithFee.balanceOf(owner.address);
+    TestHelper.closer(maticBalanceAfter, maticBalance, parseUnits('0.1'));
+    TestHelper.closer(tokenBalanceAfter, tokenBalance, parseUnits('0.3'));
+  });
+
+
+  it("swapExactTokensForTokensSupportingFeeOnTransferTokens test", async function () {
+    await tokenWithFee.approve(router.address, parseUnits('10'));
+
+    await router.addLiquidityMATIC(
+      tokenWithFee.address,
+      true,
+      parseUnits('1'),
+      0,
+      parseUnits('1'),
+      owner.address,
+      99999999999,
+      {value: parseUnits('1')}
+    );
+
+    const maticBalance = await owner.getBalance();
+    const tokenBalance = await tokenWithFee.balanceOf(owner.address);
+
+    await router.swapExactTokensForTokensSupportingFeeOnTransferTokens(
+      parseUnits('0.1'),
+      0,
+      [{from: tokenWithFee.address, to: MaticTestnetAddresses.WMATIC_TOKEN, stable: true}],
+      owner.address,
+      99999999999
+    );
+
+    const maticBalanceAfter = await owner.getBalance();
+    const tokenBalanceAfter = await tokenWithFee.balanceOf(owner.address);
+    TestHelper.closer(maticBalanceAfter, maticBalance, parseUnits('11'));
+    TestHelper.closer(tokenBalanceAfter, tokenBalance, parseUnits('0.5'));
+  });
+
+  it("swapExactMATICForTokensSupportingFeeOnTransferTokens test", async function () {
+    await tokenWithFee.approve(router.address, parseUnits('10'));
+
+    await router.addLiquidityMATIC(
+      tokenWithFee.address,
+      true,
+      parseUnits('1'),
+      0,
+      parseUnits('1'),
+      owner.address,
+      99999999999,
+      {value: parseUnits('1')}
+    );
+
+    const maticBalance = await owner.getBalance();
+    const tokenBalance = await tokenWithFee.balanceOf(owner.address);
+
+    await router.swapExactMATICForTokensSupportingFeeOnTransferTokens(
+      0,
+      [{to: tokenWithFee.address, from: MaticTestnetAddresses.WMATIC_TOKEN, stable: true}],
+      owner.address,
+      99999999999,
+      {value: parseUnits('0.1')}
+    );
+
+    const maticBalanceAfter = await owner.getBalance();
+    const tokenBalanceAfter = await tokenWithFee.balanceOf(owner.address);
+    TestHelper.closer(maticBalanceAfter, maticBalance, parseUnits('2'));
+    TestHelper.closer(tokenBalanceAfter, tokenBalance, parseUnits('0.1'));
+  });
+
+  it("swapExactTokensForMATICSupportingFeeOnTransferTokens test", async function () {
+    await tokenWithFee.approve(router.address, parseUnits('10'));
+
+    await router.addLiquidityMATIC(
+      tokenWithFee.address,
+      true,
+      parseUnits('1'),
+      0,
+      parseUnits('1'),
+      owner.address,
+      99999999999,
+      {value: parseUnits('1')}
+    );
+
+    const maticBalance = await owner.getBalance();
+    const tokenBalance = await tokenWithFee.balanceOf(owner.address);
+
+    await router.swapExactTokensForMATICSupportingFeeOnTransferTokens(
+      parseUnits('0.1'),
+      0,
+      [{from: tokenWithFee.address, to: MaticTestnetAddresses.WMATIC_TOKEN, stable: true}],
+      owner.address,
+      99999999999,
+    );
+
+    const maticBalanceAfter = await owner.getBalance();
+    const tokenBalanceAfter = await tokenWithFee.balanceOf(owner.address);
+    TestHelper.closer(maticBalanceAfter, maticBalance, parseUnits('2'));
+    TestHelper.closer(tokenBalanceAfter, tokenBalance, parseUnits('0.2'));
+  });
+
+  it("getExactAmountOut test", async function () {
+    expect(await router.getExactAmountOut(
+      parseUnits('0.1'),
+      tokenWithFee.address,
+      MaticTestnetAddresses.WMATIC_TOKEN,
+      true,
+    )).is.eq(0);
+
+    await tokenWithFee.approve(router.address, parseUnits('10'));
+
+    await router.addLiquidityMATIC(
+      tokenWithFee.address,
+      true,
+      parseUnits('1'),
+      0,
+      parseUnits('1'),
+      owner.address,
+      99999999999,
+      {value: parseUnits('1')}
+    );
+
+    expect(await router.getExactAmountOut(
+      parseUnits('0.1'),
+      tokenWithFee.address,
+      MaticTestnetAddresses.WMATIC_TOKEN,
+      true,
+    )).is.not.eq(0);
+  });
 
 });

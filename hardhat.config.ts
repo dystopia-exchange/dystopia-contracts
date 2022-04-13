@@ -18,7 +18,6 @@ const argv = require('yargs/yargs')()
   .options({
     hardhatChainId: {
       type: "number",
-      default: 80001
     },
     maticRpcUrl: {
       type: "string",
@@ -48,6 +47,9 @@ const argv = require('yargs/yargs')()
     mumbaiForkBlock: {
       type: "number",
     },
+    ftmForkBlock: {
+      type: "number",
+    },
   }).argv;
 
 
@@ -56,20 +58,22 @@ export default {
   networks: {
     hardhat: {
       allowUnlimitedContractSize: true,
-      chainId: argv.hardhatChainId,
+      chainId: !!argv.hardhatChainId ? argv.hardhatChainId : undefined,
       timeout: 99999 * 2,
       gas: argv.hardhatChainId === 137 ? 19_000_000 :
         argv.hardhatChainId === 80001 ? 19_000_000 :
-          9_000_000,
+          undefined,
       forking: {
         url:
           argv.hardhatChainId === 137 ? argv.maticRpcUrl :
-          argv.hardhatChainId === 80001 ? argv.mumbaiRpcUrl :
+          argv.hardhatChainId === 250 ? argv.ftmRpcUrl :
+            argv.hardhatChainId === 80001 ? argv.mumbaiRpcUrl :
               undefined,
         blockNumber:
-            argv.hardhatChainId === 137 ? argv.maticForkBlock !== 0 ? argv.maticForkBlock : undefined :
-              argv.hardhatChainId === 80001 ? argv.mumbaiForkBlock !== 0 ? argv.mumbaiForkBlock : undefined :
-                undefined
+          argv.hardhatChainId === 137 ? argv.maticForkBlock !== 0 ? argv.maticForkBlock : undefined :
+          argv.hardhatChainId === 250 ? argv.ftmForkBlock !== 0 ? argv.ftmForkBlock : undefined :
+            argv.hardhatChainId === 80001 ? argv.mumbaiForkBlock !== 0 ? argv.mumbaiForkBlock : undefined :
+              undefined
       },
       accounts: {
         mnemonic: "test test test test test test test test test test test junk",

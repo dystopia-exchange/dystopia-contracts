@@ -27,10 +27,11 @@ contract BaseV1Pair is IERC20, IPair {
   mapping(address => mapping(address => uint)) public override allowance;
   mapping(address => uint) public override balanceOf;
 
-  bytes32 internal DOMAIN_SEPARATOR;
+  bytes32 public DOMAIN_SEPARATOR;
   // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
-  bytes32 internal constant PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
+  bytes32 public constant PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
   mapping(address => uint) public nonces;
+  uint public chainId;
 
   uint internal constant MINIMUM_LIQUIDITY = 10 ** 3;
   /// @dev 0.1% swap fee
@@ -116,6 +117,7 @@ contract BaseV1Pair is IERC20, IPair {
         address(this)
       )
     );
+    chainId = block.chainid;
   }
 
   /// @dev Simple re-entrancy check

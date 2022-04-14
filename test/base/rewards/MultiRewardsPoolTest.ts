@@ -5,6 +5,7 @@ import {TimeUtils} from "../../TimeUtils";
 import {MultiRewardsPoolBase, Token} from "../../../typechain";
 import {Deploy} from "../../../scripts/deploy/Deploy";
 import {parseUnits} from "ethers/lib/utils";
+import {Misc} from "../../../scripts/Misc";
 
 
 const {expect} = chai;
@@ -112,8 +113,8 @@ describe("multi reward pool tests", function () {
     await TimeUtils.advanceBlocksOnTs(60 * 60 * 365);
     await pool.getReward(owner.address, [rewardToken.address]);
 
-    expect(await rewardToken.balanceOf(pool.address)).is.below(3);
-    expect(await rewardToken.balanceOf(owner.address)).is.above(FULL_REWARD.sub(3));
+    expect(await rewardToken.balanceOf(pool.address)).is.below(4);
+    expect(await rewardToken.balanceOf(owner.address)).is.above(FULL_REWARD.sub(4));
   });
 
   it("double deposit and get rewards should receive all amount", async function () {
@@ -131,6 +132,39 @@ describe("multi reward pool tests", function () {
     await pool.getReward(owner.address, [rewardToken.address]);
     expect(await rewardToken.balanceOf(pool.address)).is.below(2);
     expect(await rewardToken.balanceOf(owner.address)).is.above(FULL_REWARD.sub(2));
+  });
+
+  it("rewardTokensLength test", async function () {
+    expect(await pool.rewardTokensLength()).is.eq(0);
+  });
+
+  it("rewardPerToken test", async function () {
+    expect(await pool.rewardPerToken(Misc.ZERO_ADDRESS)).is.eq(0);
+  });
+
+  it("derivedBalance test", async function () {
+    expect(await pool.derivedBalance(Misc.ZERO_ADDRESS)).is.eq(0);
+  });
+
+  it("left for empty token test", async function () {
+    expect(await pool.left(Misc.ZERO_ADDRESS)).is.eq(0);
+  });
+
+  it("left test", async function () {
+    await pool.connect(rewarder).notifyRewardAmount(rewardToken.address, FULL_REWARD);
+    expect(await pool.left(rewardToken.address)).is.not.eq(0);
+  });
+
+  it("earned test", async function () {
+    expect(await pool.earned(Misc.ZERO_ADDRESS, Misc.ZERO_ADDRESS)).is.eq(0);
+  });
+
+  it("getPriorBalanceIndex test", async function () {
+    expect(await pool.getPriorBalanceIndex(Misc.ZERO_ADDRESS, Misc.ZERO_ADDRESS)).is.eq(0);
+  });
+
+  it("batchRewardPerToken for empty tokens test", async function () {
+    await pool.batchRewardPerToken(Misc.ZERO_ADDRESS, 100)
   });
 
   it("multiple deposit/withdraws and get rewards should receive all amount for multiple accounts", async function () {

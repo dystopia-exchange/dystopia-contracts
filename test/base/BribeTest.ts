@@ -260,7 +260,7 @@ describe("bribe tests", function () {
     expect(await Bribe__factory.connect(bribe, owner).rewardPerToken(mim.address)).is.eq(0);
   });
 
-  it.skip("third party stake to LP test", async function () {
+  it("third party stake to LP test", async function () {
     await core.voter.vote(1, [mimUstPair.address], [100]);
     expect(await core.token.balanceOf(owner3.address)).is.eq(0);
 

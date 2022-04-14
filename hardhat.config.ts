@@ -63,7 +63,7 @@ export default {
       gas: argv.hardhatChainId === 137 ? 19_000_000 :
         argv.hardhatChainId === 80001 ? 19_000_000 :
           undefined,
-      forking: {
+      forking: !!argv.hardhatChainId ? {
         url:
           argv.hardhatChainId === 137 ? argv.maticRpcUrl :
           argv.hardhatChainId === 250 ? argv.ftmRpcUrl :
@@ -74,7 +74,7 @@ export default {
           argv.hardhatChainId === 250 ? argv.ftmForkBlock !== 0 ? argv.ftmForkBlock : undefined :
             argv.hardhatChainId === 80001 ? argv.mumbaiForkBlock !== 0 ? argv.mumbaiForkBlock : undefined :
               undefined
-      },
+      } : undefined,
       accounts: {
         mnemonic: "test test test test test test test test test test test junk",
         path: "m/44'/60'/0'/0",

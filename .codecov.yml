@@ -1,7 +1,7 @@
-#comment:
-#  layout: "reach,diff,flags,files,footer"
-#  behavior: default
-#  require_changes: false
+comment:
+  layout: "reach,diff,flags,files,footer"
+  behavior: default
+  require_changes: false
 github_checks:
   comment: true
   annotations: true

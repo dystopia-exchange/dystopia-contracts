@@ -38,7 +38,7 @@ describe("core", function () {
   let pair2: BaseV1Pair;
   let pair3: BaseV1Pair;
   let owner: SignerWithAddress;
-  let gauge_factory: any;
+  let voter: any;
   let gauge: Gauge;
   let gauge2: Gauge;
   let gauge3: Gauge;
@@ -52,6 +52,7 @@ describe("core", function () {
   let owner3: SignerWithAddress;
   let vecontract;
   let gauges_factory;
+  let bribeToken1Adr: string;
 
   it("deploy base coins", async function () {
     [owner, owner2, owner3] = await ethers.getSigners(3);
@@ -361,12 +362,12 @@ describe("core", function () {
     const bribe_factory = await BaseV1BribeFactory.deploy();
     await bribe_factory.deployed();
     const BaseV1Voter = await ethers.getContractFactory("BaseV1Voter");
-    gauge_factory = await BaseV1Voter.deploy(ve.address, factory.address, gauges_factory.address, bribe_factory.address);
-    await gauge_factory.deployed();
+    voter = await BaseV1Voter.deploy(ve.address, factory.address, gauges_factory.address, bribe_factory.address);
+    await voter.deployed();
 
-    await ve.setVoter(gauge_factory.address);
+    await ve.setVoter(voter.address);
 
-    expect(await gauge_factory.length()).to.equal(0);
+    expect(await voter.length()).to.equal(0);
   });
 
   it("deploy BaseV1Minter", async function () {
@@ -375,32 +376,32 @@ describe("core", function () {
     await ve_dist.deployed();
 
     const BaseV1Minter = await ethers.getContractFactory("BaseV1Minter");
-    minter = await BaseV1Minter.deploy(gauge_factory.address, ve.address, ve_dist.address);
+    minter = await BaseV1Minter.deploy(voter.address, ve.address, ve_dist.address);
     await minter.deployed();
     await ve_dist.setDepositor(minter.address);
-    await gauge_factory.initialize([ust.address, mim.address, dai.address, ve_underlying.address], minter.address);
+    await voter.initialize([ust.address, mim.address, dai.address, ve_underlying.address], minter.address);
   });
 
   it("deploy BaseV1Factory gauge", async function () {
     const pair_1000 = ethers.BigNumber.from("1000000000");
 
-    await ve_underlying.approve(gauge_factory.address, ethers.BigNumber.from("1500000000000000000000000"));
-    await gauge_factory.createGauge(pair.address);
-    await gauge_factory.createGauge(pair2.address);
-    await gauge_factory.createGauge(pair3.address);
-    expect(await gauge_factory.gauges(pair.address)).to.not.equal(0x0000000000000000000000000000000000000000);
+    await ve_underlying.approve(voter.address, ethers.BigNumber.from("1500000000000000000000000"));
+    await voter.createGauge(pair.address);
+    await voter.createGauge(pair2.address);
+    await voter.createGauge(pair3.address);
+    expect(await voter.gauges(pair.address)).to.not.equal(0x0000000000000000000000000000000000000000);
 
     const sr = await ethers.getContractFactory("StakingRewards");
     staking = await sr.deploy(pair.address, ve_underlying.address);
 
-    const gauge_address = await gauge_factory.gauges(pair.address);
-    const bribe_address = await gauge_factory.bribes(gauge_address);
+    const gauge_address = await voter.gauges(pair.address);
+    const bribe_address = await voter.bribes(gauge_address);
 
-    const gauge_address2 = await gauge_factory.gauges(pair2.address);
-    const bribe_address2 = await gauge_factory.bribes(gauge_address2);
+    const gauge_address2 = await voter.gauges(pair2.address);
+    const bribe_address2 = await voter.bribes(gauge_address2);
 
-    const gauge_address3 = await gauge_factory.gauges(pair3.address);
-    const bribe_address3 = await gauge_factory.bribes(gauge_address3);
+    const gauge_address3 = await voter.gauges(pair3.address);
+    const bribe_address3 = await voter.bribes(gauge_address3);
 
     const Gauge = await ethers.getContractFactory("Gauge");
     gauge = await Gauge.attach(gauge_address);
@@ -422,6 +423,8 @@ describe("core", function () {
     await gauge3.deposit(pair_1000, 0);
     expect(await gauge.totalSupply()).to.equal(pair_1000);
     expect(await gauge.earned(ve.address, owner.address)).to.equal(0);
+
+    bribeToken1Adr = await bribe.tokenIdToAddress(1);
   });
 
   it("veNFT gauge manipulate", async function () {
@@ -476,8 +479,8 @@ describe("core", function () {
     await bribe.notifyRewardAmount(ve_underlying.address, pair_1000);
     await staking.notifyRewardAmount(pair_1000);
 
-    expect(await gauge.rewardRate(ve_underlying.address)).to.equal(ethers.BigNumber.from(1653));
-    expect(await bribe.rewardRate(ve_underlying.address)).to.equal(ethers.BigNumber.from(1653));
+    expect(await gauge.rewardRate(ve_underlying.address)).to.equal(ethers.BigNumber.from('1653439153439153439153'));
+    expect(await bribe.rewardRate(ve_underlying.address)).to.equal(ethers.BigNumber.from('1653439153439153439153'));
     expect(await staking.rewardRate()).to.equal(ethers.BigNumber.from(1653));
   });
 
@@ -495,11 +498,11 @@ describe("core", function () {
   });
 
   it("gauge reset", async function () {
-    await gauge_factory.reset(1);
+    await voter.reset(1);
   });
 
   it("gauge poke self", async function () {
-    await gauge_factory.poke(1);
+    await voter.poke(1);
   });
 
   it("create lock 2", async function () {
@@ -510,60 +513,60 @@ describe("core", function () {
   });
 
   it("vote hacking", async function () {
-    await gauge_factory.vote(1, [pair.address], [5000]);
-    expect(await gauge_factory.usedWeights(1)).to.closeTo((await ve.balanceOfNFT(1)), 1000);
-    expect(await bribe.balanceOf(1)).to.equal(await gauge_factory.votes(1, pair.address));
-    await gauge_factory.reset(1);
-    expect(await gauge_factory.usedWeights(1)).to.below(await ve.balanceOfNFT(1));
-    expect(await gauge_factory.usedWeights(1)).to.equal(0);
-    expect(await bribe.balanceOf(1)).to.equal(await gauge_factory.votes(1, pair.address));
-    expect(await bribe.balanceOf(1)).to.equal(0);
+    await voter.vote(1, [pair.address], [5000]);
+    expect(await voter.usedWeights(1)).to.closeTo((await ve.balanceOfNFT(1)), 1000);
+    expect(await bribe.balanceOf(bribeToken1Adr)).to.equal(await voter.votes(1, pair.address));
+    await voter.reset(1);
+    expect(await voter.usedWeights(1)).to.below(await ve.balanceOfNFT(1));
+    expect(await voter.usedWeights(1)).to.equal(0);
+    expect(await bribe.balanceOf(bribeToken1Adr)).to.equal(await voter.votes(1, pair.address));
+    expect(await bribe.balanceOf(bribeToken1Adr)).to.equal(0);
   });
 
   it("gauge poke hacking", async function () {
-    expect(await gauge_factory.usedWeights(1)).to.equal(0);
-    expect(await gauge_factory.votes(1, pair.address)).to.equal(0);
-    await gauge_factory.poke(1);
-    expect(await gauge_factory.usedWeights(1)).to.equal(0);
-    expect(await gauge_factory.votes(1, pair.address)).to.equal(0);
+    expect(await voter.usedWeights(1)).to.equal(0);
+    expect(await voter.votes(1, pair.address)).to.equal(0);
+    await voter.poke(1);
+    expect(await voter.usedWeights(1)).to.equal(0);
+    expect(await voter.votes(1, pair.address)).to.equal(0);
   });
 
   it("gauge vote & bribe balanceOf", async function () {
-    await gauge_factory.vote(1, [pair.address, pair2.address], [5000, 5000]);
-    await gauge_factory.vote(4, [pair.address, pair2.address], [500000, 500000]);
-    console.log(await gauge_factory.usedWeights(1));
-    console.log(await gauge_factory.usedWeights(4));
-    expect(await gauge_factory.totalWeight()).to.not.equal(0);
-    expect(await bribe.balanceOf(1)).to.not.equal(0);
+    await voter.vote(1, [pair.address, pair2.address], [5000, 5000]);
+    await voter.vote(4, [pair.address, pair2.address], [500000, 500000]);
+    console.log(await voter.usedWeights(1));
+    console.log(await voter.usedWeights(4));
+    expect(await voter.totalWeight()).to.not.equal(0);
+    expect(await bribe.balanceOf(bribeToken1Adr)).to.not.equal(0);
   });
 
   it("gauge poke hacking", async function () {
-    const weight_before = (await gauge_factory.usedWeights(1));
-    const votes_before = (await gauge_factory.votes(1, pair.address));
-    await gauge_factory.poke(1);
-    expect(await gauge_factory.usedWeights(1)).to.be.below(weight_before);
-    expect(await gauge_factory.votes(1, pair.address)).to.be.below(votes_before);
+    const weight_before = (await voter.usedWeights(1));
+    const votes_before = (await voter.votes(1, pair.address));
+    await voter.poke(1);
+    expect(await voter.usedWeights(1)).to.be.below(weight_before);
+    expect(await voter.votes(1, pair.address)).to.be.below(votes_before);
   });
 
   it("vote hacking break mint", async function () {
-    await gauge_factory.vote(1, [pair.address], [5000]);
+    await voter.vote(1, [pair.address], [5000]);
 
-    expect(await gauge_factory.usedWeights(1)).to.closeTo((await ve.balanceOfNFT(1)), 1000);
-    expect(await bribe.balanceOf(1)).to.equal(await gauge_factory.votes(1, pair.address));
+    expect(await voter.usedWeights(1)).to.closeTo((await ve.balanceOfNFT(1)), 1000);
+    expect(await bribe.balanceOf(bribeToken1Adr)).to.equal(await voter.votes(1, pair.address));
   });
 
   it("gauge poke hacking", async function () {
-    expect(await gauge_factory.usedWeights(1)).to.equal(await gauge_factory.votes(1, pair.address));
-    await gauge_factory.poke(1);
-    expect(await gauge_factory.usedWeights(1)).to.equal(await gauge_factory.votes(1, pair.address));
+    expect(await voter.usedWeights(1)).to.equal(await voter.votes(1, pair.address));
+    await voter.poke(1);
+    expect(await voter.usedWeights(1)).to.equal(await voter.votes(1, pair.address));
   });
 
   it("gauge distribute based on voting", async function () {
     const pair_1000 = ethers.BigNumber.from("1000000000");
-    await ve_underlying.approve(gauge_factory.address, pair_1000);
-    await gauge_factory.notifyRewardAmount(pair_1000);
-    await gauge_factory.updateAll();
-    await gauge_factory.distro();
+    await ve_underlying.approve(voter.address, pair_1000);
+    await voter.notifyRewardAmount(pair_1000);
+    await voter.updateAll();
+    await voter.distro();
   });
 
   it("bribe claim rewards", async function () {
@@ -643,11 +646,11 @@ describe("core", function () {
     await network.provider.send("evm_mine")
     await bribe.getReward(1, [mim.address, ust.address]);
 
-    await gauge_factory.distributeFees([gauge.address]);
+    await voter.distributeFees([gauge.address]);
   });
 
   it("staking rewards sense check", async function () {
-    expect(await gauge.rewardRate(ve_underlying.address)).to.be.equal(await staking.rewardRate());
+    expect((await gauge.rewardRate(ve_underlying.address)).div('1000000000000000000')).to.be.equal(await staking.rewardRate());
   });
 
   it("minter mint", async function () {
@@ -655,19 +658,19 @@ describe("core", function () {
     console.log(await ve_dist.timestamp());
     await minter.initialize([owner.address], [ethers.BigNumber.from("1000000000000000000")], ethers.BigNumber.from("1000000000000000000"));
     await minter.update_period();
-    await gauge_factory.updateGauge(gauge.address);
+    await voter.updateGauge(gauge.address);
     console.log(await ve_underlying.balanceOf(ve_dist.address));
     console.log(await ve_dist.claimable(1));
-    const claimable = await gauge_factory.claimable(gauge.address);
+    const claimable = await voter.claimable(gauge.address);
     await ve_underlying.approve(staking.address, claimable);
     await staking.notifyRewardAmount(claimable);
-    await gauge_factory.distro();
+    await voter.distro();
     await network.provider.send("evm_increaseTime", [1800])
     await network.provider.send("evm_mine")
-    expect(await gauge.rewardRate(ve_underlying.address)).to.be.equal(await staking.rewardRate());
+    expect((await gauge.rewardRate(ve_underlying.address)).div('1000000000000000000')).to.be.equal(await staking.rewardRate());
   });
 
-  it("gauge claim rewards", async function () {
+  it("gauge claim rewards1", async function () {
     expect(owner.address).to.equal(await ve.ownerOf(1));
     expect(await ve.isApprovedOrOwner(owner.address, 1)).to.equal(true);
     await gauge.withdraw(await gauge.balanceOf(owner.address));
@@ -677,11 +680,11 @@ describe("core", function () {
     await gauge.deposit(pair_1000, 0);
     await staking.getReward();
     const before = await ve_underlying.balanceOf(owner.address)
-    await gauge.batchRewardPerToken(ve_underlying.address, 200);
-    await gauge.batchRewardPerToken(ve_underlying.address, 200);
-    await gauge.batchRewardPerToken(ve_underlying.address, 200);
-    await gauge.batchRewardPerToken(ve_underlying.address, 200);
-    await gauge.batchRewardPerToken(ve_underlying.address, 200);
+    await gauge.batchUpdateRewardPerToken(ve_underlying.address, 200);
+    await gauge.batchUpdateRewardPerToken(ve_underlying.address, 200);
+    await gauge.batchUpdateRewardPerToken(ve_underlying.address, 200);
+    await gauge.batchUpdateRewardPerToken(ve_underlying.address, 200);
+    await gauge.batchUpdateRewardPerToken(ve_underlying.address, 200);
     const earned = await gauge.earned(ve_underlying.address, owner.address);
     await gauge.getReward(owner.address, [ve_underlying.address]);
     const after = await ve_underlying.balanceOf(owner.address)
@@ -754,15 +757,15 @@ describe("core", function () {
   });
 
   it("ve decay", async function () {
-    await gauge_factory.claimBribes([bribe.address], [[dai.address]], 1);
-    await gauge_factory.claimFees([bribe.address], [[dai.address]], 1);
+    await voter.claimBribes([bribe.address], [[dai.address]], 1);
+    await voter.claimFees([bribe.address], [[dai.address]], 1);
     const supply = await ve.totalSupply();
     expect(supply).to.be.above(0);
     await network.provider.send("evm_increaseTime", [4 * 365 * 86400])
     await network.provider.send("evm_mine")
     expect(await ve.balanceOfNFT(1)).to.be.equal(0);
     expect(await ve.totalSupply()).to.be.equal(0);
-    await gauge_factory.reset(1);
+    await voter.reset(1);
     await ve.withdraw(1);
   });
 
@@ -792,13 +795,13 @@ describe("core", function () {
     await gauge.connect(owner3).deposit(pair_1000, 0);
     const before = await ve_underlying.balanceOf(owner3.address)
     await gauge.connect(owner3).withdraw(await gauge.balanceOf(owner3.address));
-    await gauge.batchRewardPerToken(ve_underlying.address, 200);
+    await gauge.batchUpdateRewardPerToken(ve_underlying.address, 200);
     await pair.connect(owner3).approve(gauge.address, pair_1000);
     await gauge.connect(owner3).deposit(pair_1000, 0);
-    await gauge.batchRewardPerToken(ve_underlying.address, 200);
-    await gauge.batchRewardPerToken(ve_underlying.address, 200);
-    await gauge.batchRewardPerToken(ve_underlying.address, 200);
-    await gauge.batchRewardPerToken(ve_underlying.address, 200);
+    await gauge.batchUpdateRewardPerToken(ve_underlying.address, 200);
+    await gauge.batchUpdateRewardPerToken(ve_underlying.address, 200);
+    await gauge.batchUpdateRewardPerToken(ve_underlying.address, 200);
+    await gauge.batchUpdateRewardPerToken(ve_underlying.address, 200);
     const earned = await gauge.earned(ve_underlying.address, owner3.address);
     await gauge.connect(owner3).getReward(owner3.address, [ve_underlying.address]);
     await gauge.connect(owner3).withdraw(await gauge.balanceOf(owner3.address));
@@ -825,14 +828,14 @@ describe("core", function () {
     await network.provider.send("evm_increaseTime", [86400 * 7 * 2])
     await network.provider.send("evm_mine")
     await minter.update_period();
-    await gauge_factory.updateGauge(gauge.address);
-    const claimable = await gauge_factory.claimable(gauge.address);
+    await voter.updateGauge(gauge.address);
+    const claimable = await voter.claimable(gauge.address);
     await ve_underlying.approve(staking.address, claimable);
     await staking.notifyRewardAmount(claimable);
-    await gauge_factory.updateFor([gauge.address]);
-    await gauge_factory.distro();
-    await gauge_factory.claimRewards([gauge.address], [[ve_underlying.address]]);
-    expect(await gauge.rewardRate(ve_underlying.address)).to.be.equal(await staking.rewardRate());
+    await voter.updateFor([gauge.address]);
+    await voter.distro();
+    await voter.claimRewards([gauge.address], [[ve_underlying.address]]);
+    expect((await gauge.rewardRate(ve_underlying.address)).div('1000000000000000000')).to.be.equal(await staking.rewardRate());
     console.log(await gauge.rewardPerTokenStored(ve_underlying.address))
   });
 
@@ -856,7 +859,7 @@ describe("core", function () {
     await gauge.connect(owner3).getReward(owner3.address, [ve_underlying.address]);
   });
 
-  it("gauge claim rewards", async function () {
+  it("gauge claim rewards2", async function () {
     const pair_1000 = ethers.BigNumber.from("1000000000");
     await pair.approve(gauge.address, pair_1000);
     await gauge.deposit(pair_1000, 0);
@@ -874,7 +877,7 @@ describe("core", function () {
     await gauge.withdraw(await gauge.balanceOf(owner.address));
   });
 
-  it("gauge claim rewards", async function () {
+  it("gauge claim rewards3", async function () {
     const pair_1000 = ethers.BigNumber.from("1000000000");
     await pair.approve(gauge.address, pair_1000);
     await gauge.deposit(pair_1000, 0);

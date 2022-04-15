@@ -3,20 +3,21 @@
 pragma solidity ^0.8.13;
 
 import "../../interface/IERC20.sol";
+import "../../interface/IMultiRewardsPool.sol";
 import "../../lib/Math.sol";
-import "../Reentrancy.sol";
 import "../../lib/SafeERC20.sol";
 import "../../lib/CheckpointLib.sol";
+import "../Reentrancy.sol";
 
-abstract contract MultiRewardsPoolBase is Reentrancy {
+abstract contract MultiRewardsPoolBase is Reentrancy, IMultiRewardsPool {
   using SafeERC20 for IERC20;
   using CheckpointLib for mapping(uint => CheckpointLib.Checkpoint);
 
   /// @dev The LP token that needs to be staked for rewards
-  address public immutable underlying;
+  address public immutable override underlying;
 
-  uint public derivedSupply;
-  mapping(address => uint) public derivedBalances;
+  uint public override derivedSupply;
+  mapping(address => uint) public override derivedBalances;
 
   /// @dev Rewards are released over 7 days
   uint internal constant DURATION = 7 days;
@@ -35,11 +36,11 @@ abstract contract MultiRewardsPoolBase is Reentrancy {
   mapping(address => mapping(address => uint)) public lastEarn;
   mapping(address => mapping(address => uint)) public userRewardPerTokenStored;
 
-  uint public totalSupply;
-  mapping(address => uint) public balanceOf;
+  uint public override totalSupply;
+  mapping(address => uint) public override balanceOf;
 
-  address[] public rewardTokens;
-  mapping(address => bool) public isReward;
+  address[] public override rewardTokens;
+  mapping(address => bool) public override isRewardToken;
 
   /// @notice A record of balance checkpoints for each account, by index
   mapping(address => mapping(uint => CheckpointLib.Checkpoint)) public checkpoints;
@@ -57,7 +58,7 @@ abstract contract MultiRewardsPoolBase is Reentrancy {
   event Deposit(address indexed from, uint amount);
   event Withdraw(address indexed from, uint amount);
   event NotifyReward(address indexed from, address indexed reward, uint amount);
-  event ClaimRewards(address indexed from, address indexed reward, uint amount);
+  event ClaimRewards(address indexed from, address indexed reward, uint amount, address recepient);
 
   constructor(address _stake) {
     underlying = _stake;
@@ -67,7 +68,7 @@ abstract contract MultiRewardsPoolBase is Reentrancy {
   //************************ VIEWS *******************************************
   //**************************************************************************
 
-  function rewardTokensLength() external view returns (uint) {
+  function rewardTokensLength() external view override returns (uint) {
     return rewardTokens.length;
   }
 
@@ -87,25 +88,23 @@ abstract contract MultiRewardsPoolBase is Reentrancy {
     );
   }
 
-  function derivedBalance(address account) external view returns (uint) {
+  function derivedBalance(address account) external view override returns (uint) {
     return _derivedBalance(account);
   }
 
-  function left(address token) external view returns (uint) {
+  function left(address token) external view override returns (uint) {
     if (block.timestamp >= periodFinish[token]) return 0;
     uint _remaining = periodFinish[token] - block.timestamp;
     return _remaining * rewardRate[token] / PRECISION;
   }
 
-  function earned(address token, address account) external view returns (uint) {
+  function earned(address token, address account) external view override returns (uint) {
     return _earned(token, account);
   }
 
   //**************************************************************************
   //************************ USER ACTIONS ************************************
   //**************************************************************************
-
-  function deposit(uint amount) external virtual;
 
   function _deposit(uint amount) internal virtual lock {
     require(amount > 0, "Zero amount");
@@ -123,8 +122,6 @@ abstract contract MultiRewardsPoolBase is Reentrancy {
     _updateDerivedBalanceAndWriteCheckpoints(account);
   }
 
-  function withdraw(uint amount) external virtual;
-
   function _withdraw(uint amount) internal lock virtual {
     _decreaseBalance(msg.sender, amount);
     IERC20(underlying).safeTransfer(msg.sender, amount);
@@ -140,10 +137,8 @@ abstract contract MultiRewardsPoolBase is Reentrancy {
     _updateDerivedBalanceAndWriteCheckpoints(account);
   }
 
-  function getReward(address account, address[] memory tokens) external virtual;
-
-  function _getReward(address account, address[] memory tokens) internal lock virtual {
-    require(msg.sender == account, "Forbidden");
+  /// @dev Implement restriction checks!
+  function _getReward(address account, address[] memory tokens, address recipient) internal lock virtual {
 
     for (uint i = 0; i < tokens.length; i++) {
       (rewardPerTokenStored[tokens[i]], lastUpdateTime[tokens[i]]) = _updateRewardPerToken(tokens[i], type(uint).max, true);
@@ -152,10 +147,10 @@ abstract contract MultiRewardsPoolBase is Reentrancy {
       lastEarn[tokens[i]][account] = block.timestamp;
       userRewardPerTokenStored[tokens[i]][account] = rewardPerTokenStored[tokens[i]];
       if (_reward > 0) {
-        IERC20(tokens[i]).safeTransfer(account, _reward);
+        IERC20(tokens[i]).safeTransfer(recipient, _reward);
       }
 
-      emit ClaimRewards(msg.sender, tokens[i], _reward);
+      emit ClaimRewards(msg.sender, tokens[i], _reward, recipient);
     }
 
     _updateDerivedBalanceAndWriteCheckpoints(account);
@@ -213,7 +208,8 @@ abstract contract MultiRewardsPoolBase is Reentrancy {
     return balanceOf[account];
   }
 
-  /// @dev If the contract will get "out of gas" error on users actions this will be helpful
+  /// @dev Update stored rewardPerToken values without the last one snapshot
+  ///      If the contract will get "out of gas" error on users actions this will be helpful
   function batchUpdateRewardPerToken(address token, uint maxRuns) external {
     (rewardPerTokenStored[token], lastUpdateTime[token]) = _updateRewardPerToken(token, maxRuns, false);
   }
@@ -242,17 +238,17 @@ abstract contract MultiRewardsPoolBase is Reentrancy {
     uint _endIndex = Math.min(supplyNumCheckpoints - 1, maxRuns);
 
     if (_endIndex > 0) {
-      uint _endIndexLoop;
-      if (actualLast) {
-        _endIndexLoop = _endIndex - 1;
-      } else {
-        _endIndexLoop = _endIndex;
-      }
-      for (uint i = _startIndex; i <= _endIndexLoop; i++) {
+      for (uint i = _startIndex; i <= _endIndex - 1; i++) {
         CheckpointLib.Checkpoint memory sp0 = supplyCheckpoints[i];
         if (sp0.value > 0) {
           CheckpointLib.Checkpoint memory sp1 = supplyCheckpoints[i + 1];
-          (uint _reward, uint _endTime) = _calcRewardPerToken(token, sp1.timestamp, sp0.timestamp, sp0.value, _startTimestamp);
+          (uint _reward, uint _endTime) = _calcRewardPerToken(
+            token,
+            sp1.timestamp,
+            sp0.timestamp,
+            sp0.value,
+            _startTimestamp
+          );
           reward += _reward;
           _writeRewardPerTokenCheckpoint(token, reward, _endTime);
           _startTimestamp = _endTime;
@@ -298,9 +294,8 @@ abstract contract MultiRewardsPoolBase is Reentrancy {
   //************************ NOTIFY ******************************************
   //**************************************************************************
 
-  function notifyRewardAmount(address token, uint amount) external virtual;
-
   function _notifyRewardAmount(address token, uint amount) internal lock virtual {
+    require(token != underlying, "Wrong token for rewards");
     require(amount > 0, "Zero amount");
     if (rewardRate[token] == 0) {
       _writeRewardPerTokenCheckpoint(token, 0, block.timestamp);
@@ -321,9 +316,9 @@ abstract contract MultiRewardsPoolBase is Reentrancy {
     }
 
     periodFinish[token] = block.timestamp + DURATION;
-    if (!isReward[token]) {
+    if (!isRewardToken[token]) {
       require(rewardTokens.length < MAX_REWARD_TOKENS, "Too many reward tokens");
-      isReward[token] = true;
+      isRewardToken[token] = true;
       rewardTokens.push(token);
     }
 

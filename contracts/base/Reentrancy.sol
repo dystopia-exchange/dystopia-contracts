@@ -8,7 +8,7 @@ abstract contract Reentrancy {
   uint internal _unlocked = 1;
 
   modifier lock() {
-    require(_unlocked == 1);
+    require(_unlocked == 1, "Reentrant call");
     _unlocked = 2;
     _;
     _unlocked = 1;

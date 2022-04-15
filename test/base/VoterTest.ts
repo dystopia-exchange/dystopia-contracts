@@ -13,7 +13,6 @@ import {ethers} from "hardhat";
 import chai from "chai";
 import {CoreAddresses} from "../../scripts/deploy/CoreAddresses";
 import {Deploy} from "../../scripts/deploy/Deploy";
-import {MaticTestnetAddresses} from "../../scripts/addresses/MaticTestnetAddresses";
 import {BigNumber, utils} from "ethers";
 import {TestHelper} from "../TestHelper";
 import {TimeUtils} from "../TimeUtils";
@@ -111,8 +110,7 @@ describe("voter tests", function () {
     await core.voter.createGauge(ustDaiPair.address);
     expect(await core.voter.gauges(mimUstPair.address)).to.not.equal(0x0000000000000000000000000000000000000000);
 
-    const sr = await ethers.getContractFactory("StakingRewards");
-    staking = await sr.deploy(mimUstPair.address, core.token.address);
+    staking = await Deploy.deployContract(owner, 'StakingRewards', mimUstPair.address, core.token.address) as StakingRewards;
 
     const gaugeMimUstAddress = await core.voter.gauges(mimUstPair.address);
     const bribeMimUstAddress = await core.voter.bribes(gaugeMimUstAddress);
@@ -160,7 +158,7 @@ describe("voter tests", function () {
   });
 
   it("gauge rewardsListLength", async function () {
-    expect(await gaugeMimDai.rewardsListLength()).to.equal(0);
+    expect(await gaugeMimDai.rewardTokensLength()).to.equal(0);
   });
 
   it("veNFT gauge manipulate", async function () {
@@ -226,10 +224,10 @@ describe("voter tests", function () {
     await bribeMimUst.notifyRewardAmount(core.token.address, pair1000);
     await staking.notifyRewardAmount(pair1000);
 
-    expect(await gaugeMimUst.rewardRate(core.token.address)).to.equal(BigNumber.from(1653));
-    expect(await bribeMimUst.rewardRate(core.token.address)).to.equal(BigNumber.from(1653));
+    expect((await gaugeMimUst.rewardRate(core.token.address)).div('1000000000000000000')).to.equal(BigNumber.from(1653));
+    expect((await bribeMimUst.rewardRate(core.token.address)).div('1000000000000000000')).to.equal(BigNumber.from(1653));
     expect(await staking.rewardRate()).to.equal(BigNumber.from(1653));
-    expect(await gaugeMimUst.rewardRate(core.token.address)).to.be.equal(await staking.rewardRate());
+    expect((await gaugeMimUst.rewardRate(core.token.address)).div('1000000000000000000')).to.be.equal(await staking.rewardRate());
   });
 
   it("exit & getReward gauge stake", async function () {
@@ -249,14 +247,15 @@ describe("voter tests", function () {
   });
 
   it("vote hacking", async function () {
+    const adr1 = await bribeMimUst.tokenIdToAddress(1);
     await core.voter.vote(1, [mimUstPair.address], [5000]);
     expect(await core.voter.usedWeights(1)).to.closeTo((await core.ve.balanceOfNFT(1)), 1000);
-    expect(await bribeMimUst.balanceOf(1)).to.equal(await core.voter.votes(1, mimUstPair.address));
+    expect(await bribeMimUst.balanceOf(adr1)).to.equal(await core.voter.votes(1, mimUstPair.address));
     await core.voter.reset(1);
     expect(await core.voter.usedWeights(1)).to.below(await core.ve.balanceOfNFT(1));
     expect(await core.voter.usedWeights(1)).to.equal(0);
-    expect(await bribeMimUst.balanceOf(1)).to.equal(await core.voter.votes(1, mimUstPair.address));
-    expect(await bribeMimUst.balanceOf(1)).to.equal(0);
+    expect(await bribeMimUst.balanceOf(adr1)).to.equal(await core.voter.votes(1, mimUstPair.address));
+    expect(await bribeMimUst.balanceOf(adr1)).to.equal(0);
   });
 
 
@@ -285,9 +284,10 @@ describe("voter tests", function () {
   });
 
   it("gauge vote & bribe balanceOf", async function () {
+    const adr1 = await bribeMimUst.tokenIdToAddress(1);
     await core.voter.vote(1, [mimUstPair.address, mimDaiPair.address], [5000, 5000]);
     expect(await core.voter.totalWeight()).to.not.equal(0);
-    expect(await bribeMimUst.balanceOf(1)).to.not.equal(0);
+    expect(await bribeMimUst.balanceOf(adr1)).to.not.equal(0);
   });
 
   it("gauge poke hacking2", async function () {
@@ -301,9 +301,9 @@ describe("voter tests", function () {
 
   it("vote hacking break mint", async function () {
     await core.voter.vote(1, [mimUstPair.address], [5000]);
-
+    const adr1 = await bribeMimUst.tokenIdToAddress(1);
     expect(await core.voter.usedWeights(1)).to.closeTo((await core.ve.balanceOfNFT(1)), 1000);
-    expect(await bribeMimUst.balanceOf(1)).to.equal(await core.voter.votes(1, mimUstPair.address));
+    expect(await bribeMimUst.balanceOf(adr1)).to.equal(await core.voter.votes(1, mimUstPair.address));
   });
 
   it("gauge poke hacking3", async function () {

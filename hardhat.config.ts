@@ -66,7 +66,7 @@ export default {
       gas: argv.hardhatChainId === 137 ? 19_000_000 :
         argv.hardhatChainId === 80001 ? 19_000_000 :
           undefined,
-      forking: !!argv.hardhatChainId ? {
+      forking: !!argv.hardhatChainId && argv.hardhatChainId !== 31337 ? {
         url:
           argv.hardhatChainId === 137 ? argv.maticRpcUrl :
           argv.hardhatChainId === 250 ? argv.ftmRpcUrl :

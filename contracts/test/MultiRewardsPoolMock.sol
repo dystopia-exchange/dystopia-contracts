@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.13;
 
-import "../base/gauges/MultiRewardsPoolBase.sol";
+import "../base/reward/MultiRewardsPoolBase.sol";
 
 
 contract MultiRewardsPoolMock is MultiRewardsPoolBase {
@@ -25,19 +25,20 @@ contract MultiRewardsPoolMock is MultiRewardsPoolBase {
     _withdraw(amount1);
   }
 
-  function deposit(uint amount) external override {
+  function deposit(uint amount) external {
     _deposit(amount);
   }
 
-  function withdraw(uint amount) external override {
+  function withdraw(uint amount) external {
     _withdraw(amount);
   }
 
-  function getReward(address account, address[] memory tokens) external override {
-    _getReward(account, tokens);
+  function getReward(address account, address[] memory tokens) external {
+    require(msg.sender == account, "Forbidden");
+    _getReward(account, tokens, account);
   }
 
-  function notifyRewardAmount(address token, uint amount) external override {
+  function notifyRewardAmount(address token, uint amount) external {
     _notifyRewardAmount(token, amount);
   }
 

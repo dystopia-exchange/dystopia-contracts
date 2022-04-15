@@ -152,10 +152,23 @@ describe("multi reward pool tests", function () {
     // await expect(pool.connect(rewarder).notifyRewardAmount(rewardToken.address, 1)).revertedWith('Zero reward rate');
     await pool.connect(rewarder).notifyRewardAmount(rewardToken.address, FULL_REWARD.div(4));
     await expect(pool.connect(rewarder).notifyRewardAmount(rewardToken.address, 10)).revertedWith('Amount should be higher than remaining rewards');
+    await expect(pool.connect(rewarder).notifyRewardAmount(wmatic.address, 10)).revertedWith('Wrong token for rewards');
     await pool.connect(rewarder).notifyRewardAmount(rewardToken.address, Misc.MAX_UINT.div('10000000000000000000'));
   });
 
   // ***************** THE MAIN LOGIC TESTS *********************************
+
+  it("update snapshots after full withdraw", async function () {
+    await pool.deposit(parseUnits('0.1'));
+
+    await pool.connect(rewarder).notifyRewardAmount(rewardToken.address, FULL_REWARD.div(10));
+
+    await pool.withdraw(await pool.balanceOf(owner.address));
+
+    await pool.deposit(parseUnits('0.1'));
+
+    await pool.batchUpdateRewardPerToken(rewardToken.address, 200);
+  });
 
   it("deposit and get rewards should receive all amount", async function () {
     await pool.deposit(parseUnits('1'));
@@ -310,6 +323,11 @@ describe("multi reward pool tests", function () {
 
     expect(await rewardToken2.balanceOf(pool.address)).is.below(14);
     expect((await rewardToken2.balanceOf(owner.address)).add(await rewardToken2.balanceOf(user.address))).is.above(FULL_REWARD.sub(14));
+
+    await pool.withdraw(parseUnits('1'));
+    await pool.deposit(parseUnits('1'));
+
+    await pool.batchUpdateRewardPerToken(rewardToken.address, 200);
   });
 
 });

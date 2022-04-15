@@ -13,6 +13,7 @@ import "../../interface/IBribeFactory.sol";
 import "../../interface/IGaugeFactory.sol";
 import "../../interface/IMinter.sol";
 import "../../interface/IBribe.sol";
+import "../../interface/IMultiRewardsPool.sol";
 
 contract BaseV1Voter is IVoter {
 
@@ -331,7 +332,7 @@ contract BaseV1Voter is IVoter {
     IMinter(minter).update_period();
     _updateFor(_gauge);
     uint _claimable = claimable[_gauge];
-    if (_claimable > IGauge(_gauge).left(base) && _claimable / DURATION > 0) {
+    if (_claimable > IMultiRewardsPool(_gauge).left(base) && _claimable / DURATION > 0) {
       claimable[_gauge] = 0;
       IGauge(_gauge).notifyRewardAmount(base, _claimable);
       emit DistributeReward(msg.sender, _gauge, _claimable);

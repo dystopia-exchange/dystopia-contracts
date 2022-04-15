@@ -137,8 +137,8 @@ contract Gauge is IGauge {
     uint lower = 0;
     uint upper = nCheckpoints - 1;
     while (upper > lower) {
-      uint center = upper - (upper - lower) / 2;
       // ceil, avoiding overflow
+      uint center = upper - (upper - lower) / 2;
       Checkpoint memory cp = checkpoints[account][center];
       if (cp.timestamp == timestamp) {
         return center;
@@ -170,8 +170,8 @@ contract Gauge is IGauge {
     uint lower = 0;
     uint upper = nCheckpoints - 1;
     while (upper > lower) {
-      uint center = upper - (upper - lower) / 2;
       // ceil, avoiding overflow
+      uint center = upper - (upper - lower) / 2;
       SupplyCheckpoint memory cp = supplyCheckpoints[center];
       if (cp.timestamp == timestamp) {
         return center;
@@ -204,8 +204,8 @@ contract Gauge is IGauge {
     uint lower = 0;
     uint upper = nCheckpoints - 1;
     while (upper > lower) {
-      uint center = upper - (upper - lower) / 2;
       // ceil, avoiding overflow
+      uint center = upper - (upper - lower) / 2;
       RewardPerTokenCheckpoint memory cp = rewardPerTokenCheckpoints[token][center];
       if (cp.timestamp == timestamp) {
         return (cp.rewardPerToken, cp.timestamp);

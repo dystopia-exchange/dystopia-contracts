@@ -18,13 +18,15 @@ const argv = require('yargs/yargs')()
   .options({
     hardhatChainId: {
       type: "number",
-      default: 80001
+      default: 31337
     },
     maticRpcUrl: {
       type: "string",
+      default: ''
     },
     mumbaiRpcUrl: {
       type: "string",
+      default: ''
     },
     ethRpcUrl: {
       type: "string",
@@ -36,6 +38,7 @@ const argv = require('yargs/yargs')()
     },
     networkScanKey: {
       type: "string",
+      default: ''
     },
     privateKey: {
       type: "string",
@@ -43,9 +46,11 @@ const argv = require('yargs/yargs')()
     },
     maticForkBlock: {
       type: "number",
-      default: 23945980
     },
     mumbaiForkBlock: {
+      type: "number",
+    },
+    ftmForkBlock: {
       type: "number",
     },
   }).argv;
@@ -56,21 +61,23 @@ export default {
   networks: {
     hardhat: {
       allowUnlimitedContractSize: true,
-      chainId: argv.hardhatChainId,
+      chainId: !!argv.hardhatChainId ? argv.hardhatChainId : undefined,
       timeout: 99999 * 2,
       gas: argv.hardhatChainId === 137 ? 19_000_000 :
         argv.hardhatChainId === 80001 ? 19_000_000 :
-          9_000_000,
-      forking: {
+          undefined,
+      forking: !!argv.hardhatChainId && argv.hardhatChainId !== 31337 ? {
         url:
           argv.hardhatChainId === 137 ? argv.maticRpcUrl :
-          argv.hardhatChainId === 80001 ? argv.mumbaiRpcUrl :
+          argv.hardhatChainId === 250 ? argv.ftmRpcUrl :
+            argv.hardhatChainId === 80001 ? argv.mumbaiRpcUrl :
               undefined,
         blockNumber:
-            argv.hardhatChainId === 137 ? argv.maticForkBlock !== 0 ? argv.maticForkBlock : undefined :
-              argv.hardhatChainId === 80001 ? argv.mumbaiForkBlock !== 0 ? argv.mumbaiForkBlock : undefined :
-                undefined
-      },
+          argv.hardhatChainId === 137 ? argv.maticForkBlock !== 0 ? argv.maticForkBlock : undefined :
+          argv.hardhatChainId === 250 ? argv.ftmForkBlock !== 0 ? argv.ftmForkBlock : undefined :
+            argv.hardhatChainId === 80001 ? argv.mumbaiForkBlock !== 0 ? argv.mumbaiForkBlock : undefined :
+              undefined
+      } : undefined,
       accounts: {
         mnemonic: "test test test test test test test test test test test junk",
         path: "m/44'/60'/0'/0",

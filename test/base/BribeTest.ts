@@ -1,5 +1,6 @@
 import {
   BaseV1Pair,
+  BaseV1Pair__factory,
   Bribe,
   Bribe__factory,
   Gauge,
@@ -21,7 +22,6 @@ import {parseUnits} from "ethers/lib/utils";
 const {expect} = chai;
 
 const amount1000At6 = parseUnits('1000', 6);
-const amount100At18 = parseUnits('100', 18);
 const WEEK = 60 * 60 * 24 * 7;
 
 describe("bribe tests", function () {
@@ -36,6 +36,7 @@ describe("bribe tests", function () {
   let ust: Token;
   let mim: Token;
   let dai: Token;
+  let wmatic: Token;
   let mimUstPair: BaseV1Pair;
   let mimDaiPair: BaseV1Pair;
   let ustDaiPair: BaseV1Pair;
@@ -52,6 +53,8 @@ describe("bribe tests", function () {
     snapshotBefore = await TimeUtils.snapshot();
     [owner, owner2, owner3] = await ethers.getSigners();
 
+    wmatic = await Deploy.deployContract(owner, 'Token', 'WMATIC', 'WMATIC', 18, owner.address) as Token;
+
     [ust, mim, dai] = await TestHelper.createMockTokensAndMint(owner);
     await ust.transfer(owner2.address, utils.parseUnits('100', 6));
     await mim.transfer(owner2.address, utils.parseUnits('100'));
@@ -63,8 +66,8 @@ describe("bribe tests", function () {
 
     core = await Deploy.deployCore(
       owner,
-      MaticTestnetAddresses.WMATIC_TOKEN,
-      [MaticTestnetAddresses.WMATIC_TOKEN, ust.address, mim.address, dai.address],
+      wmatic.address,
+      [wmatic.address, ust.address, mim.address, dai.address],
       [owner.address, owner2.address],
       [utils.parseUnits('100'), utils.parseUnits('100')],
       utils.parseUnits('200')
@@ -257,5 +260,54 @@ describe("bribe tests", function () {
     expect(await Bribe__factory.connect(bribe, owner).rewardPerToken(mim.address)).is.eq(0);
   });
 
+  it.skip("third party stake to LP test", async function () {
+    await core.voter.vote(1, [mimUstPair.address], [100]);
+    expect(await core.token.balanceOf(owner3.address)).is.eq(0);
+
+    await depositToGauge(core, owner, mim.address, ust.address, gaugeMimUst, 1);
+    await depositToGauge(core, owner3, mim.address, ust.address, gaugeMimUst, 0);
+
+    await TimeUtils.advanceBlocksOnTs(WEEK * 2);
+    await core.minter.update_period()
+    await core.voter.distro();
+
+    await TimeUtils.advanceBlocksOnTs(WEEK / 2);
+
+    // should not reset rewards after deposit and withdraw
+    await depositToGauge(core, owner3, mim.address, ust.address, gaugeMimUst, 0);
+
+    // await gaugeMimUst.connect(owner).getReward(owner.address, [core.token.address]);
+    await gaugeMimUst.connect(owner3).getReward(owner3.address, [core.token.address]);
+
+    TestHelper.closer(await core.token.balanceOf(owner.address), parseUnits('380000'), parseUnits('10000'))
+    TestHelper.closer(await core.token.balanceOf(owner3.address), parseUnits('110000'), parseUnits('10000'))
+  });
 
 });
+
+
+async function depositToGauge(
+  core: CoreAddresses,
+  owner: SignerWithAddress,
+  token0: string,
+  token1: string,
+  gauge: Gauge,
+  tokenId: number
+) {
+  await TestHelper.addLiquidity(
+    core.factory,
+    core.router,
+    owner,
+    token0,
+    token1,
+    utils.parseUnits('1'),
+    utils.parseUnits('1', 6),
+    true
+  );
+  const pairAdr = await core.factory.getPair(token0, token1, true)
+  const pair = BaseV1Pair__factory.connect(pairAdr, owner);
+  const pairBalance = await pair.balanceOf(owner.address);
+  expect(pairBalance).is.not.eq(0);
+  await pair.approve(gauge.address, pairBalance);
+  await gauge.connect(owner).deposit(pairBalance, tokenId);
+}

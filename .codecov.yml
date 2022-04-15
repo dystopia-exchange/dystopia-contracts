@@ -1,11 +1,15 @@
-comment: false
+#comment:
+#  layout: "reach,diff,flags,files,footer"
+#  behavior: default
+#  require_changes: false
 github_checks:
-  annotations: false
+  comment: true
+  annotations: true
 coverage:
   status:
     patch:
       default:
-        target: 60%
+        target: 97%
     project:
       default:
         threshold: 1%

@@ -6,6 +6,7 @@ import {TimeUtils} from "../TimeUtils";
 import {MaticTestnetAddresses} from "../../scripts/addresses/MaticTestnetAddresses";
 import {BigNumber, utils} from "ethers";
 import {CoreAddresses} from "../../scripts/deploy/CoreAddresses";
+import {Token} from "../../typechain";
 
 const {expect} = chai;
 
@@ -17,15 +18,17 @@ describe("minter tests", function () {
   let owner: SignerWithAddress;
   let owner2: SignerWithAddress;
   let core: CoreAddresses;
+  let wmatic: Token;
 
 
   before(async function () {
     snapshotBefore = await TimeUtils.snapshot();
     [owner, owner2] = await ethers.getSigners();
+    wmatic = await Deploy.deployContract(owner, 'Token', 'WMATIC', 'WMATIC', 18, owner.address) as Token;
     core = await Deploy.deployCore(
       owner,
-      MaticTestnetAddresses.WMATIC_TOKEN,
-      [MaticTestnetAddresses.WMATIC_TOKEN],
+      wmatic.address,
+      [wmatic.address],
       [owner.address, owner2.address],
       [utils.parseUnits('100'), utils.parseUnits('100')],
       utils.parseUnits('200')

@@ -12,9 +12,8 @@ import {ethers} from "hardhat";
 import chai from "chai";
 import {Deploy} from "../../scripts/deploy/Deploy";
 import {TimeUtils} from "../TimeUtils";
-import {MaticTestnetAddresses} from "../../scripts/addresses/MaticTestnetAddresses";
 import {TestHelper} from "../TestHelper";
-import {BigNumber, utils} from "ethers";
+import {utils} from "ethers";
 import {parseUnits} from "ethers/lib/utils";
 import {Misc} from "../../scripts/Misc";
 
@@ -30,6 +29,7 @@ describe("migrator tests", function () {
   let factory: BaseV1Factory;
   let router: BaseV1Router01;
 
+  let wmatic: Token;
   let ust: Token;
   let mim: Token;
   let dai: Token;
@@ -41,8 +41,10 @@ describe("migrator tests", function () {
   before(async function () {
     snapshotBefore = await TimeUtils.snapshot();
     [owner, owner2] = await ethers.getSigners();
+    wmatic = await Deploy.deployContract(owner, 'Token', 'WMATIC', 'WMATIC', 18, owner.address) as Token;
+
     factory = await Deploy.deployBaseV1Factory(owner, owner.address);
-    router = await Deploy.deployBaseV1Router01(owner, factory.address, MaticTestnetAddresses.WMATIC_TOKEN);
+    router = await Deploy.deployBaseV1Router01(owner, factory.address, wmatic.address);
 
     [ust, mim, dai] = await TestHelper.createMockTokensAndMint(owner);
     await ust.transfer(owner2.address, utils.parseUnits('100', 6));

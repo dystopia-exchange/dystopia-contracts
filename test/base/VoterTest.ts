@@ -34,6 +34,7 @@ describe("voter tests", function () {
   let ust: Token;
   let mim: Token;
   let dai: Token;
+  let wmatic: Token;
   let mimUstPair: BaseV1Pair;
   let mimDaiPair: BaseV1Pair;
   let ustDaiPair: BaseV1Pair;
@@ -51,6 +52,7 @@ describe("voter tests", function () {
   before(async function () {
     snapshotBefore = await TimeUtils.snapshot();
     [owner, owner2, owner3] = await ethers.getSigners();
+    wmatic = await Deploy.deployContract(owner, 'Token', 'WMATIC', 'WMATIC', 18, owner.address) as Token;
 
     [ust, mim, dai] = await TestHelper.createMockTokensAndMint(owner);
     await ust.transfer(owner2.address, utils.parseUnits('100', 6));
@@ -63,8 +65,8 @@ describe("voter tests", function () {
 
     core = await Deploy.deployCore(
       owner,
-      MaticTestnetAddresses.WMATIC_TOKEN,
-      [MaticTestnetAddresses.WMATIC_TOKEN, ust.address, mim.address, dai.address],
+      wmatic.address,
+      [wmatic.address, ust.address, mim.address, dai.address],
       [owner.address, owner2.address],
       [utils.parseUnits('100'), utils.parseUnits('100')],
       utils.parseUnits('200')

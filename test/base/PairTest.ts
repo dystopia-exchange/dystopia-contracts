@@ -26,6 +26,7 @@ describe("pair tests", function () {
   let ust: Token;
   let mim: Token;
   let dai: Token;
+  let wmatic: Token;
 
   let pair: BaseV1Pair;
 
@@ -33,8 +34,9 @@ describe("pair tests", function () {
   before(async function () {
     snapshotBefore = await TimeUtils.snapshot();
     [owner, owner2, owner3] = await ethers.getSigners();
+    wmatic = await Deploy.deployContract(owner, 'Token', 'WMATIC', 'WMATIC', 18, owner.address) as Token;
     factory = await Deploy.deployBaseV1Factory(owner, owner.address);
-    router = await Deploy.deployBaseV1Router01(owner, factory.address, MaticTestnetAddresses.WMATIC_TOKEN);
+    router = await Deploy.deployBaseV1Router01(owner, factory.address, wmatic.address);
 
     [ust, mim, dai] = await TestHelper.createMockTokensAndMint(owner);
     await ust.transfer(owner2.address, utils.parseUnits('100', 6));

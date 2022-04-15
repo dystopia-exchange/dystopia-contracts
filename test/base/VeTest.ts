@@ -3,10 +3,10 @@ import {ethers} from "hardhat";
 import chai from "chai";
 import {Deploy} from "../../scripts/deploy/Deploy";
 import {TimeUtils} from "../TimeUtils";
-import {MaticTestnetAddresses} from "../../scripts/addresses/MaticTestnetAddresses";
 import {utils} from "ethers";
 import {CoreAddresses} from "../../scripts/deploy/CoreAddresses";
 import {Misc} from "../../scripts/Misc";
+import {Token} from "../../typechain";
 
 const {expect} = chai;
 
@@ -18,15 +18,17 @@ describe("ve tests", function () {
   let owner: SignerWithAddress;
   let owner2: SignerWithAddress;
   let core: CoreAddresses;
+  let wmatic: Token;
 
 
   before(async function () {
     snapshotBefore = await TimeUtils.snapshot();
     [owner, owner2] = await ethers.getSigners();
+    wmatic = await Deploy.deployContract(owner, 'Token', 'WMATIC', 'WMATIC', 18, owner.address) as Token;
     core = await Deploy.deployCore(
       owner,
-      MaticTestnetAddresses.WMATIC_TOKEN,
-      [MaticTestnetAddresses.WMATIC_TOKEN],
+      wmatic.address,
+      [wmatic.address],
       [owner.address, owner2.address],
       [utils.parseUnits('100'), utils.parseUnits('100')],
       utils.parseUnits('200')
@@ -93,6 +95,7 @@ describe("ve tests", function () {
   });
 
   it("increase_unlock_time test", async function () {
+    await TimeUtils.advanceBlocksOnTs(60 * 60 * 24 * 365 * 3);
     await core.ve.increase_unlock_time(1, 60 * 60 * 24 * 365 * 4);
     await expect(core.ve.increase_unlock_time(1, 60 * 60 * 24 * 365 * 5)).revertedWith('Voting lock can be 4 years max');
   });

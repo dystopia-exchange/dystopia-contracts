@@ -27,6 +27,7 @@ describe("router tests", function () {
   let factory: BaseV1Factory;
   let router: BaseV1Router01;
 
+  let wmatic: Token;
   let ust: Token;
   let mim: Token;
   let dai: Token;
@@ -36,8 +37,9 @@ describe("router tests", function () {
   before(async function () {
     snapshotBefore = await TimeUtils.snapshot();
     [owner, owner2] = await ethers.getSigners();
+    wmatic = await Deploy.deployContract(owner, 'Token', 'WMATIC', 'WMATIC', 18, owner.address) as Token;
     factory = await Deploy.deployBaseV1Factory(owner, owner.address);
-    router = await Deploy.deployBaseV1Router01(owner, factory.address, MaticTestnetAddresses.WMATIC_TOKEN);
+    router = await Deploy.deployBaseV1Router01(owner, factory.address, wmatic.address);
 
     [ust, mim, dai] = await TestHelper.createMockTokensAndMint(owner);
     await ust.transfer(owner2.address, utils.parseUnits('100', 6));
@@ -128,7 +130,7 @@ describe("router tests", function () {
       {value: parseUnits('10')}
     );
 
-    const pairAdr = await factory.getPair(mim.address, MaticTestnetAddresses.WMATIC_TOKEN, true);
+    const pairAdr = await factory.getPair(mim.address, wmatic.address, true);
 
     await BaseV1Pair__factory.connect(pairAdr, owner).approve(router.address, parseUnits('1111'));
     await router.removeLiquidityMATIC(
@@ -156,7 +158,7 @@ describe("router tests", function () {
       {value: parseUnits('10')}
     );
 
-    const pairAdr = await factory.getPair(mim.address, MaticTestnetAddresses.WMATIC_TOKEN, true);
+    const pairAdr = await factory.getPair(mim.address, wmatic.address, true);
     const pair = BaseV1Pair__factory.connect(pairAdr, owner);
 
     const {
@@ -167,7 +169,7 @@ describe("router tests", function () {
 
     await router.removeLiquidityWithPermit(
       mim.address,
-      MaticTestnetAddresses.WMATIC_TOKEN,
+      wmatic.address,
       true,
       parseUnits('0.1'),
       0,
@@ -191,7 +193,7 @@ describe("router tests", function () {
       {value: parseUnits('10')}
     );
 
-    const pairAdr = await factory.getPair(mim.address, MaticTestnetAddresses.WMATIC_TOKEN, true);
+    const pairAdr = await factory.getPair(mim.address, wmatic.address, true);
     const pair = BaseV1Pair__factory.connect(pairAdr, owner);
 
     const {
@@ -230,7 +232,7 @@ describe("router tests", function () {
       parseUnits('0.1'),
       0,
       mim.address,
-      MaticTestnetAddresses.WMATIC_TOKEN,
+      wmatic.address,
       true,
       owner.address,
       99999999999
@@ -256,7 +258,7 @@ describe("router tests", function () {
       0,
       [{
         from: mim.address,
-        to: MaticTestnetAddresses.WMATIC_TOKEN,
+        to: wmatic.address,
         stable: true,
       }],
       owner.address,
@@ -282,7 +284,7 @@ describe("router tests", function () {
       [parseUnits('0.1'), parseUnits('0.1')],
       [{
         from: mim.address,
-        to: MaticTestnetAddresses.WMATIC_TOKEN,
+        to: wmatic.address,
         stable: true,
       }],
       owner.address,
@@ -307,7 +309,7 @@ describe("router tests", function () {
     await router.swapExactMATICForTokens(
       0,
       [{
-        from: MaticTestnetAddresses.WMATIC_TOKEN,
+        from: wmatic.address,
         to: mim.address,
         stable: true,
       }],
@@ -333,7 +335,7 @@ describe("router tests", function () {
       {value: parseUnits('1')}
     );
 
-    const pairAdr = await factory.getPair(tokenWithFee.address, MaticTestnetAddresses.WMATIC_TOKEN, true);
+    const pairAdr = await factory.getPair(tokenWithFee.address, wmatic.address, true);
     const pair = BaseV1Pair__factory.connect(pairAdr, owner);
     const pairBal = await pair.balanceOf(owner.address);
 
@@ -381,7 +383,7 @@ describe("router tests", function () {
     await router.swapExactTokensForTokensSupportingFeeOnTransferTokens(
       parseUnits('0.1'),
       0,
-      [{from: tokenWithFee.address, to: MaticTestnetAddresses.WMATIC_TOKEN, stable: true}],
+      [{from: tokenWithFee.address, to: wmatic.address, stable: true}],
       owner.address,
       99999999999
     );
@@ -411,7 +413,7 @@ describe("router tests", function () {
 
     await router.swapExactMATICForTokensSupportingFeeOnTransferTokens(
       0,
-      [{to: tokenWithFee.address, from: MaticTestnetAddresses.WMATIC_TOKEN, stable: true}],
+      [{to: tokenWithFee.address, from: wmatic.address, stable: true}],
       owner.address,
       99999999999,
       {value: parseUnits('0.1')}
@@ -443,7 +445,7 @@ describe("router tests", function () {
     await router.swapExactTokensForMATICSupportingFeeOnTransferTokens(
       parseUnits('0.1'),
       0,
-      [{from: tokenWithFee.address, to: MaticTestnetAddresses.WMATIC_TOKEN, stable: true}],
+      [{from: tokenWithFee.address, to: wmatic.address, stable: true}],
       owner.address,
       99999999999,
     );
@@ -458,7 +460,7 @@ describe("router tests", function () {
     expect(await router.getExactAmountOut(
       parseUnits('0.1'),
       tokenWithFee.address,
-      MaticTestnetAddresses.WMATIC_TOKEN,
+      wmatic.address,
       true,
     )).is.eq(0);
 
@@ -478,7 +480,7 @@ describe("router tests", function () {
     expect(await router.getExactAmountOut(
       parseUnits('0.1'),
       tokenWithFee.address,
-      MaticTestnetAddresses.WMATIC_TOKEN,
+      wmatic.address,
       true,
     )).is.not.eq(0);
   });

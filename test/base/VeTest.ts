@@ -95,7 +95,7 @@ describe("ve tests", function () {
   });
 
   it("increase_unlock_time test", async function () {
-    await TimeUtils.advanceBlocksOnTs(10000);
+    await TimeUtils.advanceBlocksOnTs(60 * 60 * 24 * 365 * 3);
     await core.ve.increase_unlock_time(1, 60 * 60 * 24 * 365 * 4);
     await expect(core.ve.increase_unlock_time(1, 60 * 60 * 24 * 365 * 5)).revertedWith('Voting lock can be 4 years max');
   });

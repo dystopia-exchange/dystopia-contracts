@@ -18,12 +18,15 @@ const argv = require('yargs/yargs')()
   .options({
     hardhatChainId: {
       type: "number",
+      default: 31337
     },
     maticRpcUrl: {
       type: "string",
+      default: ''
     },
     mumbaiRpcUrl: {
       type: "string",
+      default: ''
     },
     ethRpcUrl: {
       type: "string",
@@ -35,6 +38,7 @@ const argv = require('yargs/yargs')()
     },
     networkScanKey: {
       type: "string",
+      default: ''
     },
     privateKey: {
       type: "string",
@@ -42,7 +46,6 @@ const argv = require('yargs/yargs')()
     },
     maticForkBlock: {
       type: "number",
-      default: 23945980
     },
     mumbaiForkBlock: {
       type: "number",

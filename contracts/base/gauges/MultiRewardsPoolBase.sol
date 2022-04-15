@@ -109,44 +109,35 @@ abstract contract MultiRewardsPoolBase is Reentrancy {
 
   function _deposit(uint amount) internal virtual lock {
     require(amount > 0, "Zero amount");
+    _increaseBalance(msg.sender, amount);
+    IERC20(underlying).safeTransferFrom(msg.sender, address(this), amount);
+    emit Deposit(msg.sender, amount);
+  }
 
+  function _increaseBalance(address account, uint amount) internal virtual {
     _updateRewardForAllTokens();
 
-    IERC20(underlying).safeTransferFrom(msg.sender, address(this), amount);
     totalSupply += amount;
-    balanceOf[msg.sender] += amount;
+    balanceOf[account] += amount;
 
-    uint __derivedBalance = derivedBalances[msg.sender];
-    derivedSupply -= __derivedBalance;
-    __derivedBalance = _derivedBalance(msg.sender);
-    derivedBalances[msg.sender] = __derivedBalance;
-    derivedSupply += __derivedBalance;
-
-    _writeCheckpoint(msg.sender, __derivedBalance);
-    _writeSupplyCheckpoint();
-
-    emit Deposit(msg.sender, amount);
+    _updateDerivedBalanceAndWriteCheckpoints(account);
   }
 
   function withdraw(uint amount) external virtual;
 
   function _withdraw(uint amount) internal lock virtual {
+    _decreaseBalance(msg.sender, amount);
+    IERC20(underlying).safeTransfer(msg.sender, amount);
+    emit Withdraw(msg.sender, amount);
+  }
+
+  function _decreaseBalance(address account, uint amount) internal virtual {
     _updateRewardForAllTokens();
 
     totalSupply -= amount;
-    balanceOf[msg.sender] -= amount;
-    IERC20(underlying).safeTransfer(msg.sender, amount);
+    balanceOf[account] -= amount;
 
-    uint __derivedBalance = derivedBalances[msg.sender];
-    derivedSupply -= __derivedBalance;
-    __derivedBalance = _derivedBalance(msg.sender);
-    derivedBalances[msg.sender] = __derivedBalance;
-    derivedSupply += __derivedBalance;
-
-    _writeCheckpoint(msg.sender, __derivedBalance);
-    _writeSupplyCheckpoint();
-
-    emit Withdraw(msg.sender, amount);
+    _updateDerivedBalanceAndWriteCheckpoints(account);
   }
 
   function getReward(address account, address[] memory tokens) external virtual;
@@ -155,7 +146,7 @@ abstract contract MultiRewardsPoolBase is Reentrancy {
     require(msg.sender == account, "Forbidden");
 
     for (uint i = 0; i < tokens.length; i++) {
-      (rewardPerTokenStored[tokens[i]], lastUpdateTime[tokens[i]]) = _updateRewardPerToken(tokens[i]);
+      (rewardPerTokenStored[tokens[i]], lastUpdateTime[tokens[i]]) = _updateRewardPerToken(tokens[i], type(uint).max, true);
 
       uint _reward = _earned(tokens[i], account);
       lastEarn[tokens[i]][account] = block.timestamp;
@@ -167,6 +158,10 @@ abstract contract MultiRewardsPoolBase is Reentrancy {
       emit ClaimRewards(msg.sender, tokens[i], _reward);
     }
 
+    _updateDerivedBalanceAndWriteCheckpoints(account);
+  }
+
+  function _updateDerivedBalanceAndWriteCheckpoints(address account) internal {
     uint __derivedBalance = derivedBalances[account];
     derivedSupply -= __derivedBalance;
     __derivedBalance = _derivedBalance(account);
@@ -214,15 +209,25 @@ abstract contract MultiRewardsPoolBase is Reentrancy {
   }
 
   function _derivedBalance(address account) internal virtual view returns (uint) {
-    // assume to be implemented in a parent contract
+    // supposed to be implemented in a parent contract
     return balanceOf[account];
   }
 
-  function batchRewardPerToken(address token, uint maxRuns) external {
-    (rewardPerTokenStored[token], lastUpdateTime[token]) = _batchRewardPerToken(token, maxRuns);
+  /// @dev If the contract will get "out of gas" error on users actions this will be helpful
+  function batchUpdateRewardPerToken(address token, uint maxRuns) external {
+    (rewardPerTokenStored[token], lastUpdateTime[token]) = _updateRewardPerToken(token, maxRuns, false);
   }
 
-  function _batchRewardPerToken(address token, uint maxRuns) internal returns (uint, uint) {
+  function _updateRewardForAllTokens() internal {
+    uint length = rewardTokens.length;
+    for (uint i; i < length; i++) {
+      address token = rewardTokens[i];
+      (rewardPerTokenStored[token], lastUpdateTime[token]) = _updateRewardPerToken(token, type(uint).max, true);
+    }
+  }
+
+  /// @dev Should be called only with properly updated snapshots, or with actualLast=false
+  function _updateRewardPerToken(address token, uint maxRuns, bool actualLast) internal returns (uint, uint) {
     uint _startTimestamp = lastUpdateTime[token];
     uint reward = rewardPerTokenStored[token];
 
@@ -233,18 +238,36 @@ abstract contract MultiRewardsPoolBase is Reentrancy {
     if (rewardRate[token] == 0) {
       return (reward, block.timestamp);
     }
-
     uint _startIndex = _getPriorSupplyIndex(_startTimestamp);
     uint _endIndex = Math.min(supplyNumCheckpoints - 1, maxRuns);
 
-    for (uint i = _startIndex; i < _endIndex; i++) {
-      CheckpointLib.Checkpoint memory sp0 = supplyCheckpoints[i];
-      if (sp0.value > 0) {
-        CheckpointLib.Checkpoint memory sp1 = supplyCheckpoints[i + 1];
-        (uint _reward, uint _endTime) = _calcRewardPerToken(token, sp1.timestamp, sp0.timestamp, sp0.value, _startTimestamp);
+    if (_endIndex > 0) {
+      uint _endIndexLoop;
+      if (actualLast) {
+        _endIndexLoop = _endIndex - 1;
+      } else {
+        _endIndexLoop = _endIndex;
+      }
+      for (uint i = _startIndex; i <= _endIndexLoop; i++) {
+        CheckpointLib.Checkpoint memory sp0 = supplyCheckpoints[i];
+        if (sp0.value > 0) {
+          CheckpointLib.Checkpoint memory sp1 = supplyCheckpoints[i + 1];
+          (uint _reward, uint _endTime) = _calcRewardPerToken(token, sp1.timestamp, sp0.timestamp, sp0.value, _startTimestamp);
+          reward += _reward;
+          _writeRewardPerTokenCheckpoint(token, reward, _endTime);
+          _startTimestamp = _endTime;
+        }
+      }
+    }
+
+    // need to override the last value with actual numbers only on deposit/withdraw/claim/notify actions
+    if (actualLast) {
+      CheckpointLib.Checkpoint memory sp = supplyCheckpoints[_endIndex];
+      if (sp.value > 0) {
+        (uint _reward,) = _calcRewardPerToken(token, _lastTimeRewardApplicable(token), Math.max(sp.timestamp, _startTimestamp), sp.value, _startTimestamp);
         reward += _reward;
-        _writeRewardPerTokenCheckpoint(token, reward, _endTime);
-        _startTimestamp = _endTime;
+        _writeRewardPerTokenCheckpoint(token, reward, block.timestamp);
+        _startTimestamp = block.timestamp;
       }
     }
 
@@ -266,52 +289,6 @@ abstract contract MultiRewardsPoolBase is Reentrancy {
     , endTime);
   }
 
-  function _updateRewardForAllTokens() internal {
-    uint length = rewardTokens.length;
-    for (uint i; i < length; i++) {
-      address token = rewardTokens[i];
-      (rewardPerTokenStored[token], lastUpdateTime[token]) = _updateRewardPerToken(token);
-    }
-  }
-
-  function _updateRewardPerToken(address token) internal returns (uint, uint) {
-    uint _startTimestamp = lastUpdateTime[token];
-    uint reward = rewardPerTokenStored[token];
-
-    if (supplyNumCheckpoints == 0) {
-      return (reward, _startTimestamp);
-    }
-
-    if (rewardRate[token] == 0) {
-      return (reward, block.timestamp);
-    }
-    uint _startIndex = _getPriorSupplyIndex(_startTimestamp);
-    uint _endIndex = supplyNumCheckpoints - 1;
-
-    if (_endIndex > 0) {
-      for (uint i = _startIndex; i <= _endIndex - 1; i++) {
-        CheckpointLib.Checkpoint memory sp0 = supplyCheckpoints[i];
-        if (sp0.value > 0) {
-          CheckpointLib.Checkpoint memory sp1 = supplyCheckpoints[i + 1];
-          (uint _reward, uint _endTime) = _calcRewardPerToken(token, sp1.timestamp, sp0.timestamp, sp0.value, _startTimestamp);
-          reward += _reward;
-          _writeRewardPerTokenCheckpoint(token, reward, _endTime);
-          _startTimestamp = _endTime;
-        }
-      }
-    }
-
-    CheckpointLib.Checkpoint memory sp = supplyCheckpoints[_endIndex];
-    if (sp.value > 0) {
-      (uint _reward,) = _calcRewardPerToken(token, _lastTimeRewardApplicable(token), Math.max(sp.timestamp, _startTimestamp), sp.value, _startTimestamp);
-      reward += _reward;
-      _writeRewardPerTokenCheckpoint(token, reward, block.timestamp);
-      _startTimestamp = block.timestamp;
-    }
-
-    return (reward, _startTimestamp);
-  }
-
   /// @dev Returns the last time the reward was modified or periodFinish if the reward has ended
   function _lastTimeRewardApplicable(address token) internal view returns (uint) {
     return Math.min(block.timestamp, periodFinish[token]);
@@ -328,7 +305,7 @@ abstract contract MultiRewardsPoolBase is Reentrancy {
     if (rewardRate[token] == 0) {
       _writeRewardPerTokenCheckpoint(token, 0, block.timestamp);
     }
-    (rewardPerTokenStored[token], lastUpdateTime[token]) = _updateRewardPerToken(token);
+    (rewardPerTokenStored[token], lastUpdateTime[token]) = _updateRewardPerToken(token, type(uint).max, true);
 
     if (block.timestamp >= periodFinish[token]) {
       IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
@@ -342,9 +319,7 @@ abstract contract MultiRewardsPoolBase is Reentrancy {
       IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
       rewardRate[token] = (amount * PRECISION + _left) / DURATION;
     }
-    require(rewardRate[token] > 0, "Zero reward rate");
-    uint balance = IERC20(token).balanceOf(address(this));
-    require(rewardRate[token] / PRECISION <= balance / DURATION, "Provided reward too high");
+
     periodFinish[token] = block.timestamp + DURATION;
     if (!isReward[token]) {
       require(rewardTokens.length < MAX_REWARD_TOKENS, "Too many reward tokens");

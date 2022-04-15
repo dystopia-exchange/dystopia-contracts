@@ -3,7 +3,6 @@ import {ethers} from "hardhat";
 import chai from "chai";
 import {Deploy} from "../../scripts/deploy/Deploy";
 import {TimeUtils} from "../TimeUtils";
-import {MaticTestnetAddresses} from "../../scripts/addresses/MaticTestnetAddresses";
 import {utils} from "ethers";
 import {CoreAddresses} from "../../scripts/deploy/CoreAddresses";
 import {Misc} from "../../scripts/Misc";
@@ -96,6 +95,7 @@ describe("ve tests", function () {
   });
 
   it("increase_unlock_time test", async function () {
+    await TimeUtils.advanceBlocksOnTs(1);
     await core.ve.increase_unlock_time(1, 60 * 60 * 24 * 365 * 4);
     await expect(core.ve.increase_unlock_time(1, 60 * 60 * 24 * 365 * 5)).revertedWith('Voting lock can be 4 years max');
   });

@@ -185,8 +185,8 @@ describe("emission tests", function () {
     // minter without enough token should distribute everything to veDist and voter
     expect(await core.token.balanceOf(core.minter.address)).is.eq(0);
     // not exact amount coz veDYST balance fluctuation during time
-    TestHelper.closer(await core.token.balanceOf(core.veDist.address), parseUnits('965618'), parseUnits('3000'));
-    TestHelper.closer(await core.token.balanceOf(core.voter.address), parseUnits('980000'), parseUnits('3000'));
+    TestHelper.closer(await core.token.balanceOf(core.veDist.address), parseUnits('965618'), parseUnits('10000'));
+    TestHelper.closer(await core.token.balanceOf(core.voter.address), parseUnits('980000'), parseUnits('10000'));
 
     // ------------ CHECK CLAIM VE ----------
 
@@ -199,7 +199,7 @@ describe("emission tests", function () {
     await core.veDist.claim(1);
 
     // claimed DYST will be deposited to veDYST
-    TestHelper.closer((await core.ve.locked(1)).amount, toClaim.add(veBalance), parseUnits('1000'));
+    TestHelper.closer((await core.ve.locked(1)).amount, toClaim.add(veBalance), parseUnits('10000'));
 
     // ----------- CHECK CLAIM GAUGE ----------
     expect(await core.token.balanceOf(gaugeMimUst.address)).is.eq(0);
@@ -210,7 +210,7 @@ describe("emission tests", function () {
 
     // voter has some dust after distribution
     TestHelper.closer(await core.token.balanceOf(core.voter.address), parseUnits('0'), parseUnits('100'));
-    TestHelper.closer(await core.token.balanceOf(gaugeMimUst.address), parseUnits('979999'), parseUnits('3000'));
+    TestHelper.closer(await core.token.balanceOf(gaugeMimUst.address), parseUnits('979999'), parseUnits('10000'));
 
     expect(await core.token.balanceOf(owner.address)).is.eq(0);
 
@@ -222,7 +222,7 @@ describe("emission tests", function () {
     await TimeUtils.advanceBlocksOnTs(WEEK);
 
     await gaugeMimUst.getReward(owner.address, [core.token.address]);
-    TestHelper.closer(await core.token.balanceOf(owner.address), parseUnits('979999'), parseUnits('3000'));
+    TestHelper.closer(await core.token.balanceOf(owner.address), parseUnits('979999'), parseUnits('10000'));
   });
 
   // for manual testing

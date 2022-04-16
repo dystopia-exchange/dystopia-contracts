@@ -30,11 +30,12 @@ contract BaseV1Pair is IERC20, IPair {
   bytes32 public DOMAIN_SEPARATOR;
   // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
   bytes32 public constant PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
+  uint internal constant _FEE_PRECISION = 1e32;
   mapping(address => uint) public nonces;
   uint public chainId;
 
   uint internal constant MINIMUM_LIQUIDITY = 10 ** 3;
-  /// @dev 0.1% swap fee
+  /// @dev 0.05% swap fee
   uint internal constant SWAP_FEE = 2000;
   /// @dev 50% of swap fee
   uint internal constant TREASURY_FEE = 2;
@@ -178,8 +179,8 @@ contract BaseV1Pair is IERC20, IPair {
     // transfer the fees out to BaseV1Fees and Treasury
     _safeTransfer(token0, treasury, toTreasury);
     _safeTransfer(token0, fees, toFees);
-    // 1e18 adjustment is removed during claim
-    uint256 _ratio = toFees * 1e18 / totalSupply;
+    // 1e32 adjustment is removed during claim
+    uint256 _ratio = toFees * _FEE_PRECISION / totalSupply;
     if (_ratio > 0) {
       index0 += _ratio;
     }
@@ -195,7 +196,7 @@ contract BaseV1Pair is IERC20, IPair {
 
     _safeTransfer(token1, treasury, toTreasury);
     _safeTransfer(token1, fees, toFees);
-    uint256 _ratio = toFees * 1e18 / totalSupply;
+    uint256 _ratio = toFees * _FEE_PRECISION / totalSupply;
     if (_ratio > 0) {
       index1 += _ratio;
     }
@@ -224,12 +225,12 @@ contract BaseV1Pair is IERC20, IPair {
       // see if there is any difference that need to be accrued
       uint _delta1 = _index1 - _supplyIndex1;
       if (_delta0 > 0) {
-        uint _share = _supplied * _delta0 / 1e18;
+        uint _share = _supplied * _delta0 / _FEE_PRECISION;
         // add accrued difference for each supplied token
         claimable0[recipient] += _share;
       }
       if (_delta1 > 0) {
-        uint _share = _supplied * _delta1 / 1e18;
+        uint _share = _supplied * _delta1 / _FEE_PRECISION;
         claimable1[recipient] += _share;
       }
     } else {

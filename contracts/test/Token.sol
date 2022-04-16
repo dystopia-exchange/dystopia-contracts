@@ -2,7 +2,14 @@
 
 pragma solidity ^0.8.13;
 
+import "../lib/Address.sol";
+import "../lib/Base64.sol";
+import "../lib/CheckpointLib.sol";
+import "../lib/Math.sol";
+
 contract Token {
+  using Address for address;
+  using CheckpointLib for mapping(uint => CheckpointLib.Checkpoint);
 
   string public symbol;
   string public name;
@@ -11,6 +18,7 @@ contract Token {
 
   mapping(address => uint256) public balanceOf;
   mapping(address => mapping(address => uint256)) public allowance;
+  mapping(uint => CheckpointLib.Checkpoint) private _checkpoints;
 
   event Transfer(address from, address to, uint256 value);
   event Approval(address owner, address spender, uint256 value);
@@ -110,6 +118,7 @@ contract Token {
     uint256 _value
   ) public returns (bool) {
     uint256 allowed_from = allowance[_from][msg.sender];
+    require(allowance[_from][msg.sender] >= _value, "Not enough allowance");
     if (allowed_from != type(uint).max) {
       allowance[_from][msg.sender] -= _value;
     }
@@ -127,6 +136,26 @@ contract Token {
 
     emit Transfer(account, address(0), amount);
     return true;
+  }
+
+  function testWrongCall() external {
+    (address(0)).functionCall("", "");
+  }
+
+  function testWrongCall2() external {
+    address(this).functionCall(abi.encodeWithSelector(Token(this).transfer.selector, address(this), type(uint).max), "wrong");
+  }
+
+  function encode64(bytes memory data) external pure returns (string memory){
+    return Base64.encode(data);
+  }
+
+  function sqrt(uint value) external pure returns (uint){
+    return Math.sqrt(value);
+  }
+
+  function testWrongCheckpoint() external view {
+    _checkpoints.findLowerIndex(0, 0);
   }
 
   // --------------------- WMATIC

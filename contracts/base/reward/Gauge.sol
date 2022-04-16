@@ -45,14 +45,14 @@ contract Gauge is IGauge, MultiRewardsPoolBase {
       uint _fees0 = fees0 + claimed0;
       uint _fees1 = fees1 + claimed1;
       (address _token0, address _token1) = IPair(_underlying).tokens();
-      if (_fees0 > IMultiRewardsPool(bribe).left(_token0) && _fees0 / DURATION > 0) {
+      if (_fees0 > IMultiRewardsPool(bribe).left(_token0)) {
         fees0 = 0;
         IERC20(_token0).safeIncreaseAllowance(bribe, _fees0);
         IBribe(bribe).notifyRewardAmount(_token0, _fees0);
       } else {
         fees0 = _fees0;
       }
-      if (_fees1 > IMultiRewardsPool(bribe).left(_token1) && _fees1 / DURATION > 0) {
+      if (_fees1 > IMultiRewardsPool(bribe).left(_token1)) {
         fees1 = 0;
         IERC20(_token1).safeIncreaseAllowance(bribe, _fees1);
         IBribe(bribe).notifyRewardAmount(_token1, _fees1);
@@ -71,17 +71,14 @@ contract Gauge is IGauge, MultiRewardsPoolBase {
   }
 
   function depositAll(uint tokenId) external {
-    _deposit(IERC20(underlying).balanceOf(msg.sender));
-    if (tokenId > 0) {
-      _lockVeToken(msg.sender, tokenId);
-    }
+    deposit(IERC20(underlying).balanceOf(msg.sender), tokenId);
   }
 
-  function deposit(uint amount, uint tokenId) external {
-    _deposit(amount);
+  function deposit(uint amount, uint tokenId) public {
     if (tokenId > 0) {
       _lockVeToken(msg.sender, tokenId);
     }
+    _deposit(amount);
   }
 
   function withdrawAll() external {
@@ -103,6 +100,8 @@ contract Gauge is IGauge, MultiRewardsPoolBase {
     _withdraw(amount);
   }
 
+  /// @dev Balance should be recalculated after the lock
+  ///      For locking a new ve token withdraw all funds and deposit again
   function _lockVeToken(address account, uint tokenId) internal {
     require(IERC721(_ve).ownerOf(tokenId) == account, "Not ve token owner");
     if (tokenIds[account] == 0) {
@@ -113,6 +112,7 @@ contract Gauge is IGauge, MultiRewardsPoolBase {
     emit VeTokenLocked(account, tokenId);
   }
 
+  /// @dev Balance should be recalculated after the unlock
   function _unlockVeToken(address account, uint tokenId) internal {
     require(tokenId == tokenIds[account], "Wrong token");
     tokenIds[account] = 0;
@@ -120,6 +120,7 @@ contract Gauge is IGauge, MultiRewardsPoolBase {
     emit VeTokenUnlocked(account, tokenId);
   }
 
+  /// @dev Similar to Curve https://resources.curve.fi/reward-gauges/boosting-your-crv-rewards#formula
   function _derivedBalance(address account) internal override view returns (uint) {
     uint _tokenId = tokenIds[account];
     uint _balance = balanceOf[account];
@@ -127,8 +128,7 @@ contract Gauge is IGauge, MultiRewardsPoolBase {
     uint _adjusted = 0;
     uint _supply = IERC20(_ve).totalSupply();
     if (account == IERC721(_ve).ownerOf(_tokenId) && _supply > 0) {
-      _adjusted = IVe(_ve).balanceOfNFT(_tokenId);
-      _adjusted = (totalSupply * _adjusted / _supply) * 60 / 100;
+      _adjusted = (totalSupply * IVe(_ve).balanceOfNFT(_tokenId) / _supply) * 60 / 100;
     }
     return Math.min((_derived + _adjusted), _balance);
   }

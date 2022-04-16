@@ -12,13 +12,14 @@ import "./MultiRewardsPoolBase.sol";
 ///        that were received from the user (goes hand in hand with BaseV1Gauges.vote())
 contract Bribe is IBribe, MultiRewardsPoolBase {
 
-  /// @dev Only factory can modify balances (since it only happens on vote())
-  address public immutable factory;
+  /// @dev Only voter can modify balances (since it only happens on vote())
+  address public immutable voter;
   address public immutable _ve;
 
-  constructor(address _factory) MultiRewardsPoolBase(address(0)) {
-    factory = _factory;
-    _ve = IVoter(_factory)._ve();
+  // Assume that will be created from voter contract through factory
+  constructor(address _voter) MultiRewardsPoolBase(address(0)) {
+    voter = _voter;
+    _ve = IVoter(_voter)._ve();
   }
 
   function getReward(uint tokenId, address[] memory tokens) external {
@@ -28,7 +29,7 @@ contract Bribe is IBribe, MultiRewardsPoolBase {
 
   /// @dev Used by BaseV1Voter to allow batched reward claims
   function getRewardForOwner(uint tokenId, address[] memory tokens) external override {
-    require(msg.sender == factory, "Not factory");
+    require(msg.sender == voter, "Not voter");
     address owner = IERC721(_ve).ownerOf(tokenId);
     _getReward(_tokenIdToAddress(tokenId), tokens, owner);
   }
@@ -36,7 +37,7 @@ contract Bribe is IBribe, MultiRewardsPoolBase {
   /// @dev This is an external function, but internal notation is used
   ///      since it can only be called "internally" from BaseV1Gauges
   function _deposit(uint amount, uint tokenId) external override {
-    require(msg.sender == factory, "Not factory");
+    require(msg.sender == voter, "Not voter");
     require(amount > 0, "Zero amount");
 
     address adr = _tokenIdToAddress(tokenId);
@@ -45,7 +46,7 @@ contract Bribe is IBribe, MultiRewardsPoolBase {
   }
 
   function _withdraw(uint amount, uint tokenId) external override {
-    require(msg.sender == factory, "Not factory");
+    require(msg.sender == voter, "Not voter");
     require(amount > 0, "Zero amount");
 
     address adr = _tokenIdToAddress(tokenId);

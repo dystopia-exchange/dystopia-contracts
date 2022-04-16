@@ -40,17 +40,17 @@ contract BaseV1Factory is IFactory {
   }
 
   function setPauser(address _pauser) external {
-    require(msg.sender == pauser);
+    require(msg.sender == pauser, "Not pauser");
     pendingPauser = _pauser;
   }
 
   function acceptPauser() external {
-    require(msg.sender == pendingPauser);
+    require(msg.sender == pendingPauser, "Not pending pauser");
     pauser = pendingPauser;
   }
 
   function setPause(bool _state) external {
-    require(msg.sender == pauser);
+    require(msg.sender == pauser, "Not pauser");
     isPaused = _state;
   }
 

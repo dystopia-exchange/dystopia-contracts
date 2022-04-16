@@ -120,6 +120,8 @@ describe("emission tests", function () {
     await mimUstPair.approve(gaugeMimUst.address, parseUnits('999999999999'));
     await gaugeMimUst.depositAll(0);
     await gaugeMimUst.withdrawAll();
+    await gaugeMimUst.depositAll(1);
+    await gaugeMimUst.withdrawAll();
   });
 
   it("early update period should do nothing", async function () {

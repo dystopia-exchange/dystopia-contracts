@@ -330,4 +330,11 @@ describe("voter tests", function () {
     await core.voter["distribute(address[])"]([gaugeMimUst.address]);
   });
 
+  it("whitelist new token", async function () {
+    const mockToken = await Deploy.deployContract(owner, 'Token', 'MOCK', 'MOCK', 10, owner.address) as Token;
+    await mockToken.mint(owner.address, utils.parseUnits('1000000000000', 10));
+    await core.voter.whitelist(mockToken.address, 1);
+    expect(await core.voter.isWhitelisted(mockToken.address)).is.eq(true);
+  });
+
 });

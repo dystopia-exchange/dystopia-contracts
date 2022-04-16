@@ -1,0 +1,71 @@
+import {BaseV1Factory, BrokenToken, Token} from "../../typechain";
+import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
+import {ethers} from "hardhat";
+import chai from "chai";
+import {Deploy} from "../../scripts/deploy/Deploy";
+import {TimeUtils} from "../TimeUtils";
+import {parseUnits} from "ethers/lib/utils";
+
+const {expect} = chai;
+
+describe("factory tests", function () {
+
+  let snapshotBefore: string;
+  let snapshot: string;
+
+  let owner: SignerWithAddress;
+  let owner2: SignerWithAddress;
+  let mim: Token;
+
+  before(async function () {
+    snapshotBefore = await TimeUtils.snapshot();
+    [owner, owner2] = await ethers.getSigners();
+    mim = await Deploy.deployContract(owner, 'Token', 'WMATIC', 'WMATIC', 18, owner.address) as Token;
+  });
+
+  after(async function () {
+    await TimeUtils.rollback(snapshotBefore);
+  });
+
+
+  beforeEach(async function () {
+    snapshot = await TimeUtils.snapshot();
+  });
+
+  afterEach(async function () {
+    await TimeUtils.rollback(snapshot);
+  });
+
+
+  it("mock token transfer reject without allowance for cover Address lib", async function () {
+    await expect(mim.transferFrom(owner2.address, owner.address, 1)).revertedWith('Not enough allowance');
+  });
+
+  it("encode empty test", async function () {
+    expect(await mim.encode64('0x')).eq('');
+  });
+
+  it("sqrt tests", async function () {
+    expect(await mim.sqrt(0)).eq(0);
+    expect(await mim.sqrt(1)).eq(1);
+  });
+
+  it("mock token call wrong2 for cover Address lib", async function () {
+    await expect(mim.testWrongCall2()).revertedWith('');
+  });
+
+  it("mock token call wrong for cover Address lib", async function () {
+    await expect(mim.testWrongCheckpoint()).revertedWith('Empty checkpoints');
+  });
+
+  it("mock token test wrong call", async function () {
+    await expect(mim.testWrongCall()).revertedWith('Address: call to non-contract');
+  });
+
+  it("broken token", async function () {
+    const t = await Deploy.deployContract(owner, 'BrokenToken') as BrokenToken;
+    await t.testBrokenTransfer();
+  });
+
+
+});

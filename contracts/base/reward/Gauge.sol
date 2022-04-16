@@ -100,6 +100,8 @@ contract Gauge is IGauge, MultiRewardsPoolBase {
     _withdraw(amount);
   }
 
+  /// @dev Balance should be recalculated after the lock
+  ///      For locking a new ve token withdraw all funds and deposit again
   function _lockVeToken(address account, uint tokenId) internal {
     require(IERC721(_ve).ownerOf(tokenId) == account, "Not ve token owner");
     if (tokenIds[account] == 0) {
@@ -110,6 +112,7 @@ contract Gauge is IGauge, MultiRewardsPoolBase {
     emit VeTokenLocked(account, tokenId);
   }
 
+  /// @dev Balance should be recalculated after the unlock
   function _unlockVeToken(address account, uint tokenId) internal {
     require(tokenId == tokenIds[account], "Wrong token");
     tokenIds[account] = 0;
@@ -117,6 +120,7 @@ contract Gauge is IGauge, MultiRewardsPoolBase {
     emit VeTokenUnlocked(account, tokenId);
   }
 
+  /// @dev Similar to Curve https://resources.curve.fi/reward-gauges/boosting-your-crv-rewards#formula
   function _derivedBalance(address account) internal override view returns (uint) {
     uint _tokenId = tokenIds[account];
     uint _balance = balanceOf[account];

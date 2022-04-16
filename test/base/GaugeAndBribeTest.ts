@@ -66,9 +66,9 @@ describe("gauge and bribe tests", function () {
       owner,
       wmatic.address,
       [wmatic.address, ust.address, mim.address, dai.address],
-      [owner.address, owner2.address],
-      [utils.parseUnits('100'), utils.parseUnits('100')],
-      utils.parseUnits('200')
+      [owner.address, owner2.address, owner.address],
+      [utils.parseUnits('100'), utils.parseUnits('100'), BigNumber.from(100)],
+      utils.parseUnits('200').add(100)
     );
 
     mimUstPair = await TestHelper.addLiquidity(
@@ -242,8 +242,8 @@ describe("gauge and bribe tests", function () {
     await TimeUtils.advanceBlocksOnTs(WEEK / 2);
 
     // should not reset rewards after deposit and withdraw
-    await gaugeMimUst.connect(owner2).withdrawAll()
-    await depositToGauge(core, owner3, mim.address, ust.address, gaugeMimUst, 0);
+    await gaugeMimUst.connect(owner3).withdrawAll()
+    await depositToGauge(core, owner2, mim.address, ust.address, gaugeMimUst, 2);
 
     await gaugeMimUst.connect(owner2).getReward(owner2.address, [core.token.address]);
     await gaugeMimUst.connect(owner3).getReward(owner3.address, [core.token.address]);
@@ -416,6 +416,26 @@ describe("gauge and bribe tests", function () {
 
   it("bribe tokenIdToAddress should be rejected with too high tokenId", async function () {
     expect(await bribeMimUst.addressToTokenId(await bribeMimUst.tokenIdToAddress(1))).is.eq(1);
+  });
+
+  it("deposit with another tokenId should be rejected", async function () {
+    expect(await gaugeMimUst.tokenIds(owner.address)).is.eq(1);
+    await TestHelper.addLiquidity(
+      core.factory,
+      core.router,
+      owner,
+      mim.address,
+      ust.address,
+      utils.parseUnits('1'),
+      utils.parseUnits('1', 6),
+      true
+    );
+    const pairAdr = await core.factory.getPair(mim.address, ust.address, true)
+    const pair = BaseV1Pair__factory.connect(pairAdr, owner);
+    const pairBalance = await pair.balanceOf(owner.address);
+    expect(pairBalance).is.not.eq(0);
+    await pair.approve(gaugeMimUst.address, pairBalance);
+    await expect(gaugeMimUst.deposit(pairBalance, 3)).revertedWith('Wrong token');
   });
 
 });

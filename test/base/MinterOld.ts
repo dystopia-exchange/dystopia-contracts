@@ -1,7 +1,7 @@
 /* tslint:disable:variable-name no-shadowed-variable ban-types no-var-requires no-any */
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { network } from "hardhat";
-import { BaseV1, BaseV1Minter, Token, Ve, VeDist } from "../../typechain";
+import { Dyst, DystMinter, Token, Ve, VeDist } from "../../typechain";
 import {Deploy} from "../../scripts/deploy/Deploy";
 
 const { expect } = require("chai");
@@ -26,20 +26,20 @@ const { ethers } = require("hardhat");
 describe("minter", function () {
 
   let token;
-  let ve_underlying:BaseV1;
+  let ve_underlying:Dyst;
   let ve:Ve;
   let owner:SignerWithAddress;
-  let minter:BaseV1Minter;
+  let minter:DystMinter;
   let ve_dist:VeDist;
 
   it("deploy base", async function () {
     [owner] = await ethers.getSigners(0);
     console.log(owner,ethers.getSigners(1))
     token = await ethers.getContractFactory("Token");
-    const basev1 = await ethers.getContractFactory("BaseV1");
+    const Dyst = await ethers.getContractFactory("Dyst");
     const mim = await token.deploy('MIM', 'MIM', 18, owner.address);
     await mim.mint(owner.address, ethers.BigNumber.from("1000000000000000000000000000000"));
-    ve_underlying = await basev1.deploy();
+    ve_underlying = await Dyst.deploy();
     const vecontract = await ethers.getContractFactory("Ve");
     ve = await vecontract.deploy(ve_underlying.address);
     await ve_underlying.mint(owner.address, ethers.BigNumber.from("10000000000000000000000000"));
@@ -68,8 +68,8 @@ describe("minter", function () {
     await ve_dist.deployed();
     await ve.setVoter(gauge_factory.address);
 
-    const BaseV1Minter = await ethers.getContractFactory("BaseV1Minter");
-    minter = await BaseV1Minter.deploy(gauge_factory.address, ve.address, ve_dist.address);
+    const Minter = await ethers.getContractFactory("DystMinter");
+    minter = await Minter.deploy(gauge_factory.address, ve.address, ve_dist.address);
     await minter.deployed();
     await ve_dist.setDepositor(minter.address);
     await ve_underlying.setMinter(minter.address);
@@ -99,16 +99,16 @@ describe("minter", function () {
   });
 
   it("minter weekly distribute", async function () {
-    await minter.update_period();
+    await minter.updatePeriod();
     expect(await minter.weekly()).to.equal(ethers.BigNumber.from("5000000000000000000000000"));
     await network.provider.send("evm_increaseTime", [86400 * 7])
     await network.provider.send("evm_mine")
-    await minter.update_period();
+    await minter.updatePeriod();
     expect(await ve_dist.claimable(1)).to.equal(0);
     expect(await minter.weekly()).to.equal(ethers.BigNumber.from("5000000000000000000000000"));
     await network.provider.send("evm_increaseTime", [86400 * 7])
     await network.provider.send("evm_mine")
-    await minter.update_period();
+    await minter.updatePeriod();
     const claimable = await ve_dist.claimable(1);
     console.log(claimable)
     expect(claimable).to.be.above(ethers.BigNumber.from("140075078022969338"));
@@ -120,33 +120,33 @@ describe("minter", function () {
 
     const weekly = await minter.weekly();
     console.log(weekly);
-    console.log(await minter.calculate_growth(weekly));
+    console.log(await minter.calculateGrowth(weekly));
     console.log(await ve_underlying.totalSupply());
     console.log(await ve.totalSupply());
 
     await network.provider.send("evm_increaseTime", [86400 * 7])
     await network.provider.send("evm_mine")
-    await minter.update_period();
+    await minter.updatePeriod();
     console.log(await ve_dist.claimable(1));
     await ve_dist.claim(1);
     await network.provider.send("evm_increaseTime", [86400 * 7])
     await network.provider.send("evm_mine")
-    await minter.update_period();
+    await minter.updatePeriod();
     console.log(await ve_dist.claimable(1));
     await ve_dist.claim_many([1]);
     await network.provider.send("evm_increaseTime", [86400 * 7])
     await network.provider.send("evm_mine")
-    await minter.update_period();
+    await minter.updatePeriod();
     console.log(await ve_dist.claimable(1));
     await ve_dist.claim(1);
     await network.provider.send("evm_increaseTime", [86400 * 7])
     await network.provider.send("evm_mine")
-    await minter.update_period();
+    await minter.updatePeriod();
     console.log(await ve_dist.claimable(1));
     await ve_dist.claim_many([1]);
     await network.provider.send("evm_increaseTime", [86400 * 7])
     await network.provider.send("evm_mine")
-    await minter.update_period();
+    await minter.updatePeriod();
     console.log(await ve_dist.claimable(1));
     await ve_dist.claim(1);
   });

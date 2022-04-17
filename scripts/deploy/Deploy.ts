@@ -5,11 +5,11 @@ import logSettings from "../../log_settings";
 import {BigNumber, ContractFactory, utils} from "ethers";
 import {Libraries} from "hardhat-deploy/dist/types";
 import {
-  BaseV1,
+  Dyst,
   BaseV1BribeFactory,
   BaseV1Factory,
   BaseV1GaugeFactory,
-  BaseV1Minter,
+  DystMinter,
   BaseV1Router01,
   BaseV1Voter,
   GovernanceTreasury,
@@ -70,8 +70,8 @@ export class Deploy {
     return _factory.attach(receipt.contractAddress);
   }
 
-  public static async deployBaseV1(signer: SignerWithAddress) {
-    return (await Deploy.deployContract(signer, 'BaseV1')) as BaseV1;
+  public static async deployDyst(signer: SignerWithAddress) {
+    return (await Deploy.deployContract(signer, 'Dyst')) as Dyst;
   }
 
   public static async deployToken(signer: SignerWithAddress, name: string, symbol: string, decimal: number) {
@@ -127,7 +127,7 @@ export class Deploy {
     )) as BaseV1Voter;
   }
 
-  public static async deployBaseV1Minter(
+  public static async deployDystMinter(
     signer: SignerWithAddress,
     voter: string,
     ve: string,
@@ -135,11 +135,11 @@ export class Deploy {
   ) {
     return (await Deploy.deployContract(
       signer,
-      'BaseV1Minter',
+      'DystMinter',
       voter,
       ve,
       veDist,
-    )) as BaseV1Minter;
+    )) as DystMinter;
   }
 
   public static async deployCore(
@@ -151,7 +151,7 @@ export class Deploy {
     minterMax: BigNumber
   ) {
     const treasury = await Deploy.deployGovernanceTreasury(signer);
-    const token = await Deploy.deployBaseV1(signer);
+    const token = await Deploy.deployDyst(signer);
     const gaugesFactory = await Deploy.deployGaugeFactory(signer);
     const bribesFactory = await Deploy.deployBribeFactory(signer);
     const baseFactory = await Deploy.deployBaseV1Factory(signer, treasury.address);
@@ -160,7 +160,7 @@ export class Deploy {
     const ve = await Deploy.deployVe(signer, token.address);
     const veDist = await Deploy.deployVeDist(signer, ve.address);
     const voter = await Deploy.deployBaseV1Voter(signer, ve.address, baseFactory.address, gaugesFactory.address, bribesFactory.address);
-    const minter = await Deploy.deployBaseV1Minter(signer, voter.address, ve.address, veDist.address);
+    const minter = await Deploy.deployDystMinter(signer, voter.address, ve.address, veDist.address);
 
     await Misc.runAndWait(() => token.setMinter(minter.address));
     await Misc.runAndWait(() => ve.setVoter(voter.address));

@@ -1,9 +1,9 @@
 /* tslint:disable:variable-name no-shadowed-variable ban-types no-var-requires no-any */
 import {
-  BaseV1,
+  Dyst,
   BaseV1Factory,
   BaseV1GaugeFactory,
-  BaseV1Minter,
+  DystMinter,
   BaseV1Pair,
   BaseV1Router01,
   Bribe,
@@ -29,7 +29,7 @@ describe("core", function () {
   let ust: Token;
   let mim: Token;
   let dai: Token;
-  let ve_underlying: BaseV1;
+  let ve_underlying: Dyst;
   let late_reward: Token;
   let ve: Ve;
   let factory: BaseV1Factory;
@@ -45,7 +45,7 @@ describe("core", function () {
   let bribe: Bribe;
   let bribe2: Bribe;
   let bribe3: Bribe;
-  let minter: BaseV1Minter;
+  let minter: DystMinter;
   let ve_dist: VeDist;
   let staking: StakingRewards;
   let owner2: SignerWithAddress;
@@ -370,13 +370,13 @@ describe("core", function () {
     expect(await voter.length()).to.equal(0);
   });
 
-  it("deploy BaseV1Minter", async function () {
+  it("deploy Minter", async function () {
     const VeDist = await ethers.getContractFactory("VeDist");
     ve_dist = await VeDist.deploy(ve.address);
     await ve_dist.deployed();
 
-    const BaseV1Minter = await ethers.getContractFactory("BaseV1Minter");
-    minter = await BaseV1Minter.deploy(voter.address, ve.address, ve_dist.address);
+    const Minter = await ethers.getContractFactory("DystMinter");
+    minter = await Minter.deploy(voter.address, ve.address, ve_dist.address);
     await minter.deployed();
     await ve_dist.setDepositor(minter.address);
     await voter.initialize([ust.address, mim.address, dai.address, ve_underlying.address], minter.address);
@@ -657,7 +657,7 @@ describe("core", function () {
     console.log(await ve_dist.last_token_time());
     console.log(await ve_dist.timestamp());
     await minter.initialize([owner.address], [ethers.BigNumber.from("1000000000000000000")], ethers.BigNumber.from("1000000000000000000"));
-    await minter.update_period();
+    await minter.updatePeriod();
     await voter.updateGauge(gauge.address);
     console.log(await ve_underlying.balanceOf(ve_dist.address));
     console.log(await ve_dist.claimable(1));
@@ -827,7 +827,7 @@ describe("core", function () {
   it("minter mint", async function () {
     await network.provider.send("evm_increaseTime", [86400 * 7 * 2])
     await network.provider.send("evm_mine")
-    await minter.update_period();
+    await minter.updatePeriod();
     await voter.updateGauge(gauge.address);
     const claimable = await voter.claimable(gauge.address);
     await ve_underlying.approve(staking.address, claimable);

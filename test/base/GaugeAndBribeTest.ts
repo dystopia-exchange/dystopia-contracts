@@ -236,7 +236,7 @@ describe("gauge and bribe tests", function () {
     await depositToGauge(core, owner3, mim.address, ust.address, gaugeMimUst, 0);
 
     await TimeUtils.advanceBlocksOnTs(WEEK * 2);
-    await core.minter.update_period()
+    await core.minter.updatePeriod()
     await core.voter.distro();
 
     await TimeUtils.advanceBlocksOnTs(WEEK / 2);
@@ -262,7 +262,7 @@ describe("gauge and bribe tests", function () {
     await depositToGauge(core, owner3, mim.address, ust.address, gaugeMimUst, 0);
 
     await TimeUtils.advanceBlocksOnTs(WEEK * 2);
-    await core.minter.update_period()
+    await core.minter.updatePeriod()
     await core.voter.distro();
 
     await TimeUtils.advanceBlocksOnTs(WEEK);

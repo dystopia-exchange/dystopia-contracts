@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 
 import "../../interface/IERC20.sol";
 
-contract BaseV1 is IERC20 {
+contract Dyst is IERC20 {
 
   string public constant symbol = "DYST";
   string public constant name = "Dystopia token";

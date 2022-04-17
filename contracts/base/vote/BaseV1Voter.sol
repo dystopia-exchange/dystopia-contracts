@@ -329,7 +329,7 @@ contract BaseV1Voter is IVoter {
   }
 
   function distribute(address _gauge) public lock override {
-    IMinter(minter).update_period();
+    IMinter(minter).updatePeriod();
     _updateFor(_gauge);
     uint _claimable = claimable[_gauge];
     if (_claimable > IMultiRewardsPool(_gauge).left(base) && _claimable / DURATION > 0) {

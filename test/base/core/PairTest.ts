@@ -3,6 +3,7 @@ import {
   BaseV1Pair,
   BaseV1Router01,
   ContractTestHelper,
+  IERC20__factory,
   Token
 } from "../../../typechain";
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
@@ -250,6 +251,15 @@ describe("pair tests", function () {
     expect(r[1]).eq(r0[1]);
   });
 
+  it("reentrancy should revert", async function () {
+    await expect(pair2.swap(
+      10000,
+      10000,
+      ust.address,
+      ethers.utils.defaultAbiCoder.encode(['address'], [pair2.address])
+    )).revertedWith('Reentrant call');
+  });
+
   it("insufficient input amount", async function () {
     await expect(pair2.swap(10000000, 1000000, owner.address, '0x')).revertedWith('IIA');
   });
@@ -317,6 +327,36 @@ describe("pair tests", function () {
     const loop1 = await swapInLoop(owner, factory, router, 1);
     const loop100 = await swapInLoop(owner, factory, router, 10);
     expect(loop100.sub(loop1)).is.below(10);
+  });
+
+  it("swap gas", async function () {
+    const token0 = await pair.token0();
+    await IERC20__factory.connect(token0, owner).transfer(pair.address, 1000);
+    const tx = await pair.swap(0, 100, owner.address, '0x')
+    const receipt = await tx.wait()
+    expect(receipt.gasUsed).is.below(BigNumber.from(180000));
+  });
+
+  it("mint gas", async function () {
+    const token0 = await pair.token0();
+    const token1 = await pair.token1();
+    await IERC20__factory.connect(token0, owner).transfer(pair.address, 100000000);
+    await IERC20__factory.connect(token1, owner).transfer(pair.address, 100000000);
+    const tx = await pair.mint(owner.address);
+    const receipt = await tx.wait()
+    expect(receipt.gasUsed).below(BigNumber.from(140000));
+  });
+
+  it("burn gas", async function () {
+    const token0 = await pair.token0();
+    const token1 = await pair.token1();
+    await IERC20__factory.connect(token0, owner).transfer(pair.address, 100000000);
+    await IERC20__factory.connect(token1, owner).transfer(pair.address, 100000000);
+    await pair.mint(owner.address);
+    await IERC20__factory.connect(pair.address, owner).transfer(pair.address, 100000000)
+    const tx = await pair.burn(owner.address);
+    const receipt = await tx.wait()
+    expect(receipt.gasUsed).below(BigNumber.from(130000));
   });
 
 });

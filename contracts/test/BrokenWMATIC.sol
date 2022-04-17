@@ -2,15 +2,10 @@
 
 pragma solidity ^0.8.13;
 
-import "../lib/Address.sol";
-import "../lib/Base64.sol";
-import "../lib/CheckpointLib.sol";
-import "../lib/Math.sol";
-import "../base/core/BaseV1Pair.sol";
 
-contract Token {
-  using Address for address;
-  using CheckpointLib for mapping(uint => CheckpointLib.Checkpoint);
+contract BrokenWMATIC {
+
+  uint public i;
 
   string public symbol;
   string public name;
@@ -19,7 +14,6 @@ contract Token {
 
   mapping(address => uint256) public balanceOf;
   mapping(address => mapping(address => uint256)) public allowance;
-  mapping(uint => CheckpointLib.Checkpoint) private _checkpoints;
 
   event Transfer(address from, address to, uint256 value);
   event Approval(address owner, address spender, uint256 value);
@@ -139,33 +133,6 @@ contract Token {
     return true;
   }
 
-  function testWrongCall() external {
-    (address(0)).functionCall("", "");
-  }
-
-  function testWrongCall2() external {
-    address(this).functionCall(abi.encodeWithSelector(Token(this).transfer.selector, address(this), type(uint).max), "wrong");
-  }
-
-  function encode64(bytes memory data) external pure returns (string memory){
-    return Base64.encode(data);
-  }
-
-  function sqrt(uint value) external pure returns (uint){
-    return Math.sqrt(value);
-  }
-
-  function testWrongCheckpoint() external view {
-    _checkpoints.findLowerIndex(0, 0);
-  }
-
-  function hook(address, uint, uint, bytes calldata data) external {
-    address pair = abi.decode(data, (address));
-    BaseV1Pair(pair).swap(0, 0, address(this), "");
-  }
-
-  // --------------------- WMATIC
-
   // Error Code: No error.
   uint256 public constant ERR_NO_ERROR = 0x0;
 
@@ -200,9 +167,10 @@ contract Token {
     burn(msg.sender, amount);
 
     // if wFTM were burned, transfer native tokens back to the sender
-    payable(msg.sender).transfer(amount);
+//    payable(msg.sender).transfer(amount);
 
     // all went well here
-    return ERR_NO_ERROR;
+    return ERR_INVALID_ZERO_VALUE;
   }
+
 }

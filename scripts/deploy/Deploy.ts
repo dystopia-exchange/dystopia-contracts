@@ -6,12 +6,12 @@ import {BigNumber, ContractFactory, utils} from "ethers";
 import {Libraries} from "hardhat-deploy/dist/types";
 import {
   Dyst,
-  BaseV1BribeFactory,
-  BaseV1Factory,
-  BaseV1GaugeFactory,
+  BribeFactory,
+  DystFactory,
+  GaugeFactory,
   DystMinter,
-  BaseV1Router01,
-  BaseV1Voter,
+  DystRouter01,
+  DystVoter,
   GovernanceTreasury,
   Token,
   Ve,
@@ -79,27 +79,27 @@ export class Deploy {
   }
 
   public static async deployGaugeFactory(signer: SignerWithAddress) {
-    return (await Deploy.deployContract(signer, 'BaseV1GaugeFactory')) as BaseV1GaugeFactory;
+    return (await Deploy.deployContract(signer, 'GaugeFactory')) as GaugeFactory;
   }
 
   public static async deployBribeFactory(signer: SignerWithAddress) {
-    return (await Deploy.deployContract(signer, 'BaseV1BribeFactory')) as BaseV1BribeFactory;
+    return (await Deploy.deployContract(signer, 'BribeFactory')) as BribeFactory;
   }
 
-  public static async deployBaseV1Factory(signer: SignerWithAddress, treasury: string) {
-    return (await Deploy.deployContract(signer, 'BaseV1Factory', treasury)) as BaseV1Factory;
+  public static async deployDystFactory(signer: SignerWithAddress, treasury: string) {
+    return (await Deploy.deployContract(signer, 'DystFactory', treasury)) as DystFactory;
   }
 
   public static async deployGovernanceTreasury(signer: SignerWithAddress) {
     return (await Deploy.deployContract(signer, 'GovernanceTreasury')) as GovernanceTreasury;
   }
 
-  public static async deployBaseV1Router01(
+  public static async deployDystRouter01(
     signer: SignerWithAddress,
     factory: string,
     networkToken: string,
   ) {
-    return (await Deploy.deployContract(signer, 'BaseV1Router01', factory, networkToken)) as BaseV1Router01;
+    return (await Deploy.deployContract(signer, 'DystRouter01', factory, networkToken)) as DystRouter01;
   }
 
   public static async deployVe(signer: SignerWithAddress, token: string) {
@@ -110,7 +110,7 @@ export class Deploy {
     return (await Deploy.deployContract(signer, 'VeDist', ve)) as VeDist;
   }
 
-  public static async deployBaseV1Voter(
+  public static async deployDystVoter(
     signer: SignerWithAddress,
     ve: string,
     factory: string,
@@ -119,12 +119,12 @@ export class Deploy {
   ) {
     return (await Deploy.deployContract(
       signer,
-      'BaseV1Voter',
+      'DystVoter',
       ve,
       factory,
       gauges,
       bribes,
-    )) as BaseV1Voter;
+    )) as DystVoter;
   }
 
   public static async deployDystMinter(
@@ -154,12 +154,12 @@ export class Deploy {
     const token = await Deploy.deployDyst(signer);
     const gaugesFactory = await Deploy.deployGaugeFactory(signer);
     const bribesFactory = await Deploy.deployBribeFactory(signer);
-    const baseFactory = await Deploy.deployBaseV1Factory(signer, treasury.address);
+    const baseFactory = await Deploy.deployDystFactory(signer, treasury.address);
 
-    const router = await Deploy.deployBaseV1Router01(signer, baseFactory.address, networkToken);
+    const router = await Deploy.deployDystRouter01(signer, baseFactory.address, networkToken);
     const ve = await Deploy.deployVe(signer, token.address);
     const veDist = await Deploy.deployVeDist(signer, ve.address);
-    const voter = await Deploy.deployBaseV1Voter(signer, ve.address, baseFactory.address, gaugesFactory.address, bribesFactory.address);
+    const voter = await Deploy.deployDystVoter(signer, ve.address, baseFactory.address, gaugesFactory.address, bribesFactory.address);
     const minter = await Deploy.deployDystMinter(signer, voter.address, ve.address, veDist.address);
 
     await Misc.runAndWait(() => token.setMinter(minter.address));

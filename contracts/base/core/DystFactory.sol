@@ -3,9 +3,9 @@
 pragma solidity ^0.8.13;
 
 import "../../interface/IFactory.sol";
-import "./BaseV1Pair.sol";
+import "./DystPair.sol";
 
-contract BaseV1Factory is IFactory {
+contract DystFactory is IFactory {
 
   bool public override isPaused;
   address public pauser;
@@ -40,22 +40,22 @@ contract BaseV1Factory is IFactory {
   }
 
   function setPauser(address _pauser) external {
-    require(msg.sender == pauser, "Not pauser");
+    require(msg.sender == pauser, "DystFactory: Not pauser");
     pendingPauser = _pauser;
   }
 
   function acceptPauser() external {
-    require(msg.sender == pendingPauser, "Not pending pauser");
+    require(msg.sender == pendingPauser, "DystFactory: Not pending pauser");
     pauser = pendingPauser;
   }
 
   function setPause(bool _state) external {
-    require(msg.sender == pauser, "Not pauser");
+    require(msg.sender == pauser, "DystFactory: Not pauser");
     isPaused = _state;
   }
 
   function pairCodeHash() external pure override returns (bytes32) {
-    return keccak256(type(BaseV1Pair).creationCode);
+    return keccak256(type(DystPair).creationCode);
   }
 
   function getInitializable() external view override returns (address, address, bool) {
@@ -64,17 +64,14 @@ contract BaseV1Factory is IFactory {
 
   function createPair(address tokenA, address tokenB, bool stable)
   external override returns (address pair) {
-    // BaseV1: IDENTICAL_ADDRESSES
-    require(tokenA != tokenB, 'IA');
+    require(tokenA != tokenB, 'DystFactory: IDENTICAL_ADDRESSES');
     (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
-    // BaseV1: ZERO_ADDRESS
-    require(token0 != address(0), 'ZA');
-    // BaseV1: PAIR_EXISTS - single check is sufficient
-    require(getPair[token0][token1][stable] == address(0), 'PE');
+    require(token0 != address(0), 'DystFactory: ZERO_ADDRESS');
+    require(getPair[token0][token1][stable] == address(0), 'DystFactory: PAIR_EXISTS');
     // notice salt includes stable as well, 3 parameters
     bytes32 salt = keccak256(abi.encodePacked(token0, token1, stable));
     (_temp0, _temp1, _temp) = (token0, token1, stable);
-    pair = address(new BaseV1Pair{salt : salt}());
+    pair = address(new DystPair{salt : salt}());
     getPair[token0][token1][stable] = pair;
     // populate mapping in the reverse direction
     getPair[token1][token0][stable] = pair;

@@ -5,7 +5,7 @@ import {Deploy} from "../../../scripts/deploy/Deploy";
 import {TimeUtils} from "../../TimeUtils";
 import {BigNumber, utils} from "ethers";
 import {CoreAddresses} from "../../../scripts/deploy/CoreAddresses";
-import {BaseV1Pair, Token} from "../../../typechain";
+import {DystPair, Token} from "../../../typechain";
 import {TestHelper} from "../../TestHelper";
 import {parseUnits} from "ethers/lib/utils";
 import {Misc} from "../../../scripts/Misc";
@@ -24,7 +24,7 @@ describe("minter tests", function () {
   let ust: Token;
   let mim: Token;
   let dai: Token;
-  let pair: BaseV1Pair;
+  let pair: DystPair;
   // let gauge: Gauge;
 
 
@@ -98,11 +98,11 @@ describe("minter tests", function () {
     const treasury = await Deploy.deployGovernanceTreasury(owner);
     const gaugesFactory = await Deploy.deployGaugeFactory(owner);
     const bribesFactory = await Deploy.deployBribeFactory(owner);
-    const baseFactory = await Deploy.deployBaseV1Factory(owner, treasury.address);
+    const baseFactory = await Deploy.deployDystFactory(owner, treasury.address);
     const token = await Deploy.deployContract(owner, 'Token', 'VE', 'VE', 18, owner.address) as Token;
     const ve = await Deploy.deployVe(owner, token.address);
     const veDist = await Deploy.deployVeDist(owner, ve.address);
-    const voter = await Deploy.deployBaseV1Voter(owner, ve.address, baseFactory.address, gaugesFactory.address, bribesFactory.address);
+    const voter = await Deploy.deployDystVoter(owner, ve.address, baseFactory.address, gaugesFactory.address, bribesFactory.address);
     const minter = await Deploy.deployDystMinter(owner, voter.address, ve.address, veDist.address);
     await expect(minter.initialize([owner.address], [1], 2)).revertedWith('Wrong total_amount')
   });

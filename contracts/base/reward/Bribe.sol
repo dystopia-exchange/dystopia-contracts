@@ -9,33 +9,33 @@ import "../../interface/IVe.sol";
 import "./MultiRewardsPoolBase.sol";
 
 /// @title Bribes pay out rewards for a given pool based on the votes
-///        that were received from the user (goes hand in hand with BaseV1Gauges.vote())
+///        that were received from the user (goes hand in hand with Gauges.vote())
 contract Bribe is IBribe, MultiRewardsPoolBase {
 
   /// @dev Only voter can modify balances (since it only happens on vote())
   address public immutable voter;
-  address public immutable _ve;
+  address public immutable ve;
 
   // Assume that will be created from voter contract through factory
   constructor(address _voter) MultiRewardsPoolBase(address(0)) {
     voter = _voter;
-    _ve = IVoter(_voter)._ve();
+    ve = IVoter(_voter).ve();
   }
 
   function getReward(uint tokenId, address[] memory tokens) external {
-    require(IVe(_ve).isApprovedOrOwner(msg.sender, tokenId), "Not token owner");
+    require(IVe(ve).isApprovedOrOwner(msg.sender, tokenId), "Not token owner");
     _getReward(_tokenIdToAddress(tokenId), tokens, msg.sender);
   }
 
-  /// @dev Used by BaseV1Voter to allow batched reward claims
+  /// @dev Used by Voter to allow batched reward claims
   function getRewardForOwner(uint tokenId, address[] memory tokens) external override {
     require(msg.sender == voter, "Not voter");
-    address owner = IERC721(_ve).ownerOf(tokenId);
+    address owner = IERC721(ve).ownerOf(tokenId);
     _getReward(_tokenIdToAddress(tokenId), tokens, owner);
   }
 
   /// @dev This is an external function, but internal notation is used
-  ///      since it can only be called "internally" from BaseV1Gauges
+  ///      since it can only be called "internally" from Gauges
   function _deposit(uint amount, uint tokenId) external override {
     require(msg.sender == voter, "Not voter");
     require(amount > 0, "Zero amount");

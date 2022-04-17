@@ -1,11 +1,11 @@
 /* tslint:disable:variable-name no-shadowed-variable ban-types no-var-requires no-any */
 import {
   Dyst,
-  BaseV1Factory,
-  BaseV1GaugeFactory,
+  DystFactory,
+  GaugeFactory,
   DystMinter,
-  BaseV1Pair,
-  BaseV1Router01,
+  DystPair,
+  DystRouter01,
   Bribe,
   Gauge,
   GovernanceTreasury__factory,
@@ -32,11 +32,11 @@ describe("core", function () {
   let ve_underlying: Dyst;
   let late_reward: Token;
   let ve: Ve;
-  let factory: BaseV1Factory;
-  let router: BaseV1Router01;
-  let pair: BaseV1Pair;
-  let pair2: BaseV1Pair;
-  let pair3: BaseV1Pair;
+  let factory: DystFactory;
+  let router: DystRouter01;
+  let pair: DystPair;
+  let pair2: DystPair;
+  let pair3: DystPair;
   let owner: SignerWithAddress;
   let voter: any;
   let gauge: Gauge;
@@ -147,24 +147,24 @@ describe("core", function () {
     expect(await mim.name()).to.equal("MIM");
   });
 
-  it("deploy BaseV1Factory and test pair length", async function () {
+  it("deploy DystFactory and test pair length", async function () {
     const treasury = await Deploy.deployGovernanceTreasury(owner);
-    const BaseV1Factory = await ethers.getContractFactory("BaseV1Factory");
-    factory = await BaseV1Factory.deploy(treasury.address);
+    const DystFactory = await ethers.getContractFactory("DystFactory");
+    factory = await DystFactory.deploy(treasury.address);
     await factory.deployed();
 
     expect(await factory.allPairsLength()).to.equal(0);
   });
 
-  it("deploy BaseV1Router and test factory address", async function () {
-    const BaseV1Router = await ethers.getContractFactory("BaseV1Router01");
-    router = await BaseV1Router.deploy(factory.address, owner.address);
+  it("deploy DystRouter01 and test factory address", async function () {
+    const DystRouter01 = await ethers.getContractFactory("DystRouter01");
+    router = await DystRouter01.deploy(factory.address, owner.address);
     await router.deployed();
 
     expect(await router.factory()).to.equal(factory.address);
   });
 
-  it("deploy pair via BaseV1Factory owner", async function () {
+  it("deploy pair via DystFactory owner", async function () {
     const ust_1 = ethers.BigNumber.from("1000000");
     const mim_1 = ethers.BigNumber.from("1000000000000000000");
     const dai_1 = ethers.BigNumber.from("1000000000000000000");
@@ -180,7 +180,7 @@ describe("core", function () {
     expect(await factory.allPairsLength()).to.equal(3);
   });
 
-  it("deploy pair via BaseV1Factory owner2", async function () {
+  it("deploy pair via DystFactory owner2", async function () {
     const ust_1 = ethers.BigNumber.from("1000000");
     const mim_1 = ethers.BigNumber.from("1000000000000000000");
     const dai_1 = ethers.BigNumber.from("1000000000000000000");
@@ -198,14 +198,14 @@ describe("core", function () {
 
   it("confirm pair for mim-ust", async function () {
     const create2address = await router.pairFor(mim.address, ust.address, true);
-    const BaseV1Pair = await ethers.getContractFactory("BaseV1Pair");
+    const DystPair = await ethers.getContractFactory("DystPair");
     const address = await factory.getPair(mim.address, ust.address, true);
     const allpairs0 = await factory.allPairs(0);
-    pair = await BaseV1Pair.attach(address);
+    pair = await DystPair.attach(address);
     const address2 = await factory.getPair(mim.address, ust.address, false);
-    pair2 = await BaseV1Pair.attach(address2);
+    pair2 = await DystPair.attach(address2);
     const address3 = await factory.getPair(mim.address, dai.address, true);
-    pair3 = await BaseV1Pair.attach(address3);
+    pair3 = await DystPair.attach(address3);
 
     expect(pair.address).to.equal(create2address);
   });
@@ -240,7 +240,7 @@ describe("core", function () {
     expect(await pair.connect(owner2).getAmountOut(ust_1, ust.address)).to.equal(ethers.BigNumber.from("991833071663219513"));
   });
 
-  it("BaseV1Router01 addLiquidity", async function () {
+  it("DystRouter01 addLiquidity", async function () {
     const ust_1000 = ethers.BigNumber.from("100000000000");
     const mim_1000 = ethers.BigNumber.from("100000000000000000000000");
     const mim_100000000 = ethers.BigNumber.from("100000000000000000000000000");
@@ -258,7 +258,7 @@ describe("core", function () {
     await router.addLiquidity(mim.address, dai.address, true, mim_100000000, dai_100000000, 0, 0, owner.address, Date.now());
   });
 
-  it("BaseV1Router01 removeLiquidity", async function () {
+  it("DystRouter01 removeLiquidity", async function () {
     const ust_1000 = ethers.BigNumber.from("100000000000");
     const mim_1000 = ethers.BigNumber.from("100000000000000000000000");
     const mim_100000000 = ethers.BigNumber.from("100000000000000000000000000");
@@ -270,7 +270,7 @@ describe("core", function () {
     const output = await router.quoteRemoveLiquidity(mim.address, ust.address, true, ust_1000);
   });
 
-  it("BaseV1Router01 addLiquidity owner2", async function () {
+  it("DystRouter01 addLiquidity owner2", async function () {
     const ust_1000 = ethers.BigNumber.from("100000000000");
     const mim_1000 = ethers.BigNumber.from("100000000000000000000000");
     const mim_100000000 = ethers.BigNumber.from("100000000000000000000000000");
@@ -287,7 +287,7 @@ describe("core", function () {
     await router.connect(owner2).addLiquidity(mim.address, dai.address, true, mim_100000000, dai_100000000, 0, 0, owner.address, Date.now());
   });
 
-  it("BaseV1Router01 pair1 getAmountsOut & swapExactTokensForTokens", async function () {
+  it("DystRouter01 pair1 getAmountsOut & swapExactTokensForTokens", async function () {
     const treasury = await factory.treasury();
     const ust_1 = ethers.BigNumber.from("1000000");
     const route = {from: ust.address, to: mim.address, stable: true}
@@ -310,7 +310,7 @@ describe("core", function () {
     expect(await ust.balanceOf(owner.address)).to.be.above(b2);
   });
 
-  it("BaseV1Router01 pair1 getAmountsOut & swapExactTokensForTokens owner2", async function () {
+  it("DystRouter01 pair1 getAmountsOut & swapExactTokensForTokens owner2", async function () {
     const ust_1 = ethers.BigNumber.from("1000000");
     const route = {from: ust.address, to: mim.address, stable: true}
 
@@ -328,7 +328,7 @@ describe("core", function () {
     expect(await ust.balanceOf(owner.address)).to.be.equal(b);
   });
 
-  it("BaseV1Router01 pair2 getAmountsOut & swapExactTokensForTokens", async function () {
+  it("DystRouter01 pair2 getAmountsOut & swapExactTokensForTokens", async function () {
     const ust_1 = ethers.BigNumber.from("1000000");
     const route = {from: ust.address, to: mim.address, stable: false}
 
@@ -341,7 +341,7 @@ describe("core", function () {
     await router.swapExactTokensForTokens(ust_1, expected_output[1], [route], owner.address, Date.now());
   });
 
-  it("BaseV1Router01 pair3 getAmountsOut & swapExactTokensForTokens", async function () {
+  it("DystRouter01 pair3 getAmountsOut & swapExactTokensForTokens", async function () {
     const mim_1000000 = ethers.BigNumber.from("1000000000000000000000000");
     const route = {from: mim.address, to: dai.address, stable: true}
 
@@ -354,15 +354,15 @@ describe("core", function () {
     await router.swapExactTokensForTokens(mim_1000000, expected_output[1], [route], owner.address, Date.now());
   });
 
-  it("deploy BaseV1Voter", async function () {
-    const BaseV1GaugeFactory = await ethers.getContractFactory("BaseV1GaugeFactory");
-    gauges_factory = await BaseV1GaugeFactory.deploy();
+  it("deploy DystVoter", async function () {
+    const GaugeFactory = await ethers.getContractFactory("GaugeFactory");
+    gauges_factory = await GaugeFactory.deploy();
     await gauges_factory.deployed();
-    const BaseV1BribeFactory = await ethers.getContractFactory("BaseV1BribeFactory");
-    const bribe_factory = await BaseV1BribeFactory.deploy();
+    const BribeFactory = await ethers.getContractFactory("BribeFactory");
+    const bribe_factory = await BribeFactory.deploy();
     await bribe_factory.deployed();
-    const BaseV1Voter = await ethers.getContractFactory("BaseV1Voter");
-    voter = await BaseV1Voter.deploy(ve.address, factory.address, gauges_factory.address, bribe_factory.address);
+    const DystVoter = await ethers.getContractFactory("DystVoter");
+    voter = await DystVoter.deploy(ve.address, factory.address, gauges_factory.address, bribe_factory.address);
     await voter.deployed();
 
     await ve.setVoter(voter.address);
@@ -382,7 +382,7 @@ describe("core", function () {
     await voter.initialize([ust.address, mim.address, dai.address, ve_underlying.address], minter.address);
   });
 
-  it("deploy BaseV1Factory gauge", async function () {
+  it("deploy DystFactory gauge", async function () {
     const pair_1000 = ethers.BigNumber.from("1000000000");
 
     await ve_underlying.approve(voter.address, ethers.BigNumber.from("1500000000000000000000000"));
@@ -443,7 +443,7 @@ describe("core", function () {
   });
 
 
-  it("deploy BaseV1Factory gauge owner2", async function () {
+  it("deploy DystFactory gauge owner2", async function () {
     const pair_1000 = ethers.BigNumber.from("1000000000");
     const pair_3000 = ethers.BigNumber.from("3000000000");
 
@@ -576,7 +576,7 @@ describe("core", function () {
     await bribe.getReward(1, [ve_underlying.address]);
   });
 
-  it("BaseV1Router01 pair1 getAmountsOut & swapExactTokensForTokens", async function () {
+  it("DystRouter01 pair1 getAmountsOut & swapExactTokensForTokens", async function () {
     const ust_1 = ethers.BigNumber.from("1000000");
     const route = {from: ust.address, to: mim.address, stable: true}
 
@@ -588,7 +588,7 @@ describe("core", function () {
     const fees = await pair.fees()
   });
 
-  it("BaseV1Router01 pair2 getAmountsOut & swapExactTokensForTokens", async function () {
+  it("DystRouter01 pair2 getAmountsOut & swapExactTokensForTokens", async function () {
     const ust_1 = ethers.BigNumber.from("1000000");
     const route = {from: ust.address, to: mim.address, stable: false}
 
@@ -600,7 +600,7 @@ describe("core", function () {
     const fees = await pair2.fees()
   });
 
-  it("BaseV1Router01 pair1 getAmountsOut & swapExactTokensForTokens", async function () {
+  it("DystRouter01 pair1 getAmountsOut & swapExactTokensForTokens", async function () {
     const mim_1 = ethers.BigNumber.from("1000000000000000000");
     const route = {from: mim.address, to: ust.address, stable: true}
 
@@ -612,7 +612,7 @@ describe("core", function () {
     const fees = await pair.fees()
   });
 
-  it("BaseV1Router01 pair2 getAmountsOut & swapExactTokensForTokens", async function () {
+  it("DystRouter01 pair2 getAmountsOut & swapExactTokensForTokens", async function () {
     const mim_1 = ethers.BigNumber.from("1000000000000000000");
     const route = {from: mim.address, to: ust.address, stable: false}
 
@@ -622,7 +622,7 @@ describe("core", function () {
     await router.swapExactTokensForTokens(mim_1, expected_output[1], [route], owner.address, Date.now());
   });
 
-  it("BaseV1Router01 pair1>pair2 getAmountsOut & swapExactTokensForTokens", async function () {
+  it("DystRouter01 pair1>pair2 getAmountsOut & swapExactTokensForTokens", async function () {
     const mim_1 = ethers.BigNumber.from("1000000000000000000");
     const route = [{from: mim.address, to: ust.address, stable: false}, {
       from: ust.address,
@@ -769,7 +769,7 @@ describe("core", function () {
     await ve.withdraw(1);
   });
 
-  it("BaseV1Router01 addLiquidity owner3", async function () {
+  it("DystRouter01 addLiquidity owner3", async function () {
     const ust_1000 = ethers.BigNumber.from("1000000000000");
     const mim_1000 = ethers.BigNumber.from("1000000000000000000000000");
     const mim_100000000 = ethers.BigNumber.from("100000000000000000000000000");
@@ -780,7 +780,7 @@ describe("core", function () {
     await router.connect(owner3).addLiquidity(mim.address, ust.address, true, mim_1000, ust_1000, 0, 0, owner3.address, Date.now());
   });
 
-  it("deploy BaseV1Factory gauge owner3", async function () {
+  it("deploy DystFactory gauge owner3", async function () {
     const pair_1000 = ethers.BigNumber.from("1000000000");
     const pair_2000 = ethers.BigNumber.from("2000000000");
 

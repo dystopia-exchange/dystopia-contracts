@@ -15,7 +15,7 @@ contract Gauge is IGauge, MultiRewardsPoolBase {
   using SafeERC20 for IERC20;
 
   /// @dev The ve token used for gauges
-  address public immutable _ve;
+  address public immutable ve;
   address public immutable bribe;
   address public immutable voter;
 
@@ -28,9 +28,9 @@ contract Gauge is IGauge, MultiRewardsPoolBase {
   event VeTokenLocked(address indexed account, uint tokenId);
   event VeTokenUnlocked(address indexed account, uint tokenId);
 
-  constructor(address _stake, address _bribe, address __ve, address _voter) MultiRewardsPoolBase(_stake) {
+  constructor(address _stake, address _bribe, address _ve, address _voter) MultiRewardsPoolBase(_stake) {
     bribe = _bribe;
-    _ve = __ve;
+    ve = _ve;
     voter = _voter;
   }
 
@@ -103,7 +103,7 @@ contract Gauge is IGauge, MultiRewardsPoolBase {
   /// @dev Balance should be recalculated after the lock
   ///      For locking a new ve token withdraw all funds and deposit again
   function _lockVeToken(address account, uint tokenId) internal {
-    require(IERC721(_ve).ownerOf(tokenId) == account, "Not ve token owner");
+    require(IERC721(ve).ownerOf(tokenId) == account, "Not ve token owner");
     if (tokenIds[account] == 0) {
       tokenIds[account] = tokenId;
       IVoter(voter).attachTokenToGauge(tokenId, account);
@@ -126,9 +126,9 @@ contract Gauge is IGauge, MultiRewardsPoolBase {
     uint _balance = balanceOf[account];
     uint _derived = _balance * 40 / 100;
     uint _adjusted = 0;
-    uint _supply = IERC20(_ve).totalSupply();
-    if (account == IERC721(_ve).ownerOf(_tokenId) && _supply > 0) {
-      _adjusted = (totalSupply * IVe(_ve).balanceOfNFT(_tokenId) / _supply) * 60 / 100;
+    uint _supply = IERC20(ve).totalSupply();
+    if (account == IERC721(ve).ownerOf(_tokenId) && _supply > 0) {
+      _adjusted = (totalSupply * IVe(ve).balanceOfNFT(_tokenId) / _supply) * 60 / 100;
     }
     return Math.min((_derived + _adjusted), _balance);
   }

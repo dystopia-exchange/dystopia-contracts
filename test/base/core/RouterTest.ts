@@ -1,7 +1,7 @@
 import {
-  BaseV1Factory,
-  BaseV1Pair__factory,
-  BaseV1Router01,
+  DystFactory,
+  DystPair__factory,
+  DystRouter01,
   Token,
   TokenWithFee
 } from "../../../typechain";
@@ -24,8 +24,8 @@ describe("router tests", function () {
 
   let owner: SignerWithAddress;
   let owner2: SignerWithAddress;
-  let factory: BaseV1Factory;
-  let router: BaseV1Router01;
+  let factory: DystFactory;
+  let router: DystRouter01;
 
   let wmatic: Token;
   let ust: Token;
@@ -39,8 +39,8 @@ describe("router tests", function () {
     [owner, owner2] = await ethers.getSigners();
     wmatic = await Deploy.deployContract(owner, 'Token', 'WMATIC', 'WMATIC', 18, owner.address) as Token;
     await wmatic.mint(owner.address, parseUnits('1000'));
-    factory = await Deploy.deployBaseV1Factory(owner, owner.address);
-    router = await Deploy.deployBaseV1Router01(owner, factory.address, wmatic.address);
+    factory = await Deploy.deployDystFactory(owner, owner.address);
+    router = await Deploy.deployDystRouter01(owner, factory.address, wmatic.address);
 
     [ust, mim, dai] = await TestHelper.createMockTokensAndMint(owner);
     await ust.transfer(owner2.address, utils.parseUnits('100', 6));
@@ -154,7 +154,7 @@ describe("router tests", function () {
 
     const pairAdr = await factory.getPair(mim.address, wmatic.address, true);
 
-    await BaseV1Pair__factory.connect(pairAdr, owner).approve(router.address, parseUnits('1111'));
+    await DystPair__factory.connect(pairAdr, owner).approve(router.address, parseUnits('1111'));
     await router.removeLiquidityMATIC(
       mim.address,
       true,
@@ -181,7 +181,7 @@ describe("router tests", function () {
     );
 
     const pairAdr = await factory.getPair(mim.address, wmatic.address, true);
-    const pair = BaseV1Pair__factory.connect(pairAdr, owner);
+    const pair = DystPair__factory.connect(pairAdr, owner);
 
     const {
       v,
@@ -216,7 +216,7 @@ describe("router tests", function () {
     );
 
     const pairAdr = await factory.getPair(mim.address, wmatic.address, true);
-    const pair = BaseV1Pair__factory.connect(pairAdr, owner);
+    const pair = DystPair__factory.connect(pairAdr, owner);
 
     const {
       v,
@@ -358,7 +358,7 @@ describe("router tests", function () {
     );
 
     const pairAdr = await factory.getPair(tokenWithFee.address, wmatic.address, true);
-    const pair = BaseV1Pair__factory.connect(pairAdr, owner);
+    const pair = DystPair__factory.connect(pairAdr, owner);
     const pairBal = await pair.balanceOf(owner.address);
 
     const {
@@ -517,21 +517,21 @@ describe("router tests", function () {
       owner.address,
       1,
       {value: parseUnits('10')}
-    )).revertedWith('BaseV1Router: EXPIRED');
+    )).revertedWith('DystRouter: EXPIRED');
   });
 
   it("sort tokens identical address", async function () {
     await expect(router.sortTokens(
       mim.address,
       mim.address,
-    )).revertedWith('BaseV1Router: IDENTICAL_ADDRESSES');
+    )).revertedWith('DystRouter: IDENTICAL_ADDRESSES');
   });
 
   it("sort tokens zero address", async function () {
     await expect(router.sortTokens(
       mim.address,
       Misc.ZERO_ADDRESS,
-    )).revertedWith('BaseV1Router: ZERO_ADDRESS');
+    )).revertedWith('DystRouter: ZERO_ADDRESS');
   });
 
   it("getAmountOut for not exist pair", async function () {
@@ -543,7 +543,7 @@ describe("router tests", function () {
   });
 
   it("receive matic not from wmatic reject", async function () {
-    await expect(owner.sendTransaction({value: 1, to: router.address})).revertedWith("BaseV1Router: NOT_WMATIC");
+    await expect(owner.sendTransaction({value: 1, to: router.address})).revertedWith("DystRouter: NOT_WMATIC");
   });
 
   it("getReserves", async function () {
@@ -561,15 +561,15 @@ describe("router tests", function () {
   });
 
   it("getAmountsOut wrong path", async function () {
-    await expect(router.getAmountsOut(0, [])).revertedWith('BaseV1Router: INVALID_PATH');
+    await expect(router.getAmountsOut(0, [])).revertedWith('DystRouter: INVALID_PATH');
   });
 
   it("quoteLiquidity zero amount", async function () {
-    await expect(router.quoteLiquidity(0, 0, 0)).revertedWith('BaseV1Router: INSUFFICIENT_AMOUNT');
+    await expect(router.quoteLiquidity(0, 0, 0)).revertedWith('DystRouter: INSUFFICIENT_AMOUNT');
   });
 
   it("quoteLiquidity IL", async function () {
-    await expect(router.quoteLiquidity(1, 0, 0)).revertedWith('BaseV1Router: INSUFFICIENT_LIQUIDITY');
+    await expect(router.quoteLiquidity(1, 0, 0)).revertedWith('DystRouter: INSUFFICIENT_LIQUIDITY');
   });
 
   it("getAmountsOut with not exist pair", async function () {
@@ -590,7 +590,7 @@ describe("router tests", function () {
       owner.address,
       99999999999,
       {value: parseUnits('10')}
-    )).revertedWith('BaseV1Router: DESIRED_A_AMOUNT');
+    )).revertedWith('DystRouter: DESIRED_A_AMOUNT');
     await expect(router.addLiquidityMATIC(
       mim.address,
       true,
@@ -600,7 +600,7 @@ describe("router tests", function () {
       owner.address,
       99999999999,
       {value: parseUnits('10')}
-    )).revertedWith('BaseV1Router: DESIRED_B_AMOUNT');
+    )).revertedWith('DystRouter: DESIRED_B_AMOUNT');
   });
 
 
@@ -625,7 +625,7 @@ describe("router tests", function () {
       owner.address,
       99999999999,
       {value: parseUnits('0.77')}
-    )).revertedWith('BaseV1Router: INSUFFICIENT_B_AMOUNT');
+    )).revertedWith('DystRouter: INSUFFICIENT_B_AMOUNT');
 
     await expect(router.addLiquidityMATIC(
       mim.address,
@@ -636,7 +636,7 @@ describe("router tests", function () {
       owner.address,
       99999999999,
       {value: parseUnits('0.01')}
-    )).revertedWith('BaseV1Router: INSUFFICIENT_A_AMOUNT');
+    )).revertedWith('DystRouter: INSUFFICIENT_A_AMOUNT');
   });
 
 
@@ -681,7 +681,7 @@ describe("router tests", function () {
 
     const pairAdr = await factory.getPair(mim.address, wmatic.address, true);
 
-    await BaseV1Pair__factory.connect(pairAdr, owner).approve(router.address, parseUnits('1111'));
+    await DystPair__factory.connect(pairAdr, owner).approve(router.address, parseUnits('1111'));
     await expect(router.removeLiquidity(
       mim.address,
       wmatic.address,
@@ -691,7 +691,7 @@ describe("router tests", function () {
       0,
       owner.address,
       99999999999,
-    )).revertedWith('BaseV1Router: INSUFFICIENT_A_AMOUNT');
+    )).revertedWith('DystRouter: INSUFFICIENT_A_AMOUNT');
     await expect(router.removeLiquidity(
       mim.address,
       wmatic.address,
@@ -701,7 +701,7 @@ describe("router tests", function () {
       parseUnits('1'),
       owner.address,
       99999999999,
-    )).revertedWith('BaseV1Router: INSUFFICIENT_B_AMOUNT');
+    )).revertedWith('DystRouter: INSUFFICIENT_B_AMOUNT');
   });
 
   it("removeLiquidityMATICSupportingFeeOnTransferTokens test", async function () {
@@ -719,7 +719,7 @@ describe("router tests", function () {
 
     const pairAdr = await factory.getPair(tokenWithFee.address, wmatic.address, true);
 
-    await BaseV1Pair__factory.connect(pairAdr, owner).approve(router.address, parseUnits('1111'));
+    await DystPair__factory.connect(pairAdr, owner).approve(router.address, parseUnits('1111'));
     await router.removeLiquidityMATICSupportingFeeOnTransferTokens(
       tokenWithFee.address,
       true,
@@ -740,7 +740,7 @@ describe("router tests", function () {
       true,
       owner.address,
       BigNumber.from('999999999999999999'),
-    )).revertedWith('BaseV1Router: INSUFFICIENT_OUTPUT_AMOUNT');
+    )).revertedWith('DystRouter: INSUFFICIENT_OUTPUT_AMOUNT');
   });
 
   it("swapExactTokensForTokens IOA test", async function () {
@@ -754,7 +754,7 @@ describe("router tests", function () {
       }],
       owner.address,
       BigNumber.from('999999999999999999'),
-    )).revertedWith('BaseV1Router: INSUFFICIENT_OUTPUT_AMOUNT');
+    )).revertedWith('DystRouter: INSUFFICIENT_OUTPUT_AMOUNT');
   });
 
 
@@ -768,7 +768,7 @@ describe("router tests", function () {
       }],
       owner.address,
       BigNumber.from('999999999999999999'),
-    )).revertedWith('BaseV1Router: INSUFFICIENT_OUTPUT_AMOUNT');
+    )).revertedWith('DystRouter: INSUFFICIENT_OUTPUT_AMOUNT');
   });
 
   it("swapExactMATICForTokens IP test", async function () {
@@ -781,7 +781,7 @@ describe("router tests", function () {
       }],
       owner.address,
       BigNumber.from('999999999999999999'),
-    )).revertedWith('BaseV1Router: INVALID_PATH');
+    )).revertedWith('DystRouter: INVALID_PATH');
   });
 
   it("swapExactTokensForMATIC IOA test", async function () {
@@ -795,7 +795,7 @@ describe("router tests", function () {
       }],
       owner.address,
       BigNumber.from('999999999999999999'),
-    )).revertedWith('BaseV1Router: INSUFFICIENT_OUTPUT_AMOUNT');
+    )).revertedWith('DystRouter: INSUFFICIENT_OUTPUT_AMOUNT');
   });
 
   it("swapExactTokensForMATIC IP test", async function () {
@@ -809,7 +809,7 @@ describe("router tests", function () {
       }],
       owner.address,
       BigNumber.from('999999999999999999'),
-    )).revertedWith('BaseV1Router: INVALID_PATH');
+    )).revertedWith('DystRouter: INVALID_PATH');
   });
 
   it("swapExactTokensForTokensSupportingFeeOnTransferTokens IOA test", async function () {
@@ -836,7 +836,7 @@ describe("router tests", function () {
       }],
       owner.address,
       BigNumber.from('999999999999999999'),
-    )).revertedWith('BaseV1Router: INSUFFICIENT_OUTPUT_AMOUNT');
+    )).revertedWith('DystRouter: INSUFFICIENT_OUTPUT_AMOUNT');
   });
 
   it("swapExactMATICForTokensSupportingFeeOnTransferTokens IP test", async function () {
@@ -863,7 +863,7 @@ describe("router tests", function () {
       owner.address,
       BigNumber.from('999999999999999999'),
       {value: parseUnits('0.1')}
-    )).revertedWith('BaseV1Router: INVALID_PATH');
+    )).revertedWith('DystRouter: INVALID_PATH');
   });
 
   it("swapExactMATICForTokensSupportingFeeOnTransferTokens IOA test", async function () {
@@ -890,7 +890,7 @@ describe("router tests", function () {
       owner.address,
       BigNumber.from('999999999999999999'),
       {value: parseUnits('0.1')}
-    )).revertedWith('BaseV1Router: INSUFFICIENT_OUTPUT_AMOUNT');
+    )).revertedWith('DystRouter: INSUFFICIENT_OUTPUT_AMOUNT');
   });
 
   it("swapExactTokensForMATICSupportingFeeOnTransferTokens IOA test", async function () {
@@ -917,7 +917,7 @@ describe("router tests", function () {
       }],
       owner.address,
       BigNumber.from('999999999999999999'),
-    )).revertedWith('BaseV1Router: INSUFFICIENT_OUTPUT_AMOUNT');
+    )).revertedWith('DystRouter: INSUFFICIENT_OUTPUT_AMOUNT');
   });
 
   it("swapExactTokensForMATICSupportingFeeOnTransferTokens IP test", async function () {
@@ -944,12 +944,12 @@ describe("router tests", function () {
       }],
       owner.address,
       BigNumber.from('999999999999999999'),
-    )).revertedWith('BaseV1Router: INVALID_PATH');
+    )).revertedWith('DystRouter: INVALID_PATH');
   });
 
   it("router with broken matic should revert", async function () {
     const brokenMatic = await Deploy.deployContract(owner, 'BrokenWMATIC', 'WMATIC', 'WMATIC', 18, owner.address)
-    const routerWithBrokenMatic = await Deploy.deployBaseV1Router01(owner, factory.address, brokenMatic.address);
+    const routerWithBrokenMatic = await Deploy.deployDystRouter01(owner, factory.address, brokenMatic.address);
 
     await mim.approve(routerWithBrokenMatic.address, parseUnits('10'));
 
@@ -975,7 +975,7 @@ describe("router tests", function () {
       }],
       owner.address,
       99999999999
-    )).revertedWith('BaseV1Router: ETH_TRANSFER_FAILED');
+    )).revertedWith('DystRouter: ETH_TRANSFER_FAILED');
   });
 
 });

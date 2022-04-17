@@ -21,7 +21,7 @@ contract Dyst is IERC20 {
     _mint(msg.sender, 0);
   }
 
-  // No checks as its meant to be once off to set minting rights to BaseV1 Minter
+  // No checks as its meant to be once off to set minting rights to Minter
   function setMinter(address _minter) external {
     require(msg.sender == minter, "DYST: Not minter");
     minter = _minter;

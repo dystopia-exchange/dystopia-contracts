@@ -1,10 +1,10 @@
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
 import {BigNumber, utils} from "ethers";
 import {
-  BaseV1Factory,
-  BaseV1Pair,
-  BaseV1Pair__factory,
-  BaseV1Router01,
+  DystFactory,
+  DystPair,
+  DystPair__factory,
+  DystRouter01,
   Gauge,
   IERC20__factory,
   Token
@@ -18,8 +18,8 @@ const {expect} = chai;
 export class TestHelper {
 
   public static async addLiquidity(
-    factory: BaseV1Factory,
-    router: BaseV1Router01,
+    factory: DystFactory,
+    router: DystRouter01,
     owner: SignerWithAddress,
     tokenA: string,
     tokenB: string,
@@ -33,13 +33,13 @@ export class TestHelper {
     await IERC20__factory.connect(tokenB, owner).approve(router.address, tokenBAmount);
     await router.connect(owner).addLiquidity(tokenA, tokenB, stable, tokenAAmount, tokenBAmount, 0, 0, owner.address, Date.now());
     const address = await factory.getPair(tokenA, tokenB, stable);
-    return BaseV1Pair__factory.connect(address, owner);
+    return DystPair__factory.connect(address, owner);
   }
 
   public static async depositToGauge(
     owner: SignerWithAddress,
     gauge: Gauge,
-    pair: BaseV1Pair,
+    pair: DystPair,
     amount: BigNumber,
     tokenId: number
   ) {
@@ -65,7 +65,7 @@ export class TestHelper {
 
   public static async permitForPair(
     owner: SignerWithAddress,
-    pair: BaseV1Pair,
+    pair: DystPair,
     spender: string,
     amount: BigNumber,
     deadline = '99999999999'

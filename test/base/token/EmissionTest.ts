@@ -1,6 +1,6 @@
 import {
   DystMinter__factory,
-  BaseV1Pair,
+  DystPair,
   Bribe,
   Bribe__factory,
   Gauge,
@@ -40,7 +40,7 @@ describe("emission tests", function () {
   let ust: Token;
   let mim: Token;
   let dai: Token;
-  let mimUstPair: BaseV1Pair;
+  let mimUstPair: DystPair;
 
   let gaugeMimUst: Gauge;
 

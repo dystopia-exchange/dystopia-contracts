@@ -23,17 +23,19 @@ contract BaseV1 is IERC20 {
 
   // No checks as its meant to be once off to set minting rights to BaseV1 Minter
   function setMinter(address _minter) external {
-    require(msg.sender == minter);
+    require(msg.sender == minter, "DYST: Not minter");
     minter = _minter;
   }
 
   function approve(address _spender, uint _value) external override returns (bool) {
+    require(_spender != address(0), "DYST: Approve to the zero address");
     allowance[msg.sender][_spender] = _value;
     emit Approval(msg.sender, _spender, _value);
     return true;
   }
 
   function _mint(address _to, uint _amount) internal returns (bool) {
+    require(_to != address(0), "DYST: Mint to the zero address");
     balanceOf[_to] += _amount;
     totalSupply += _amount;
     emit Transfer(address(0x0), _to, _amount);
@@ -41,7 +43,14 @@ contract BaseV1 is IERC20 {
   }
 
   function _transfer(address _from, address _to, uint _value) internal returns (bool) {
-    balanceOf[_from] -= _value;
+    require(_to != address(0), "DYST: Transfer to the zero address");
+
+    uint fromBalance = balanceOf[_from];
+    require(fromBalance >= _value, "DYST: Transfer amount exceeds balance");
+  unchecked {
+    balanceOf[_from] = fromBalance - _value;
+  }
+
     balanceOf[_to] += _value;
     emit Transfer(_from, _to, _value);
     return true;
@@ -52,15 +61,21 @@ contract BaseV1 is IERC20 {
   }
 
   function transferFrom(address _from, address _to, uint _value) external override returns (bool) {
-    uint allowed_from = allowance[_from][msg.sender];
-    if (allowed_from != type(uint).max) {
-      allowance[_from][msg.sender] -= _value;
+    address spender = msg.sender;
+    uint spenderAllowance = allowance[_from][spender];
+    if (spenderAllowance != type(uint).max) {
+      require(spenderAllowance >= _value, "DYST: Insufficient allowance");
+    unchecked {
+      uint newAllowance = spenderAllowance - _value;
+      allowance[_from][spender] = newAllowance;
+      emit Approval(_from, spender, newAllowance);
+    }
     }
     return _transfer(_from, _to, _value);
   }
 
   function mint(address account, uint amount) external returns (bool) {
-    require(msg.sender == minter);
+    require(msg.sender == minter, "DYST: Not minter");
     _mint(account, amount);
     return true;
   }

@@ -1,9 +1,9 @@
-import {GovernanceTreasury} from "../../typechain";
+import {GovernanceTreasury} from "../../../typechain";
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
 import {ethers} from "hardhat";
 import chai from "chai";
-import {Deploy} from "../../scripts/deploy/Deploy";
-import {TimeUtils} from "../TimeUtils";
+import {Deploy} from "../../../scripts/deploy/Deploy";
+import {TimeUtils} from "../../TimeUtils";
 
 const {expect} = chai;
 

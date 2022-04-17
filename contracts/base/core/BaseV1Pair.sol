@@ -10,16 +10,18 @@ import "../../interface/ICallee.sol";
 import "../../interface/IUnderlying.sol";
 import "./BaseV1Fees.sol";
 import "../../lib/Math.sol";
+import "../../lib/SafeERC20.sol";
+import "../Reentrancy.sol";
 
 // The base pair of pools, either stable or volatile
-contract BaseV1Pair is IERC20, IPair {
+contract BaseV1Pair is IERC20, IPair, Reentrancy {
+  using SafeERC20 for IERC20;
 
   string public name;
   string public symbol;
   uint8 public constant decimals = 18;
 
-  /// @dev Used to denote stable or volatile pair, not immutable since
-  ///      construction happens in the initialize method for CREATE2 deterministic addresses
+  /// @dev Used to denote stable or volatile pair
   bool public immutable stable;
 
   uint public override totalSupply = 0;
@@ -27,14 +29,15 @@ contract BaseV1Pair is IERC20, IPair {
   mapping(address => mapping(address => uint)) public override allowance;
   mapping(address => uint) public override balanceOf;
 
-  bytes32 public DOMAIN_SEPARATOR;
+  bytes32 public immutable DOMAIN_SEPARATOR;
   // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
   bytes32 public constant PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
+  uint internal constant _FEE_PRECISION = 1e32;
   mapping(address => uint) public nonces;
-  uint public chainId;
+  uint public immutable chainId;
 
   uint internal constant MINIMUM_LIQUIDITY = 10 ** 3;
-  /// @dev 0.1% swap fee
+  /// @dev 0.05% swap fee
   uint internal constant SWAP_FEE = 2000;
   /// @dev 50% of swap fee
   uint internal constant TREASURY_FEE = 2;
@@ -42,8 +45,8 @@ contract BaseV1Pair is IERC20, IPair {
   address public immutable override token0;
   address public immutable override token1;
   address public immutable fees;
-  address immutable factory;
-  address immutable treasury;
+  address public immutable factory;
+  address public immutable treasury;
 
   /// @dev Capture oracle reading every 30 minutes
   uint constant periodSize = 1800;
@@ -120,15 +123,6 @@ contract BaseV1Pair is IERC20, IPair {
     chainId = block.chainid;
   }
 
-  /// @dev Simple re-entrancy check
-  uint internal _unlocked = 1;
-  modifier lock() {
-    require(_unlocked == 1);
-    _unlocked = 2;
-    _;
-    _unlocked = 1;
-  }
-
   function observationLength() external view returns (uint) {
     return observations.length;
   }
@@ -176,10 +170,10 @@ contract BaseV1Pair is IERC20, IPair {
     uint toFees = amount - toTreasury;
 
     // transfer the fees out to BaseV1Fees and Treasury
-    _safeTransfer(token0, treasury, toTreasury);
-    _safeTransfer(token0, fees, toFees);
-    // 1e18 adjustment is removed during claim
-    uint256 _ratio = toFees * 1e18 / totalSupply;
+    IERC20(token0).safeTransfer(treasury, toTreasury);
+    IERC20(token0).safeTransfer(fees, toFees);
+    // 1e32 adjustment is removed during claim
+    uint256 _ratio = toFees * _FEE_PRECISION / totalSupply;
     if (_ratio > 0) {
       index0 += _ratio;
     }
@@ -193,9 +187,9 @@ contract BaseV1Pair is IERC20, IPair {
     uint toTreasury = amount / TREASURY_FEE;
     uint toFees = amount - toTreasury;
 
-    _safeTransfer(token1, treasury, toTreasury);
-    _safeTransfer(token1, fees, toFees);
-    uint256 _ratio = toFees * 1e18 / totalSupply;
+    IERC20(token1).safeTransfer(treasury, toTreasury);
+    IERC20(token1).safeTransfer(fees, toFees);
+    uint256 _ratio = toFees * _FEE_PRECISION / totalSupply;
     if (_ratio > 0) {
       index1 += _ratio;
     }
@@ -224,12 +218,12 @@ contract BaseV1Pair is IERC20, IPair {
       // see if there is any difference that need to be accrued
       uint _delta1 = _index1 - _supplyIndex1;
       if (_delta0 > 0) {
-        uint _share = _supplied * _delta0 / 1e18;
+        uint _share = _supplied * _delta0 / _FEE_PRECISION;
         // add accrued difference for each supplied token
         claimable0[recipient] += _share;
       }
       if (_delta1 > 0) {
-        uint _share = _supplied * _delta1 / 1e18;
+        uint _share = _supplied * _delta1 / _FEE_PRECISION;
         claimable1[recipient] += _share;
       }
     } else {
@@ -391,8 +385,8 @@ contract BaseV1Pair is IERC20, IPair {
     // BaseV1: INSUFFICIENT_LIQUIDITY_BURNED
     require(amount0 > 0 && amount1 > 0, 'ILB');
     _burn(address(this), _liquidity);
-    _safeTransfer(_token0, to, amount0);
-    _safeTransfer(_token1, to, amount1);
+    IERC20(_token0).safeTransfer(to, amount0);
+    IERC20(_token1).safeTransfer(to, amount1);
     _balance0 = IERC20(_token0).balanceOf(address(this));
     _balance1 = IERC20(_token1).balanceOf(address(this));
 
@@ -402,13 +396,12 @@ contract BaseV1Pair is IERC20, IPair {
 
   /// @dev This low-level function should be called from a contract which performs important safety checks
   function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external override lock {
-    require(!IFactory(factory).isPaused());
+    require(!IFactory(factory).isPaused(), "PAUSE");
     // BaseV1: INSUFFICIENT_OUTPUT_AMOUNT
     require(amount0Out > 0 || amount1Out > 0, 'IOA');
     (uint _reserve0, uint _reserve1) = (reserve0, reserve1);
     // BaseV1: INSUFFICIENT_LIQUIDITY
     require(amount0Out < _reserve0 && amount1Out < _reserve1, 'IL');
-
     uint _balance0;
     uint _balance1;
     {// scope for _token{0,1}, avoids stack too deep errors
@@ -416,9 +409,9 @@ contract BaseV1Pair is IERC20, IPair {
       // BaseV1: INVALID_TO
       require(to != _token0 && to != _token1, 'IT');
       // optimistically transfer tokens
-      if (amount0Out > 0) _safeTransfer(_token0, to, amount0Out);
+      if (amount0Out > 0) IERC20(_token0).safeTransfer(to, amount0Out);
       // optimistically transfer tokens
-      if (amount1Out > 0) _safeTransfer(_token1, to, amount1Out);
+      if (amount1Out > 0) IERC20(_token1).safeTransfer(to, amount1Out);
       // callback, used for flash loans
       if (data.length > 0) ICallee(to).hook(msg.sender, amount0Out, amount1Out, data);
       _balance0 = IERC20(_token0).balanceOf(address(this));
@@ -451,13 +444,18 @@ contract BaseV1Pair is IERC20, IPair {
   /// @dev Force balances to match reserves
   function skim(address to) external lock {
     (address _token0, address _token1) = (token0, token1);
-    _safeTransfer(_token0, to, IERC20(_token0).balanceOf(address(this)) - (reserve0));
-    _safeTransfer(_token1, to, IERC20(_token1).balanceOf(address(this)) - (reserve1));
+    IERC20(_token0).safeTransfer(to, IERC20(_token0).balanceOf(address(this)) - (reserve0));
+    IERC20(_token1).safeTransfer(to, IERC20(_token1).balanceOf(address(this)) - (reserve1));
   }
 
   // force reserves to match balances
   function sync() external lock {
-    _update(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)), reserve0, reserve1);
+    _update(
+      IERC20(token0).balanceOf(address(this)),
+      IERC20(token1).balanceOf(address(this)),
+      reserve0,
+      reserve1
+    );
   }
 
   function _f(uint x0, uint y) internal pure returns (uint) {
@@ -479,14 +477,8 @@ contract BaseV1Pair is IERC20, IPair {
         uint dy = (k - xy) * 1e18 / _d(x0, y);
         y = y - dy;
       }
-      if (y > y_prev) {
-        if (y - y_prev <= 1) {
-          return y;
-        }
-      } else {
-        if (y_prev - y <= 1) {
-          return y;
-        }
+      if (Math.closeTo(y, y_prev, 1)) {
+        break;
       }
     }
     return y;
@@ -520,13 +512,17 @@ contract BaseV1Pair is IERC20, IPair {
       uint _y = y * 1e18 / decimals1;
       uint _a = (_x * _y) / 1e18;
       uint _b = ((_x * _x) / 1e18 + (_y * _y) / 1e18);
-      return _a * _b / 1e18;
       // x3y+y3x >= k
+      return _a * _b / 1e18;
     } else {
-      return x * y;
       // xy >= k
+      return x * y;
     }
   }
+
+  //****************************************************************************
+  //**************************** ERC20 *****************************************
+  //****************************************************************************
 
   function _mint(address dst, uint amount) internal {
     // balances must be updated on mint/burn/transfer
@@ -544,6 +540,7 @@ contract BaseV1Pair is IERC20, IPair {
   }
 
   function approve(address spender, uint amount) external override returns (bool) {
+    require(spender != address(0), "Approve to the zero address");
     allowance[msg.sender][spender] = amount;
 
     emit Approval(msg.sender, spender, amount);
@@ -559,7 +556,7 @@ contract BaseV1Pair is IERC20, IPair {
     bytes32 r,
     bytes32 s
   ) external override {
-    require(deadline >= block.timestamp, 'BaseV1: EXPIRED');
+    require(deadline >= block.timestamp, 'EXPIRED');
     bytes32 digest = keccak256(
       abi.encodePacked(
         '\x19\x01',
@@ -568,7 +565,7 @@ contract BaseV1Pair is IERC20, IPair {
       )
     );
     address recoveredAddress = ecrecover(digest, v, r, s);
-    require(recoveredAddress != address(0) && recoveredAddress == owner, 'BaseV1: INVALID_SIGNATURE');
+    require(recoveredAddress != address(0) && recoveredAddress == owner, 'INVALID_SIGNATURE');
     allowance[owner][spender] = value;
 
     emit Approval(owner, spender, value);
@@ -584,10 +581,12 @@ contract BaseV1Pair is IERC20, IPair {
     uint spenderAllowance = allowance[src][spender];
 
     if (spender != src && spenderAllowance != type(uint).max) {
+      require(spenderAllowance >= amount, "Insufficient allowance");
+    unchecked {
       uint newAllowance = spenderAllowance - amount;
       allowance[src][spender] = newAllowance;
-
       emit Approval(src, spender, newAllowance);
+    }
     }
 
     _transferTokens(src, dst, amount);
@@ -595,21 +594,21 @@ contract BaseV1Pair is IERC20, IPair {
   }
 
   function _transferTokens(address src, address dst, uint amount) internal {
+    require(dst != address(0), "Transfer to the zero address");
+
     // update fee position for src
     _updateFor(src);
     // update fee position for dst
     _updateFor(dst);
 
-    balanceOf[src] -= amount;
+    uint srcBalance = balanceOf[src];
+    require(srcBalance >= amount, "Transfer amount exceeds balance");
+  unchecked {
+    balanceOf[src] = srcBalance - amount;
+  }
+
     balanceOf[dst] += amount;
 
     emit Transfer(src, dst, amount);
-  }
-
-  function _safeTransfer(address token, address to, uint256 value) internal {
-    require(token.code.length > 0);
-    (bool success, bytes memory data) =
-    token.call(abi.encodeWithSelector(IERC20.transfer.selector, to, value));
-    require(success && (data.length == 0 || abi.decode(data, (bool))));
   }
 }

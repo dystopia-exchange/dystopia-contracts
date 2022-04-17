@@ -80,6 +80,20 @@ export class Misc {
     Misc.printDuration('runAndWait completed', start);
   }
 
+  public static async impersonate(address: string) {
+    await hre.network.provider.request({
+      method: "hardhat_impersonateAccount",
+      params: [address],
+    });
+
+    await hre.network.provider.request({
+      method: "hardhat_setBalance",
+      params: [address, "0x1431E0FAE6D7217CAA0000000"],
+    });
+    console.log('address impersonated', address);
+    return ethers.getSigner(address);
+  }
+
 
   // ****************** WAIT ******************
 

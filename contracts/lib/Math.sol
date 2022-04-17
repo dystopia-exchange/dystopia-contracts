@@ -12,6 +12,19 @@ library Math {
     return a < b ? a : b;
   }
 
+  function closeTo(uint a, uint b, uint target) internal pure returns (bool) {
+    if (a > b) {
+      if (a - b <= target) {
+        return true;
+      }
+    } else {
+      if (b - a <= target) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   function sqrt(uint y) internal pure returns (uint z) {
     if (y > 3) {
       z = y;

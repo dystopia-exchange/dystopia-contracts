@@ -1,4 +1,4 @@
-import {BaseV1GaugeFactory, GovernanceTreasury} from "../../typechain";
+import {GaugeFactory, GovernanceTreasury} from "../../typechain";
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
 import {ethers} from "hardhat";
 import chai from "chai";
@@ -14,7 +14,7 @@ describe("gauge factory tests", function () {
 
   let owner: SignerWithAddress;
   let owner2: SignerWithAddress;
-  let gaugeFactory: BaseV1GaugeFactory;
+  let gaugeFactory: GaugeFactory;
 
 
   before(async function () {

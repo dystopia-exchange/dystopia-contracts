@@ -1,6 +1,6 @@
 import {
-  BaseV1Minter__factory,
-  BaseV1Pair,
+  DystMinter__factory,
+  DystPair,
   Bribe,
   Bribe__factory,
   Gauge,
@@ -8,19 +8,19 @@ import {
   Multicall2,
   StakingRewards,
   Token
-} from "../../typechain";
+} from "../../../typechain";
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
 import {ethers} from "hardhat";
 import chai from "chai";
-import {CoreAddresses} from "../../scripts/deploy/CoreAddresses";
-import {Deploy} from "../../scripts/deploy/Deploy";
-import {TestHelper} from "../TestHelper";
-import {TimeUtils} from "../TimeUtils";
-import {Misc} from "../../scripts/Misc";
+import {CoreAddresses} from "../../../scripts/deploy/CoreAddresses";
+import {Deploy} from "../../../scripts/deploy/Deploy";
+import {TestHelper} from "../../TestHelper";
+import {TimeUtils} from "../../TimeUtils";
+import {Misc} from "../../../scripts/Misc";
 import {formatUnits, parseUnits} from "ethers/lib/utils";
 import {appendFileSync, writeFileSync} from "fs";
 import {BigNumber} from "ethers";
-import {MaticTestnetAddresses} from "../../scripts/addresses/MaticTestnetAddresses";
+import {MaticTestnetAddresses} from "../../../scripts/addresses/MaticTestnetAddresses";
 
 const {expect} = chai;
 
@@ -40,7 +40,7 @@ describe("emission tests", function () {
   let ust: Token;
   let mim: Token;
   let dai: Token;
-  let mimUstPair: BaseV1Pair;
+  let mimUstPair: DystPair;
 
   let gaugeMimUst: Gauge;
 
@@ -129,7 +129,7 @@ describe("emission tests", function () {
     expect(await core.token.balanceOf(core.veDist.address)).is.eq(0);
     expect(await core.token.balanceOf(core.voter.address)).is.eq(0);
 
-    await core.minter.update_period();
+    await core.minter.updatePeriod();
 
     expect(await core.token.balanceOf(core.minter.address)).is.eq(0);
     expect(await core.token.balanceOf(core.veDist.address)).is.eq(0);
@@ -142,7 +142,7 @@ describe("emission tests", function () {
     expect(await core.token.balanceOf(core.veDist.address)).is.eq(0);
     expect(await core.token.balanceOf(core.voter.address)).is.eq(0);
 
-    await core.minter.update_period();
+    await core.minter.updatePeriod();
 
     expect(await core.token.balanceOf(core.minter.address)).is.eq(0);
     // not exact amount coz veDYST balance fluctuation during time
@@ -156,7 +156,7 @@ describe("emission tests", function () {
     expect(await core.token.balanceOf(core.veDist.address)).is.eq(0);
     expect(await core.token.balanceOf(core.voter.address)).is.eq(0);
 
-    await core.minter.update_period();
+    await core.minter.updatePeriod();
 
     expect(await core.token.balanceOf(core.minter.address)).is.eq(0);
     // not exact amount coz veDYST balance fluctuation during time
@@ -167,7 +167,7 @@ describe("emission tests", function () {
 
     await TimeUtils.advanceBlocksOnTs(WEEK);
 
-    await core.minter.update_period();
+    await core.minter.updatePeriod();
 
     expect(await core.token.balanceOf(core.minter.address)).is.eq(0);
     // not exact amount coz veDYST balance fluctuation during time
@@ -182,7 +182,7 @@ describe("emission tests", function () {
     expect(await core.token.balanceOf(core.veDist.address)).is.eq(0);
     expect(await core.token.balanceOf(core.voter.address)).is.eq(0);
 
-    await core.minter.update_period();
+    await core.minter.updatePeriod();
 
     // minter without enough token should distribute everything to veDist and voter
     expect(await core.token.balanceOf(core.minter.address)).is.eq(0);
@@ -228,8 +228,8 @@ describe("emission tests", function () {
   });
 
   // for manual testing
-  it.skip("emission loop without lock", async function () {
-    await emissionLoop(owner, ust, mim, wmatic, parseUnits('10000000'), 99);
+  it.skip("emission loop", async function () {
+    await emissionLoop(owner, ust, mim, wmatic, parseUnits('10000000'), 90);
   });
 
 });
@@ -278,7 +278,7 @@ async function emissionLoop(
 
   for (let i = 0; i < 200; i++) {
 
-    const activePeriod = (await core.minter.active_period()).toNumber();
+    const activePeriod = (await core.minter.activePeriod()).toNumber();
     const now = (await mc.getCurrentBlockTimestamp()).toNumber();
     console.log('!!! PERIOD', activePeriod, now, activePeriod + WEEK - now);
     await TimeUtils.advanceBlocksOnTs(activePeriod + WEEK - now);
@@ -289,12 +289,12 @@ async function emissionLoop(
     const tx = await gauge.getReward(owner.address, [core.token.address]);
     const receipt = await tx.wait(1);
     // tslint:disable-next-line
-    const log = receipt.events?.find((l: any) => l.topics[0] === BaseV1Minter__factory.createInterface().getEventTopic('Mint'));
+    const log = receipt.events?.find((l: any) => l.topics[0] === DystMinter__factory.createInterface().getEventTopic('Mint'));
     let weekly = '-1';
     let growth = '-1';
     if (log) {
-      weekly = formatUnits(BaseV1Minter__factory.createInterface().parseLog(log).args[1]);
-      growth = formatUnits(BaseV1Minter__factory.createInterface().parseLog(log).args[2]);
+      weekly = formatUnits(DystMinter__factory.createInterface().parseLog(log).args[1]);
+      growth = formatUnits(DystMinter__factory.createInterface().parseLog(log).args[2]);
     }
 
     const tokenBalance = await core.token.balanceOf(owner.address);
@@ -317,7 +317,7 @@ async function emissionLoop(
 
     const totalSupply = await core.token.totalSupply();
     const veSupply = await core.ve.totalSupply();
-    const circulationSupply = await core.minter.circulating_supply();
+    const circulationSupply = await core.minter.circulatingSupply();
 
     const data = '' +
       `${i};` +

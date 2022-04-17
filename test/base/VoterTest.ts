@@ -1,5 +1,5 @@
 import {
-  BaseV1Pair,
+  DystPair,
   Bribe,
   Bribe__factory,
   Gauge,
@@ -34,9 +34,9 @@ describe("voter tests", function () {
   let mim: Token;
   let dai: Token;
   let wmatic: Token;
-  let mimUstPair: BaseV1Pair;
-  let mimDaiPair: BaseV1Pair;
-  let ustDaiPair: BaseV1Pair;
+  let mimUstPair: DystPair;
+  let mimDaiPair: DystPair;
+  let ustDaiPair: DystPair;
 
   let gaugeMimUst: Gauge;
   let gaugeMimDai: Gauge;
@@ -153,7 +153,7 @@ describe("voter tests", function () {
     await TimeUtils.rollback(snapshot);
   });
 
-  it("BaseV1Voter length", async function () {
+  it("DystVoter length", async function () {
     expect(await core.voter.length()).to.equal(3);
   });
 

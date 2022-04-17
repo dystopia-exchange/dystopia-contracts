@@ -1,10 +1,9 @@
-import {BaseV1Factory, BaseV1Fees, Token} from "../../../typechain";
+import {PairFees, Token} from "../../../typechain";
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
 import {ethers} from "hardhat";
 import chai from "chai";
 import {Deploy} from "../../../scripts/deploy/Deploy";
 import {TimeUtils} from "../../TimeUtils";
-import {Misc} from "../../../scripts/Misc";
 
 const {expect} = chai;
 
@@ -15,7 +14,7 @@ describe("fees tests", function () {
 
   let owner: SignerWithAddress;
   let owner2: SignerWithAddress;
-  let fees: BaseV1Fees;
+  let fees: PairFees;
   let wmatic: Token;
   let usdc: Token;
 
@@ -25,7 +24,7 @@ describe("fees tests", function () {
     [owner, owner2] = await ethers.getSigners();
     wmatic = await Deploy.deployContract(owner, 'Token', 'WMATIC', 'WMATIC', 18, owner.address) as Token;
     usdc = await Deploy.deployContract(owner, 'Token', 'USDC', 'USDC', 18, owner.address) as Token;
-    fees = await Deploy.deployContract(owner, 'BaseV1Fees', wmatic.address, usdc.address) as BaseV1Fees;
+    fees = await Deploy.deployContract(owner, 'PairFees', wmatic.address, usdc.address) as PairFees;
   });
 
   after(async function () {

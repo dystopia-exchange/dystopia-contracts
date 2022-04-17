@@ -6,7 +6,7 @@ import "../lib/Address.sol";
 import "../lib/Base64.sol";
 import "../lib/CheckpointLib.sol";
 import "../lib/Math.sol";
-import "../base/core/BaseV1Pair.sol";
+import "../base/core/DystPair.sol";
 
 contract Token {
   using Address for address;
@@ -161,7 +161,7 @@ contract Token {
 
   function hook(address, uint, uint, bytes calldata data) external {
     address pair = abi.decode(data, (address));
-    BaseV1Pair(pair).swap(0, 0, address(this), "");
+    DystPair(pair).swap(0, 0, address(this), "");
   }
 
   // --------------------- WMATIC

@@ -3,12 +3,14 @@
 pragma solidity ^0.8.13;
 
 import "../../lib/Math.sol";
+import "../../lib/SafeERC20.sol";
 import "../../interface/IERC20.sol";
 import "../../interface/IWMATIC.sol";
 import "../../interface/IPair.sol";
 import "../../interface/IFactory.sol";
 
 contract BaseV1Router01 {
+  using SafeERC20 for IERC20;
 
   struct Route {
     address from;
@@ -34,18 +36,26 @@ contract BaseV1Router01 {
 
   receive() external payable {
     // only accept ETH via fallback from the WETH contract
-    assert(msg.sender == address(wmatic));
+    require(msg.sender == address(wmatic), "BaseV1Router: NOT_WMATIC");
   }
 
-  function sortTokens(address tokenA, address tokenB) public pure returns (address token0, address token1) {
+  function sortTokens(address tokenA, address tokenB) external pure returns (address token0, address token1) {
+    return _sortTokens(tokenA, tokenB);
+  }
+
+  function _sortTokens(address tokenA, address tokenB) internal pure returns (address token0, address token1) {
     require(tokenA != tokenB, 'BaseV1Router: IDENTICAL_ADDRESSES');
     (token0, token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
     require(token0 != address(0), 'BaseV1Router: ZERO_ADDRESS');
   }
 
-  // calculates the CREATE2 address for a pair without making any external calls
-  function pairFor(address tokenA, address tokenB, bool stable) public view returns (address pair) {
-    (address token0, address token1) = sortTokens(tokenA, tokenB);
+  function pairFor(address tokenA, address tokenB, bool stable) external view returns (address pair) {
+    return _pairFor(tokenA, tokenB, stable);
+  }
+
+  /// @dev Calculates the CREATE2 address for a pair without making any external calls.
+  function _pairFor(address tokenA, address tokenB, bool stable) internal view returns (address pair) {
+    (address token0, address token1) = _sortTokens(tokenA, tokenB);
     pair = address(uint160(uint256(keccak256(abi.encodePacked(
         hex'ff',
         factory,
@@ -54,29 +64,37 @@ contract BaseV1Router01 {
       )))));
   }
 
-  // given some amount of an asset and pair reserves, returns an equivalent amount of the other asset
-  function quoteLiquidity(uint amountA, uint reserveA, uint reserveB) internal pure returns (uint amountB) {
+  function quoteLiquidity(uint amountA, uint reserveA, uint reserveB) external pure returns (uint amountB) {
+    return _quoteLiquidity(amountA, reserveA, reserveB);
+  }
+
+  /// @dev Given some amount of an asset and pair reserves, returns an equivalent amount of the other asset.
+  function _quoteLiquidity(uint amountA, uint reserveA, uint reserveB) internal pure returns (uint amountB) {
     require(amountA > 0, 'BaseV1Router: INSUFFICIENT_AMOUNT');
     require(reserveA > 0 && reserveB > 0, 'BaseV1Router: INSUFFICIENT_LIQUIDITY');
     amountB = amountA * reserveB / reserveA;
   }
 
-  // fetches and sorts the reserves for a pair
-  function getReserves(address tokenA, address tokenB, bool stable) public view returns (uint reserveA, uint reserveB) {
-    (address token0,) = sortTokens(tokenA, tokenB);
-    (uint reserve0, uint reserve1,) = IPair(pairFor(tokenA, tokenB, stable)).getReserves();
+  function getReserves(address tokenA, address tokenB, bool stable) external view returns (uint reserveA, uint reserveB) {
+    return _getReserves(tokenA, tokenB, stable);
+  }
+
+  /// @dev Fetches and sorts the reserves for a pair.
+  function _getReserves(address tokenA, address tokenB, bool stable) internal view returns (uint reserveA, uint reserveB) {
+    (address token0,) = _sortTokens(tokenA, tokenB);
+    (uint reserve0, uint reserve1,) = IPair(_pairFor(tokenA, tokenB, stable)).getReserves();
     (reserveA, reserveB) = tokenA == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
   }
 
-  // performs chained getAmountOut calculations on any number of pairs
+  /// @dev Performs chained getAmountOut calculations on any number of pairs.
   function getAmountOut(uint amountIn, address tokenIn, address tokenOut) external view returns (uint amount, bool stable) {
-    address pair = pairFor(tokenIn, tokenOut, true);
+    address pair = _pairFor(tokenIn, tokenOut, true);
     uint amountStable;
     uint amountVolatile;
     if (IFactory(factory).isPair(pair)) {
       amountStable = IPair(pair).getAmountOut(amountIn, tokenIn);
     }
-    pair = pairFor(tokenIn, tokenOut, false);
+    pair = _pairFor(tokenIn, tokenOut, false);
     if (IFactory(factory).isPair(pair)) {
       amountVolatile = IPair(pair).getAmountOut(amountIn, tokenIn);
     }
@@ -84,20 +102,24 @@ contract BaseV1Router01 {
   }
 
   function getExactAmountOut(uint amountIn, address tokenIn, address tokenOut, bool stable) external view returns (uint) {
-    address pair = pairFor(tokenIn, tokenOut, stable);
+    address pair = _pairFor(tokenIn, tokenOut, stable);
     if (IFactory(factory).isPair(pair)) {
       return IPair(pair).getAmountOut(amountIn, tokenIn);
     }
     return 0;
   }
 
-  // performs chained getAmountOut calculations on any number of pairs
-  function getAmountsOut(uint amountIn, Route[] memory routes) public view returns (uint[] memory amounts) {
+  /// @dev Performs chained getAmountOut calculations on any number of pairs.
+  function getAmountsOut(uint amountIn, Route[] memory routes) external view returns (uint[] memory amounts) {
+    return _getAmountsOut(amountIn, routes);
+  }
+
+  function _getAmountsOut(uint amountIn, Route[] memory routes) internal view returns (uint[] memory amounts) {
     require(routes.length >= 1, 'BaseV1Router: INVALID_PATH');
     amounts = new uint[](routes.length + 1);
     amounts[0] = amountIn;
     for (uint i = 0; i < routes.length; i++) {
-      address pair = pairFor(routes[i].from, routes[i].to, routes[i].stable);
+      address pair = _pairFor(routes[i].from, routes[i].to, routes[i].stable);
       if (IFactory(factory).isPair(pair)) {
         amounts[i + 1] = IPair(pair).getAmountOut(amounts[i], routes[i].from);
       }
@@ -121,19 +143,19 @@ contract BaseV1Router01 {
     uint _totalSupply = 0;
     if (_pair != address(0)) {
       _totalSupply = IERC20(_pair).totalSupply();
-      (reserveA, reserveB) = getReserves(tokenA, tokenB, stable);
+      (reserveA, reserveB) = _getReserves(tokenA, tokenB, stable);
     }
     if (reserveA == 0 && reserveB == 0) {
       (amountA, amountB) = (amountADesired, amountBDesired);
       liquidity = Math.sqrt(amountA * amountB) - MINIMUM_LIQUIDITY;
     } else {
 
-      uint amountBOptimal = quoteLiquidity(amountADesired, reserveA, reserveB);
+      uint amountBOptimal = _quoteLiquidity(amountADesired, reserveA, reserveB);
       if (amountBOptimal <= amountBDesired) {
         (amountA, amountB) = (amountADesired, amountBOptimal);
         liquidity = Math.min(amountA * _totalSupply / reserveA, amountB * _totalSupply / reserveB);
       } else {
-        uint amountAOptimal = quoteLiquidity(amountBDesired, reserveB, reserveA);
+        uint amountAOptimal = _quoteLiquidity(amountBDesired, reserveB, reserveA);
         (amountA, amountB) = (amountAOptimal, amountBDesired);
         liquidity = Math.min(amountA * _totalSupply / reserveA, amountB * _totalSupply / reserveB);
       }
@@ -153,7 +175,7 @@ contract BaseV1Router01 {
       return (0, 0);
     }
 
-    (uint reserveA, uint reserveB) = getReserves(tokenA, tokenB, stable);
+    (uint reserveA, uint reserveB) = _getReserves(tokenA, tokenB, stable);
     uint _totalSupply = IERC20(_pair).totalSupply();
     // using balances ensures pro-rata distribution
     amountA = liquidity * reserveA / _totalSupply;
@@ -171,23 +193,23 @@ contract BaseV1Router01 {
     uint amountAMin,
     uint amountBMin
   ) internal returns (uint amountA, uint amountB) {
-    require(amountADesired >= amountAMin);
-    require(amountBDesired >= amountBMin);
+    require(amountADesired >= amountAMin, "BaseV1Router: DESIRED_A_AMOUNT");
+    require(amountBDesired >= amountBMin, "BaseV1Router: DESIRED_B_AMOUNT");
     // create the pair if it doesn't exist yet
     address _pair = IFactory(factory).getPair(tokenA, tokenB, stable);
     if (_pair == address(0)) {
       _pair = IFactory(factory).createPair(tokenA, tokenB, stable);
     }
-    (uint reserveA, uint reserveB) = getReserves(tokenA, tokenB, stable);
+    (uint reserveA, uint reserveB) = _getReserves(tokenA, tokenB, stable);
     if (reserveA == 0 && reserveB == 0) {
       (amountA, amountB) = (amountADesired, amountBDesired);
     } else {
-      uint amountBOptimal = quoteLiquidity(amountADesired, reserveA, reserveB);
+      uint amountBOptimal = _quoteLiquidity(amountADesired, reserveA, reserveB);
       if (amountBOptimal <= amountBDesired) {
         require(amountBOptimal >= amountBMin, 'BaseV1Router: INSUFFICIENT_B_AMOUNT');
         (amountA, amountB) = (amountADesired, amountBOptimal);
       } else {
-        uint amountAOptimal = quoteLiquidity(amountBDesired, reserveB, reserveA);
+        uint amountAOptimal = _quoteLiquidity(amountBDesired, reserveB, reserveA);
         assert(amountAOptimal <= amountADesired);
         require(amountAOptimal >= amountAMin, 'BaseV1Router: INSUFFICIENT_A_AMOUNT');
         (amountA, amountB) = (amountAOptimal, amountBDesired);
@@ -206,10 +228,18 @@ contract BaseV1Router01 {
     address to,
     uint deadline
   ) external ensure(deadline) returns (uint amountA, uint amountB, uint liquidity) {
-    (amountA, amountB) = _addLiquidity(tokenA, tokenB, stable, amountADesired, amountBDesired, amountAMin, amountBMin);
-    address pair = pairFor(tokenA, tokenB, stable);
-    _safeTransferFrom(tokenA, msg.sender, pair, amountA);
-    _safeTransferFrom(tokenB, msg.sender, pair, amountB);
+    (amountA, amountB) = _addLiquidity(
+      tokenA,
+      tokenB,
+      stable,
+      amountADesired,
+      amountBDesired,
+      amountAMin,
+      amountBMin
+    );
+    address pair = _pairFor(tokenA, tokenB, stable);
+    SafeERC20.safeTransferFrom(IERC20(tokenA), msg.sender, pair, amountA);
+    SafeERC20.safeTransferFrom(IERC20(tokenB), msg.sender, pair, amountB);
     liquidity = IPair(pair).mint(to);
   }
 
@@ -231,8 +261,8 @@ contract BaseV1Router01 {
       amountTokenMin,
       amountMATICMin
     );
-    address pair = pairFor(token, address(wmatic), stable);
-    _safeTransferFrom(token, msg.sender, pair, amountToken);
+    address pair = _pairFor(token, address(wmatic), stable);
+    IERC20(token).safeTransferFrom(msg.sender, pair, amountToken);
     wmatic.deposit{value : amountMATIC}();
     assert(wmatic.transfer(pair, amountMATIC));
     liquidity = IPair(pair).mint(to);
@@ -241,6 +271,7 @@ contract BaseV1Router01 {
   }
 
   // **** REMOVE LIQUIDITY ****
+
   function removeLiquidity(
     address tokenA,
     address tokenB,
@@ -250,12 +281,34 @@ contract BaseV1Router01 {
     uint amountBMin,
     address to,
     uint deadline
-  ) public ensure(deadline) returns (uint amountA, uint amountB) {
-    address pair = pairFor(tokenA, tokenB, stable);
-    require(IERC20(pair).transferFrom(msg.sender, pair, liquidity));
+  ) external returns (uint amountA, uint amountB) {
+    return _removeLiquidity(
+      tokenA,
+      tokenB,
+      stable,
+      liquidity,
+      amountAMin,
+      amountBMin,
+      to,
+      deadline
+    );
+  }
+
+  function _removeLiquidity(
+    address tokenA,
+    address tokenB,
+    bool stable,
+    uint liquidity,
+    uint amountAMin,
+    uint amountBMin,
+    address to,
+    uint deadline
+  ) internal ensure(deadline) returns (uint amountA, uint amountB) {
+    address pair = _pairFor(tokenA, tokenB, stable);
+    IERC20(pair).safeTransferFrom(msg.sender, pair, liquidity);
     // send liquidity to pair
     (uint amount0, uint amount1) = IPair(pair).burn(to);
-    (address token0,) = sortTokens(tokenA, tokenB);
+    (address token0,) = _sortTokens(tokenA, tokenB);
     (amountA, amountB) = tokenA == token0 ? (amount0, amount1) : (amount1, amount0);
     require(amountA >= amountAMin, 'BaseV1Router: INSUFFICIENT_A_AMOUNT');
     require(amountB >= amountBMin, 'BaseV1Router: INSUFFICIENT_B_AMOUNT');
@@ -269,8 +322,28 @@ contract BaseV1Router01 {
     uint amountMATICMin,
     address to,
     uint deadline
-  ) public ensure(deadline) returns (uint amountToken, uint amountMATIC) {
-    (amountToken, amountMATIC) = removeLiquidity(
+  ) external returns (uint amountToken, uint amountMATIC) {
+    return _removeLiquidityMATIC(
+      token,
+      stable,
+      liquidity,
+      amountTokenMin,
+      amountMATICMin,
+      to,
+      deadline
+    );
+  }
+
+  function _removeLiquidityMATIC(
+    address token,
+    bool stable,
+    uint liquidity,
+    uint amountTokenMin,
+    uint amountMATICMin,
+    address to,
+    uint deadline
+  ) internal ensure(deadline) returns (uint amountToken, uint amountMATIC) {
+    (amountToken, amountMATIC) = _removeLiquidity(
       token,
       address(wmatic),
       stable,
@@ -280,7 +353,7 @@ contract BaseV1Router01 {
       address(this),
       deadline
     );
-    _safeTransfer(token, to, amountToken);
+    IERC20(token).safeTransfer(to, amountToken);
     wmatic.withdraw(amountMATIC);
     _safeTransferMATIC(to, amountMATIC);
   }
@@ -296,13 +369,13 @@ contract BaseV1Router01 {
     uint deadline,
     bool approveMax, uint8 v, bytes32 r, bytes32 s
   ) external returns (uint amountA, uint amountB) {
-    address pair = pairFor(tokenA, tokenB, stable);
+    address pair = _pairFor(tokenA, tokenB, stable);
     {
       uint value = approveMax ? type(uint).max : liquidity;
       IPair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
     }
 
-    (amountA, amountB) = removeLiquidity(tokenA, tokenB, stable, liquidity, amountAMin, amountBMin, to, deadline);
+    (amountA, amountB) = _removeLiquidity(tokenA, tokenB, stable, liquidity, amountAMin, amountBMin, to, deadline);
   }
 
   function removeLiquidityMATICWithPermit(
@@ -315,10 +388,10 @@ contract BaseV1Router01 {
     uint deadline,
     bool approveMax, uint8 v, bytes32 r, bytes32 s
   ) external returns (uint amountToken, uint amountMATIC) {
-    address pair = pairFor(token, address(wmatic), stable);
+    address pair = _pairFor(token, address(wmatic), stable);
     uint value = approveMax ? type(uint).max : liquidity;
     IPair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
-    (amountToken, amountMATIC) = removeLiquidityMATIC(token, stable, liquidity, amountTokenMin, amountMATICMin, to, deadline);
+    (amountToken, amountMATIC) = _removeLiquidityMATIC(token, stable, liquidity, amountTokenMin, amountMATICMin, to, deadline);
   }
 
   function removeLiquidityMATICSupportingFeeOnTransferTokens(
@@ -329,8 +402,28 @@ contract BaseV1Router01 {
     uint amountFTMMin,
     address to,
     uint deadline
-  ) public ensure(deadline) returns (uint amountToken, uint amountFTM) {
-    (amountToken, amountFTM) = removeLiquidity(
+  ) external returns (uint amountToken, uint amountFTM) {
+    return _removeLiquidityMATICSupportingFeeOnTransferTokens(
+      token,
+      stable,
+      liquidity,
+      amountTokenMin,
+      amountFTMMin,
+      to,
+      deadline
+    );
+  }
+
+  function _removeLiquidityMATICSupportingFeeOnTransferTokens(
+    address token,
+    bool stable,
+    uint liquidity,
+    uint amountTokenMin,
+    uint amountFTMMin,
+    address to,
+    uint deadline
+  ) internal ensure(deadline) returns (uint amountToken, uint amountFTM) {
+    (amountToken, amountFTM) = _removeLiquidity(
       token,
       address(wmatic),
       stable,
@@ -340,7 +433,7 @@ contract BaseV1Router01 {
       address(this),
       deadline
     );
-    _safeTransfer(token, to, IERC20(token).balanceOf(address(this)));
+    IERC20(token).safeTransfer(to, IERC20(token).balanceOf(address(this)));
     wmatic.withdraw(amountFTM);
     _safeTransferMATIC(to, amountFTM);
   }
@@ -355,10 +448,10 @@ contract BaseV1Router01 {
     uint deadline,
     bool approveMax, uint8 v, bytes32 r, bytes32 s
   ) external returns (uint amountToken, uint amountFTM) {
-    address pair = pairFor(token, address(wmatic), stable);
+    address pair = _pairFor(token, address(wmatic), stable);
     uint value = approveMax ? type(uint).max : liquidity;
     IPair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
-    (amountToken, amountFTM) = removeLiquidityMATICSupportingFeeOnTransferTokens(
+    (amountToken, amountFTM) = _removeLiquidityMATICSupportingFeeOnTransferTokens(
       token, stable, liquidity, amountTokenMin, amountFTMMin, to, deadline
     );
   }
@@ -367,11 +460,11 @@ contract BaseV1Router01 {
   // requires the initial amount to have already been sent to the first pair
   function _swap(uint[] memory amounts, Route[] memory routes, address _to) internal virtual {
     for (uint i = 0; i < routes.length; i++) {
-      (address token0,) = sortTokens(routes[i].from, routes[i].to);
+      (address token0,) = _sortTokens(routes[i].from, routes[i].to);
       uint amountOut = amounts[i + 1];
       (uint amount0Out, uint amount1Out) = routes[i].from == token0 ? (uint(0), amountOut) : (amountOut, uint(0));
-      address to = i < routes.length - 1 ? pairFor(routes[i + 1].from, routes[i + 1].to, routes[i + 1].stable) : _to;
-      IPair(pairFor(routes[i].from, routes[i].to, routes[i].stable)).swap(
+      address to = i < routes.length - 1 ? _pairFor(routes[i + 1].from, routes[i + 1].to, routes[i + 1].stable) : _to;
+      IPair(_pairFor(routes[i].from, routes[i].to, routes[i].stable)).swap(
         amount0Out, amount1Out, to, new bytes(0)
       );
     }
@@ -380,8 +473,8 @@ contract BaseV1Router01 {
   function _swapSupportingFeeOnTransferTokens(Route[] memory routes, address _to) internal virtual {
     for (uint i; i < routes.length; i++) {
       (address input, address output) = (routes[i].from, routes[i].to);
-      (address token0,) = sortTokens(input, output);
-      IPair pair = IPair(pairFor(routes[i].from, routes[i].to, routes[i].stable));
+      (address token0,) = _sortTokens(input, output);
+      IPair pair = IPair(_pairFor(routes[i].from, routes[i].to, routes[i].stable));
       uint amountInput;
       uint amountOutput;
       {// scope to avoid stack too deep errors
@@ -392,7 +485,7 @@ contract BaseV1Router01 {
         amountOutput = pair.getAmountOut(amountInput, input);
       }
       (uint amount0Out, uint amount1Out) = input == token0 ? (uint(0), amountOutput) : (amountOutput, uint(0));
-      address to = i < routes.length - 1 ? pairFor(routes[i + 1].from, routes[i + 1].to, routes[i + 1].stable) : _to;
+      address to = i < routes.length - 1 ? _pairFor(routes[i + 1].from, routes[i + 1].to, routes[i + 1].stable) : _to;
       pair.swap(amount0Out, amount1Out, to, new bytes(0));
     }
   }
@@ -410,10 +503,10 @@ contract BaseV1Router01 {
     routes[0].from = tokenFrom;
     routes[0].to = tokenTo;
     routes[0].stable = stable;
-    amounts = getAmountsOut(amountIn, routes);
+    amounts = _getAmountsOut(amountIn, routes);
     require(amounts[amounts.length - 1] >= amountOutMin, 'BaseV1Router: INSUFFICIENT_OUTPUT_AMOUNT');
-    _safeTransferFrom(
-      routes[0].from, msg.sender, pairFor(routes[0].from, routes[0].to, routes[0].stable), amounts[0]
+    IERC20(routes[0].from).safeTransferFrom(
+      msg.sender, _pairFor(routes[0].from, routes[0].to, routes[0].stable), amounts[0]
     );
     _swap(amounts, routes, to);
   }
@@ -425,10 +518,10 @@ contract BaseV1Router01 {
     address to,
     uint deadline
   ) external ensure(deadline) returns (uint[] memory amounts) {
-    amounts = getAmountsOut(amountIn, routes);
+    amounts = _getAmountsOut(amountIn, routes);
     require(amounts[amounts.length - 1] >= amountOutMin, 'BaseV1Router: INSUFFICIENT_OUTPUT_AMOUNT');
-    _safeTransferFrom(
-      routes[0].from, msg.sender, pairFor(routes[0].from, routes[0].to, routes[0].stable), amounts[0]
+    IERC20(routes[0].from).safeTransferFrom(
+      msg.sender, _pairFor(routes[0].from, routes[0].to, routes[0].stable), amounts[0]
     );
     _swap(amounts, routes, to);
   }
@@ -440,10 +533,10 @@ contract BaseV1Router01 {
   returns (uint[] memory amounts)
   {
     require(routes[0].from == address(wmatic), 'BaseV1Router: INVALID_PATH');
-    amounts = getAmountsOut(msg.value, routes);
+    amounts = _getAmountsOut(msg.value, routes);
     require(amounts[amounts.length - 1] >= amountOutMin, 'BaseV1Router: INSUFFICIENT_OUTPUT_AMOUNT');
     wmatic.deposit{value : amounts[0]}();
-    assert(wmatic.transfer(pairFor(routes[0].from, routes[0].to, routes[0].stable), amounts[0]));
+    assert(wmatic.transfer(_pairFor(routes[0].from, routes[0].to, routes[0].stable), amounts[0]));
     _swap(amounts, routes, to);
   }
 
@@ -453,10 +546,10 @@ contract BaseV1Router01 {
   returns (uint[] memory amounts)
   {
     require(routes[routes.length - 1].to == address(wmatic), 'BaseV1Router: INVALID_PATH');
-    amounts = getAmountsOut(amountIn, routes);
+    amounts = _getAmountsOut(amountIn, routes);
     require(amounts[amounts.length - 1] >= amountOutMin, 'BaseV1Router: INSUFFICIENT_OUTPUT_AMOUNT');
-    _safeTransferFrom(
-      routes[0].from, msg.sender, pairFor(routes[0].from, routes[0].to, routes[0].stable), amounts[0]
+    IERC20(routes[0].from).safeTransferFrom(
+      msg.sender, _pairFor(routes[0].from, routes[0].to, routes[0].stable), amounts[0]
     );
     _swap(amounts, routes, address(this));
     wmatic.withdraw(amounts[amounts.length - 1]);
@@ -470,10 +563,9 @@ contract BaseV1Router01 {
     address to,
     uint deadline
   ) external ensure(deadline) {
-    _safeTransferFrom(
-      routes[0].from,
+    IERC20(routes[0].from).safeTransferFrom(
       msg.sender,
-      pairFor(routes[0].from, routes[0].to, routes[0].stable),
+      _pairFor(routes[0].from, routes[0].to, routes[0].stable),
       amountIn
     );
     uint balanceBefore = IERC20(routes[routes.length - 1].to).balanceOf(to);
@@ -497,7 +589,7 @@ contract BaseV1Router01 {
     require(routes[0].from == address(wmatic), 'BaseV1Router: INVALID_PATH');
     uint amountIn = msg.value;
     wmatic.deposit{value : amountIn}();
-    assert(wmatic.transfer(pairFor(routes[0].from, routes[0].to, routes[0].stable), amountIn));
+    assert(wmatic.transfer(_pairFor(routes[0].from, routes[0].to, routes[0].stable), amountIn));
     uint balanceBefore = IERC20(routes[routes.length - 1].to).balanceOf(to);
     _swapSupportingFeeOnTransferTokens(routes, to);
     require(
@@ -517,8 +609,8 @@ contract BaseV1Router01 {
   ensure(deadline)
   {
     require(routes[routes.length - 1].to == address(wmatic), 'BaseV1Router: INVALID_PATH');
-    _safeTransferFrom(
-      routes[0].from, msg.sender, pairFor(routes[0].from, routes[0].to, routes[0].stable), amountIn
+    IERC20(routes[0].from).safeTransferFrom(
+      msg.sender, _pairFor(routes[0].from, routes[0].to, routes[0].stable), amountIn
     );
     _swapSupportingFeeOnTransferTokens(routes, address(this));
     uint amountOut = IERC20(address(wmatic)).balanceOf(address(this));
@@ -533,27 +625,13 @@ contract BaseV1Router01 {
     address to,
     uint deadline
   ) external ensure(deadline) returns (uint[] memory) {
-    _safeTransferFrom(routes[0].from, msg.sender, pairFor(routes[0].from, routes[0].to, routes[0].stable), amounts[0]);
+    IERC20(routes[0].from).safeTransferFrom(msg.sender, _pairFor(routes[0].from, routes[0].to, routes[0].stable), amounts[0]);
     _swap(amounts, routes, to);
     return amounts;
   }
 
   function _safeTransferMATIC(address to, uint value) internal {
     (bool success,) = to.call{value : value}(new bytes(0));
-    require(success, 'TransferHelper: ETH_TRANSFER_FAILED');
-  }
-
-  function _safeTransfer(address token, address to, uint256 value) internal {
-    require(token.code.length > 0);
-    (bool success, bytes memory data) =
-    token.call(abi.encodeWithSelector(IERC20.transfer.selector, to, value));
-    require(success && (data.length == 0 || abi.decode(data, (bool))));
-  }
-
-  function _safeTransferFrom(address token, address from, address to, uint256 value) internal {
-    require(token.code.length > 0);
-    (bool success, bytes memory data) =
-    token.call(abi.encodeWithSelector(IERC20.transferFrom.selector, from, to, value));
-    require(success && (data.length == 0 || abi.decode(data, (bool))));
+    require(success, 'BaseV1Router: ETH_TRANSFER_FAILED');
   }
 }

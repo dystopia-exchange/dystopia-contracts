@@ -8,7 +8,7 @@ import {parseUnits} from "ethers/lib/utils";
 
 const {expect} = chai;
 
-describe("factory tests", function () {
+describe("lib tests", function () {
 
   let snapshotBefore: string;
   let snapshot: string;

@@ -3,10 +3,12 @@
 pragma solidity ^0.8.13;
 
 import "../../interface/IERC20.sol";
+import "../../lib/SafeERC20.sol";
 
 /// @title Base V1 Fees contract is used as a 1:1 pair relationship to split out fees,
 ///        this ensures that the curve does not need to be modified for LP shares
 contract BaseV1Fees {
+  using SafeERC20 for IERC20;
 
   /// @dev The pair it is bonded to
   address internal immutable pair;
@@ -21,18 +23,15 @@ contract BaseV1Fees {
     token1 = _token1;
   }
 
-  function _safeTransfer(address token, address to, uint256 value) internal {
-    require(token.code.length > 0);
-    (bool success, bytes memory data) =
-    token.call(abi.encodeWithSelector(IERC20.transfer.selector, to, value));
-    require(success && (data.length == 0 || abi.decode(data, (bool))));
-  }
-
   // Allow the pair to transfer fees to users
   function claimFeesFor(address recipient, uint amount0, uint amount1) external {
-    require(msg.sender == pair);
-    if (amount0 > 0) _safeTransfer(token0, recipient, amount0);
-    if (amount1 > 0) _safeTransfer(token1, recipient, amount1);
+    require(msg.sender == pair, "Not pair");
+    if (amount0 > 0) {
+      IERC20(token0).safeTransfer(recipient, amount0);
+    }
+    if (amount1 > 0) {
+      IERC20(token1).safeTransfer(recipient, amount1);
+    }
   }
 
 }

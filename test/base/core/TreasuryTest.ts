@@ -1,26 +1,26 @@
-import {BaseV1Factory} from "../../typechain";
+import {GovernanceTreasury} from "../../../typechain";
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
 import {ethers} from "hardhat";
 import chai from "chai";
-import {Deploy} from "../../scripts/deploy/Deploy";
-import {TimeUtils} from "../TimeUtils";
+import {Deploy} from "../../../scripts/deploy/Deploy";
+import {TimeUtils} from "../../TimeUtils";
 
 const {expect} = chai;
 
-describe("factory tests", function () {
+describe("treasury tests", function () {
 
   let snapshotBefore: string;
   let snapshot: string;
 
   let owner: SignerWithAddress;
   let owner2: SignerWithAddress;
-  let factory: BaseV1Factory;
+  let treasury: GovernanceTreasury;
 
 
   before(async function () {
     snapshotBefore = await TimeUtils.snapshot();
     [owner, owner2] = await ethers.getSigners();
-    factory = await Deploy.deployBaseV1Factory(owner, owner.address);
+    treasury = await Deploy.deployGovernanceTreasury(owner);
   });
 
   after(async function () {
@@ -36,16 +36,10 @@ describe("factory tests", function () {
     await TimeUtils.rollback(snapshot);
   });
 
-  it("set pauser", async function () {
-    await factory.setPauser(owner2.address);
-    await factory.connect(owner2).acceptPauser();
-    expect(await factory.pauser()).is.eq(owner2.address);
+  it("set owner", async function () {
+    await treasury.setOwner(owner2.address);
+    await treasury.connect(owner2).acceptOwner();
+    expect(await treasury.owner()).is.eq(owner2.address);
   });
-
-  it("pause", async function () {
-    await factory.setPause(true);
-    expect(await factory.isPaused()).is.eq(true);
-  });
-
 
 });

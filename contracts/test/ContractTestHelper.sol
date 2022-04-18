@@ -2,21 +2,21 @@
 
 pragma solidity ^0.8.13;
 
-import "../base/core/BaseV1Pair.sol";
+import "../base/core/DystPair.sol";
 
 contract ContractTestHelper {
   using SafeERC20 for IERC20;
 
   function pairCurrentTwice(address pair, address tokenIn, uint amountIn) external returns (uint, uint){
-    uint c0 = BaseV1Pair(pair).current(tokenIn, amountIn);
-    BaseV1Pair(pair).sync();
-    uint c1 = BaseV1Pair(pair).current(tokenIn, amountIn);
+    uint c0 = DystPair(pair).current(tokenIn, amountIn);
+    DystPair(pair).sync();
+    uint c1 = DystPair(pair).current(tokenIn, amountIn);
     return (c0, c1);
   }
 
   function hook(address, uint amount0, uint amount1, bytes calldata data) external {
     address pair = abi.decode(data, (address));
-    (address token0, address token1) = BaseV1Pair(pair).tokens();
+    (address token0, address token1) = DystPair(pair).tokens();
     if (amount0 != 0) {
       IERC20(token0).safeTransfer(pair, amount0);
     }

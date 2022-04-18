@@ -1,4 +1,4 @@
-import {BaseV1Factory, BaseV1Pair__factory, Token} from "../../../typechain";
+import {DystFactory, DystPair__factory, Token} from "../../../typechain";
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
 import {ethers} from "hardhat";
 import chai from "chai";
@@ -15,7 +15,7 @@ describe("factory tests", function () {
 
   let owner: SignerWithAddress;
   let owner2: SignerWithAddress;
-  let factory: BaseV1Factory;
+  let factory: DystFactory;
   let wmatic: Token;
   let usdc: Token;
 
@@ -25,7 +25,7 @@ describe("factory tests", function () {
     [owner, owner2] = await ethers.getSigners();
     wmatic = await Deploy.deployContract(owner, 'Token', 'WMATIC', 'WMATIC', 18, owner.address) as Token;
     usdc = await Deploy.deployContract(owner, 'Token', 'USDC', 'USDC', 6, owner.address) as Token;
-    factory = await Deploy.deployBaseV1Factory(owner, owner.address);
+    factory = await Deploy.deployDystFactory(owner, owner.address);
   });
 
   after(async function () {
@@ -66,18 +66,18 @@ describe("factory tests", function () {
   });
 
   it("create pair revert with the same tokens", async function () {
-    await expect(factory.createPair(Misc.ZERO_ADDRESS, Misc.ZERO_ADDRESS, true)).revertedWith('IA');
+    await expect(factory.createPair(Misc.ZERO_ADDRESS, Misc.ZERO_ADDRESS, true)).revertedWith('IDENTICAL_ADDRESSES');
   });
 
   it("create pair revert with the zero token", async function () {
-    await expect(factory.createPair(wmatic.address, Misc.ZERO_ADDRESS, true)).revertedWith('ZA');
+    await expect(factory.createPair(wmatic.address, Misc.ZERO_ADDRESS, true)).revertedWith('ZERO_ADDRESS');
   });
 
   it("check created pair variables", async function () {
     await factory.createPair(wmatic.address, usdc.address, true);
-    await expect(factory.createPair(wmatic.address, usdc.address, true)).revertedWith('PE');
+    await expect(factory.createPair(wmatic.address, usdc.address, true)).revertedWith('PAIR_EXISTS');
     const pairAdr = await factory.getPair(wmatic.address, usdc.address, true);
-    const pair = BaseV1Pair__factory.connect(pairAdr, owner);
+    const pair = DystPair__factory.connect(pairAdr, owner);
     expect(await pair.factory()).eq(factory.address);
     expect(await pair.treasury()).eq(owner.address);
     expect(await pair.fees()).not.eq(Misc.ZERO_ADDRESS);

@@ -7,7 +7,7 @@ import "../../lib/SafeERC20.sol";
 
 /// @title Base V1 Fees contract is used as a 1:1 pair relationship to split out fees,
 ///        this ensures that the curve does not need to be modified for LP shares
-contract BaseV1Fees {
+contract PairFees {
   using SafeERC20 for IERC20;
 
   /// @dev The pair it is bonded to

@@ -1,7 +1,7 @@
 import {
-  BaseV1Factory,
-  BaseV1Pair,
-  BaseV1Router01,
+  DystFactory,
+  DystPair,
+  DystRouter01,
   ContractTestHelper,
   IERC20__factory,
   Token
@@ -26,8 +26,8 @@ describe("pair tests", function () {
   let owner: SignerWithAddress;
   let owner2: SignerWithAddress;
   let owner3: SignerWithAddress;
-  let factory: BaseV1Factory;
-  let router: BaseV1Router01;
+  let factory: DystFactory;
+  let router: DystRouter01;
   let testHelper: ContractTestHelper;
 
   let ust: Token;
@@ -35,8 +35,8 @@ describe("pair tests", function () {
   let dai: Token;
   let wmatic: Token;
 
-  let pair: BaseV1Pair;
-  let pair2: BaseV1Pair;
+  let pair: DystPair;
+  let pair2: DystPair;
 
 
   before(async function () {
@@ -44,8 +44,8 @@ describe("pair tests", function () {
     [owner, owner2, owner3] = await ethers.getSigners();
     wmatic = await Deploy.deployContract(owner, 'Token', 'WMATIC', 'WMATIC', 18, owner.address) as Token;
     await wmatic.mint(owner.address, parseUnits('10000'))
-    factory = await Deploy.deployBaseV1Factory(owner, owner.address);
-    router = await Deploy.deployBaseV1Router01(owner, factory.address, wmatic.address);
+    factory = await Deploy.deployDystFactory(owner, owner.address);
+    router = await Deploy.deployDystRouter01(owner, factory.address, wmatic.address);
 
     [ust, mim, dai] = await TestHelper.createMockTokensAndMint(owner);
     await ust.transfer(owner2.address, utils.parseUnits('100', 6));
@@ -210,11 +210,11 @@ describe("pair tests", function () {
   });
 
   it("insufficient liquidity minted revert", async function () {
-    await expect(pair2.mint(owner.address)).revertedWith('ILM');
+    await expect(pair2.mint(owner.address)).revertedWith('DystPair: INSUFFICIENT_LIQUIDITY_MINTED');
   });
 
   it("insufficient liquidity burned revert", async function () {
-    await expect(pair2.burn(owner.address)).revertedWith('ILB');
+    await expect(pair2.burn(owner.address)).revertedWith('DystPair: INSUFFICIENT_LIQUIDITY_BURNED');
   });
 
   it("swap on pause test", async function () {
@@ -223,15 +223,15 @@ describe("pair tests", function () {
   });
 
   it("insufficient output amount", async function () {
-    await expect(pair2.swap(0, 0, owner.address, '0x')).revertedWith('IOA');
+    await expect(pair2.swap(0, 0, owner.address, '0x')).revertedWith('DystPair: INSUFFICIENT_OUTPUT_AMOUNT');
   });
 
-  it("insufficient output liquidity", async function () {
-    await expect(pair2.swap(Misc.MAX_UINT, Misc.MAX_UINT, owner.address, '0x')).revertedWith('IL');
+  it("insufficient liquidity", async function () {
+    await expect(pair2.swap(Misc.MAX_UINT, Misc.MAX_UINT, owner.address, '0x')).revertedWith('DystPair: INSUFFICIENT_LIQUIDITY');
   });
 
   it("invalid to", async function () {
-    await expect(pair2.swap(1, 1, wmatic.address, '0x')).revertedWith('IT');
+    await expect(pair2.swap(1, 1, wmatic.address, '0x')).revertedWith('DystPair: INVALID_TO');
   });
 
   it("flash swap", async function () {
@@ -261,12 +261,12 @@ describe("pair tests", function () {
   });
 
   it("insufficient input amount", async function () {
-    await expect(pair2.swap(10000000, 1000000, owner.address, '0x')).revertedWith('IIA');
+    await expect(pair2.swap(10000000, 1000000, owner.address, '0x')).revertedWith('DystPair: INSUFFICIENT_INPUT_AMOUNT');
   });
 
   it("k revert", async function () {
     await mim.transfer(pair2.address, 1);
-    await expect(pair2.swap(10000000, 1000000, owner.address, '0x')).revertedWith('K');
+    await expect(pair2.swap(10000000, 1000000, owner.address, '0x')).revertedWith('DystPair: K');
   });
 
   it("approve with zero adr revert", async function () {
@@ -363,8 +363,8 @@ describe("pair tests", function () {
 
 async function swapInLoop(
   owner: SignerWithAddress,
-  factory: BaseV1Factory,
-  router: BaseV1Router01,
+  factory: DystFactory,
+  router: DystRouter01,
   loops: number,
 ) {
   const amount = parseUnits('1');
@@ -401,8 +401,8 @@ async function swapInLoop(
 
 async function prices(
   owner: SignerWithAddress,
-  factory: BaseV1Factory,
-  router: BaseV1Router01,
+  factory: DystFactory,
+  router: DystRouter01,
   stable = true,
 ) {
   const tokenA = await Deploy.deployContract(owner, 'Token', 'UST', 'UST', 18, owner.address) as Token;

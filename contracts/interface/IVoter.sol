@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 
 interface IVoter {
 
-  function _ve() external view returns (address);
+  function ve() external view returns (address);
 
   function attachTokenToGauge(uint _tokenId, address account) external;
 

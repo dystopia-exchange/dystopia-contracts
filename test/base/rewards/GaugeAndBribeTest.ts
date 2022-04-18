@@ -6,17 +6,17 @@ import {
   Gauge,
   Gauge__factory,
   Token
-} from "../../typechain";
+} from "../../../typechain";
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
 import {ethers} from "hardhat";
 import chai from "chai";
-import {CoreAddresses} from "../../scripts/deploy/CoreAddresses";
-import {Deploy} from "../../scripts/deploy/Deploy";
+import {CoreAddresses} from "../../../scripts/deploy/CoreAddresses";
+import {Deploy} from "../../../scripts/deploy/Deploy";
 import {BigNumber, utils} from "ethers";
-import {TestHelper} from "../TestHelper";
-import {TimeUtils} from "../TimeUtils";
+import {TestHelper} from "../../TestHelper";
+import {TimeUtils} from "../../TimeUtils";
 import {formatUnits, parseUnits} from "ethers/lib/utils";
-import {Misc} from "../../scripts/Misc";
+import {Misc} from "../../../scripts/Misc";
 
 const {expect} = chai;
 
@@ -237,7 +237,7 @@ describe("gauge and bribe tests", function () {
 
     await TimeUtils.advanceBlocksOnTs(WEEK * 2);
     await core.minter.updatePeriod()
-    await core.voter.distro();
+    await core.voter.distributeAll();
 
     await TimeUtils.advanceBlocksOnTs(WEEK / 2);
 
@@ -263,7 +263,7 @@ describe("gauge and bribe tests", function () {
 
     await TimeUtils.advanceBlocksOnTs(WEEK * 2);
     await core.minter.updatePeriod()
-    await core.voter.distro();
+    await core.voter.distributeAll();
 
     await TimeUtils.advanceBlocksOnTs(WEEK);
 

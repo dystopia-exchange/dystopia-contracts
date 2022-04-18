@@ -79,6 +79,7 @@ contract Gauge is IGauge, MultiRewardsPoolBase {
       _lockVeToken(msg.sender, tokenId);
     }
     _deposit(amount);
+    IVoter(voter).emitDeposit(tokenId, msg.sender, amount);
   }
 
   function withdrawAll() external {
@@ -91,6 +92,7 @@ contract Gauge is IGauge, MultiRewardsPoolBase {
       tokenId = tokenIds[msg.sender];
     }
     withdrawToken(amount, tokenId);
+    IVoter(voter).emitWithdraw(tokenId, msg.sender, amount);
   }
 
   function withdrawToken(uint amount, uint tokenId) public {

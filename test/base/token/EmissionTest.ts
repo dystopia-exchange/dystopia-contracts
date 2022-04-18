@@ -207,8 +207,7 @@ describe("emission tests", function () {
     expect(await core.token.balanceOf(gaugeMimUst.address)).is.eq(0);
 
     // distribute DYST to all gauges
-    await core.voter["distribute()"]();
-    await core.voter.distro();
+    await core.voter.distributeAll();
 
     // voter has some dust after distribution
     TestHelper.closer(await core.token.balanceOf(core.voter.address), parseUnits('0'), parseUnits('100'));

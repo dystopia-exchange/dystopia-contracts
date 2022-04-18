@@ -367,7 +367,7 @@ describe("core", function () {
 
     await ve.setVoter(voter.address);
 
-    expect(await voter.length()).to.equal(0);
+    expect(await voter.poolsLength()).to.equal(0);
   });
 
   it("deploy Minter", async function () {
@@ -566,7 +566,7 @@ describe("core", function () {
     await ve_underlying.approve(voter.address, pair_1000);
     await voter.notifyRewardAmount(pair_1000);
     await voter.updateAll();
-    await voter.distro();
+    await voter.distributeAll();
   });
 
   it("bribe claim rewards", async function () {
@@ -664,7 +664,7 @@ describe("core", function () {
     const claimable = await voter.claimable(gauge.address);
     await ve_underlying.approve(staking.address, claimable);
     await staking.notifyRewardAmount(claimable);
-    await voter.distro();
+    await voter.distributeAll();
     await network.provider.send("evm_increaseTime", [1800])
     await network.provider.send("evm_mine")
     expect((await gauge.rewardRate(ve_underlying.address)).div('1000000000000000000')).to.be.equal(await staking.rewardRate());
@@ -833,7 +833,7 @@ describe("core", function () {
     await ve_underlying.approve(staking.address, claimable);
     await staking.notifyRewardAmount(claimable);
     await voter.updateFor([gauge.address]);
-    await voter.distro();
+    await voter.distributeAll();
     await voter.claimRewards([gauge.address], [[ve_underlying.address]]);
     expect((await gauge.rewardRate(ve_underlying.address)).div('1000000000000000000')).to.be.equal(await staking.rewardRate());
     console.log(await gauge.rewardPerTokenStored(ve_underlying.address))

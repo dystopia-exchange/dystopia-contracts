@@ -222,7 +222,7 @@ contract DystVoter is IVoter, Reentrancy {
   function attachTokenToGauge(uint tokenId, address account) external override {
     require(isGauge[msg.sender], "!gauge");
     if (tokenId > 0) {
-      IVe(ve).attach(tokenId);
+      IVe(ve).attachToken(tokenId);
     }
     emit Attach(account, msg.sender, tokenId);
   }
@@ -237,7 +237,7 @@ contract DystVoter is IVoter, Reentrancy {
   function detachTokenFromGauge(uint tokenId, address account) external override {
     require(isGauge[msg.sender], "!gauge");
     if (tokenId > 0) {
-      IVe(ve).detach(tokenId);
+      IVe(ve).detachToken(tokenId);
     }
     emit Detach(account, msg.sender, tokenId);
   }

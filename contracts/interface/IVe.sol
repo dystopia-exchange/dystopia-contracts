@@ -47,9 +47,9 @@ interface IVe {
 
   function depositFor(uint tokenId, uint value) external;
 
-  function attach(uint tokenId) external;
+  function attachToken(uint tokenId) external;
 
-  function detach(uint tokenId) external;
+  function detachToken(uint tokenId) external;
 
   function voting(uint tokenId) external;
 

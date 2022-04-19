@@ -12,6 +12,10 @@ library Math {
     return a < b ? a : b;
   }
 
+  function positiveInt128(int128 value) internal pure returns (int128) {
+    return value < 0 ? int128(0) : value;
+  }
+
   function closeTo(uint a, uint b, uint target) internal pure returns (bool) {
     if (a > b) {
       if (a - b <= target) {

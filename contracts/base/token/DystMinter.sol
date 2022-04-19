@@ -65,7 +65,7 @@ contract DystMinter is IMinter {
     token.approve(address(ve), type(uint).max);
     uint sum;
     for (uint i = 0; i < claimants.length; i++) {
-      ve.create_lock_for(amounts[i], _LOCK_PERIOD, claimants[i]);
+      ve.createLockFor(amounts[i], _LOCK_PERIOD, claimants[i]);
       sum += amounts[i];
     }
     require(sum == totalAmount, "Wrong total_amount");

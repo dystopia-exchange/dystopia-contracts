@@ -54,15 +54,15 @@ describe("ve tests", function () {
   });
 
   it("get_last_user_slope test", async function () {
-    expect(await core.ve.get_last_user_slope(0)).is.eq(0);
+    expect(await core.ve.getLastUserSlope(0)).is.eq(0);
   });
 
   it("user_point_history__ts test", async function () {
-    expect(await core.ve.user_point_history__ts(0, 0)).is.eq(0);
+    expect(await core.ve.userPointHistoryTs(0, 0)).is.eq(0);
   });
 
   it("locked__end test", async function () {
-    expect(await core.ve.locked__end(0)).is.eq(0);
+    expect(await core.ve.lockedEnd(0)).is.eq(0);
   });
 
   it("balanceOf test", async function () {
@@ -96,8 +96,8 @@ describe("ve tests", function () {
 
   it("increase_unlock_time test", async function () {
     await TimeUtils.advanceBlocksOnTs(60 * 60 * 24 * 365 * 3);
-    await core.ve.increase_unlock_time(1, 60 * 60 * 24 * 365 * 4);
-    await expect(core.ve.increase_unlock_time(1, 60 * 60 * 24 * 365 * 5)).revertedWith('Voting lock can be 4 years max');
+    await core.ve.increaseUnlockTime(1, 60 * 60 * 24 * 365 * 4);
+    await expect(core.ve.increaseUnlockTime(1, 60 * 60 * 24 * 365 * 5)).revertedWith('Voting lock can be 4 years max');
   });
 
   it("tokenURI test", async function () {

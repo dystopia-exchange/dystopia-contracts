@@ -62,7 +62,7 @@ describe("minter", function () {
 
     await gauge_factory.initialize([mim.address, ve_underlying.address],owner.address);
     await ve_underlying.approve(ve.address, ethers.BigNumber.from("1000000000000000000"));
-    await ve.create_lock(ethers.BigNumber.from("1000000000000000000"), 4 * 365 * 86400);
+    await ve.createLock(ethers.BigNumber.from("1000000000000000000"), 4 * 365 * 86400);
     const VeDist = await ethers.getContractFactory("VeDist");
     ve_dist = await VeDist.deploy(ve.address);
     await ve_dist.deployed();

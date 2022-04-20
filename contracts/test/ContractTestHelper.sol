@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 
 import "../base/core/DystPair.sol";
 import "../base/vote/Ve.sol";
+import "../interface/IVeDist.sol";
 
 contract ContractTestHelper is IERC721Receiver {
   using SafeERC20 for IERC20;
@@ -46,6 +47,13 @@ contract ContractTestHelper is IERC721Receiver {
     Ve(ve).totalSupplyAt(block.number);
     Ve(ve).totalSupplyAt(block.number - 1);
     Ve(ve).safeTransferFrom(address(this), msg.sender, tokenId);
+  }
+
+  function multipleVeDistCheckpoints(address veDist) external {
+    IVeDist(veDist).checkpointToken();
+    IVeDist(veDist).checkpointToken();
+    IVeDist(veDist).checkpointTotalSupply();
+    IVeDist(veDist).checkpointTotalSupply();
   }
 
   function onERC721Received(

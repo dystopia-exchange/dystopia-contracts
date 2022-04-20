@@ -23,7 +23,7 @@ const { ethers } = require("hardhat");
 //   return getAddress(`0x${keccak256(sanitizedInputs).slice(-40)}`)
 // }
 
-describe("minter", function () {
+describe("minter old tests", function () {
 
   let token;
   let ve_underlying:Dyst;
@@ -133,7 +133,7 @@ describe("minter", function () {
     await network.provider.send("evm_mine")
     await minter.updatePeriod();
     console.log(await ve_dist.claimable(1));
-    await ve_dist.claim_many([1]);
+    await ve_dist.claimMany([1]);
     await network.provider.send("evm_increaseTime", [86400 * 7])
     await network.provider.send("evm_mine")
     await minter.updatePeriod();
@@ -143,7 +143,7 @@ describe("minter", function () {
     await network.provider.send("evm_mine")
     await minter.updatePeriod();
     console.log(await ve_dist.claimable(1));
-    await ve_dist.claim_many([1]);
+    await ve_dist.claimMany([1]);
     await network.provider.send("evm_increaseTime", [86400 * 7])
     await network.provider.send("evm_mine")
     await minter.updatePeriod();

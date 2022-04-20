@@ -207,7 +207,7 @@ contract DystVoter is IVoter, Reentrancy {
     require(isWhitelisted[tokenA] && isWhitelisted[tokenB], "!whitelisted");
     address _bribe = IBribeFactory(bribeFactory).createBribe();
     address _gauge = IGaugeFactory(gaugeFactory).createGauge(_pool, _bribe, ve);
-    IERC20(token).approve(_gauge, type(uint).max);
+    IERC20(token).safeIncreaseAllowance(_gauge, type(uint).max);
     bribes[_gauge] = _bribe;
     gauges[_pool] = _gauge;
     poolForGauge[_gauge] = _pool;

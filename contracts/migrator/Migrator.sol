@@ -95,6 +95,7 @@ contract Migrator {
     uint256 amountBMin
   ) public returns (uint256 amountA, uint256 amountB) {
     IPair pair = IPair(oldFactory.getPair(tokenA, tokenB));
+    // todo safe
     IERC20(address(pair)).transferFrom(msg.sender, address(pair), liquidity);
     (uint256 amount0, uint256 amount1) = pair.burn(address(this));
     (address token0,) = sortTokens(tokenA, tokenB);

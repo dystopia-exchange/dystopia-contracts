@@ -99,7 +99,7 @@ contract VeDist is IVeDist{
     for (uint i = 0; i < 128; i++) {
       if (_min >= _max) break;
       uint _mid = (_min + _max + 2) / 2;
-      IVe.Point memory pt = IVe(ve).point_history(_mid);
+      IVe.Point memory pt = IVe(ve).pointHistory(_mid);
       if (pt.ts <= _timestamp) {
         _min = _mid;
       } else {
@@ -115,7 +115,7 @@ contract VeDist is IVeDist{
     for (uint i = 0; i < 128; i++) {
       if (_min >= _max) break;
       uint _mid = (_min + _max + 2) / 2;
-      IVe.Point memory pt = IVe(ve).user_point_history(tokenId, _mid);
+      IVe.Point memory pt = IVe(ve).userPointHistory(tokenId, _mid);
       if (pt.ts <= _timestamp) {
         _min = _mid;
       } else {
@@ -127,9 +127,9 @@ contract VeDist is IVeDist{
 
   function ve_for_at(uint _tokenId, uint _timestamp) external view returns (uint) {
     address ve = voting_escrow;
-    uint max_user_epoch = IVe(ve).user_point_epoch(_tokenId);
+    uint max_user_epoch = IVe(ve).userPointEpoch(_tokenId);
     uint epoch = _find_timestamp_user_epoch(ve, _tokenId, _timestamp, max_user_epoch);
-    IVe.Point memory pt = IVe(ve).user_point_history(_tokenId, epoch);
+    IVe.Point memory pt = IVe(ve).userPointHistory(_tokenId, epoch);
     return Math.max(uint(int256(pt.bias - pt.slope * (int128(int256(_timestamp - pt.ts))))), 0);
   }
 
@@ -144,7 +144,7 @@ contract VeDist is IVeDist{
         break;
       } else {
         uint epoch = _find_timestamp_epoch(ve, t);
-        IVe.Point memory pt = IVe(ve).point_history(epoch);
+        IVe.Point memory pt = IVe(ve).pointHistory(epoch);
         int128 dt = 0;
         if (t > pt.ts) {
           dt = int128(int256(t - pt.ts));
@@ -164,7 +164,7 @@ contract VeDist is IVeDist{
     uint user_epoch = 0;
     uint to_distribute = 0;
 
-    uint max_user_epoch = IVe(ve).user_point_epoch(_tokenId);
+    uint max_user_epoch = IVe(ve).userPointEpoch(_tokenId);
     uint _start_time = start_time;
 
     if (max_user_epoch == 0) return 0;
@@ -178,7 +178,7 @@ contract VeDist is IVeDist{
 
     if (user_epoch == 0) user_epoch = 1;
 
-    IVe.Point memory user_point = IVe(ve).user_point_history(_tokenId, user_epoch);
+    IVe.Point memory user_point = IVe(ve).userPointHistory(_tokenId, user_epoch);
 
     if (week_cursor == 0) week_cursor = (user_point.ts + WEEK - 1) / WEEK * WEEK;
     if (week_cursor >= last_token_time) return 0;
@@ -195,7 +195,7 @@ contract VeDist is IVeDist{
         if (user_epoch > max_user_epoch) {
           user_point = IVe.Point(0, 0, 0, 0);
         } else {
-          user_point = IVe(ve).user_point_history(_tokenId, user_epoch);
+          user_point = IVe(ve).userPointHistory(_tokenId, user_epoch);
         }
       } else {
         int128 dt = int128(int256(week_cursor - old_user_point.ts));
@@ -221,7 +221,7 @@ contract VeDist is IVeDist{
     uint user_epoch = 0;
     uint to_distribute = 0;
 
-    uint max_user_epoch = IVe(ve).user_point_epoch(_tokenId);
+    uint max_user_epoch = IVe(ve).userPointEpoch(_tokenId);
     uint _start_time = start_time;
 
     if (max_user_epoch == 0) return 0;
@@ -235,7 +235,7 @@ contract VeDist is IVeDist{
 
     if (user_epoch == 0) user_epoch = 1;
 
-    IVe.Point memory user_point = IVe(ve).user_point_history(_tokenId, user_epoch);
+    IVe.Point memory user_point = IVe(ve).userPointHistory(_tokenId, user_epoch);
 
     if (week_cursor == 0) week_cursor = (user_point.ts + WEEK - 1) / WEEK * WEEK;
     if (week_cursor >= last_token_time) return 0;
@@ -252,7 +252,7 @@ contract VeDist is IVeDist{
         if (user_epoch > max_user_epoch) {
           user_point = IVe.Point(0, 0, 0, 0);
         } else {
-          user_point = IVe(ve).user_point_history(_tokenId, user_epoch);
+          user_point = IVe(ve).userPointHistory(_tokenId, user_epoch);
         }
       } else {
         int128 dt = int128(int256(week_cursor - old_user_point.ts));
@@ -279,7 +279,7 @@ contract VeDist is IVeDist{
     _last_token_time = _last_token_time / WEEK * WEEK;
     uint amount = _claim(_tokenId, voting_escrow, _last_token_time);
     if (amount != 0) {
-      IVe(voting_escrow).deposit_for(_tokenId, amount);
+      IVe(voting_escrow).depositFor(_tokenId, amount);
       token_last_balance -= amount;
     }
     return amount;
@@ -297,7 +297,7 @@ contract VeDist is IVeDist{
       if (_tokenId == 0) break;
       uint amount = _claim(_tokenId, _voting_escrow, _last_token_time);
       if (amount != 0) {
-        IVe(_voting_escrow).deposit_for(_tokenId, amount);
+        IVe(_voting_escrow).depositFor(_tokenId, amount);
         total += amount;
       }
     }

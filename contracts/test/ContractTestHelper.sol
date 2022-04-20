@@ -3,8 +3,9 @@
 pragma solidity ^0.8.13;
 
 import "../base/core/DystPair.sol";
+import "../base/vote/Ve.sol";
 
-contract ContractTestHelper {
+contract ContractTestHelper is IERC721Receiver {
   using SafeERC20 for IERC20;
 
   function pairCurrentTwice(address pair, address tokenIn, uint amountIn) external returns (uint, uint){
@@ -31,6 +32,29 @@ contract ContractTestHelper {
     uint numerator = amountInWithFee * reserveOut;
     uint denominator = reserveIn * 1000 + amountInWithFee;
     amountOut = numerator / denominator;
+  }
+
+  function veFlashTransfer(address ve, uint tokenId) external {
+    Ve(ve).safeTransferFrom(msg.sender, address(this), tokenId);
+    require(Ve(ve).balanceOfNFT(tokenId) == 0, "not zero balance");
+    Ve(ve).tokenURI(tokenId);
+    Ve(ve).totalSupplyAt(block.number);
+    Ve(ve).checkpoint();
+    Ve(ve).checkpoint();
+    Ve(ve).checkpoint();
+    Ve(ve).checkpoint();
+    Ve(ve).totalSupplyAt(block.number);
+    Ve(ve).totalSupplyAt(block.number - 1);
+    Ve(ve).safeTransferFrom(address(this), msg.sender, tokenId);
+  }
+
+  function onERC721Received(
+    address,
+    address,
+    uint256,
+    bytes calldata
+  ) external pure returns (bytes4) {
+    return this.onERC721Received.selector;
   }
 
 }

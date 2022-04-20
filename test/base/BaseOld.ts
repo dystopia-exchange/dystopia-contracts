@@ -21,7 +21,7 @@ import {Deploy} from "../../scripts/deploy/Deploy";
 const {expect} = require("chai");
 const {ethers} = require("hardhat");
 
-describe("core", function () {
+describe("base old tests", function () {
 
   let token;
   let token0: String;
@@ -654,7 +654,7 @@ describe("core", function () {
   });
 
   it("minter mint", async function () {
-    console.log(await ve_dist.last_token_time());
+    console.log(await ve_dist.lastTokenTime());
     console.log(await ve_dist.timestamp());
     await minter.initialize([owner.address], [ethers.BigNumber.from("1000000000000000000")], ethers.BigNumber.from("1000000000000000000"));
     await minter.updatePeriod();

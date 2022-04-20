@@ -1,9 +1,9 @@
-import {BrokenToken, Token} from "../typechain";
+import {BrokenToken, ContractTestHelper, Token} from "../../typechain";
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
 import {ethers} from "hardhat";
 import chai from "chai";
-import {Deploy} from "../scripts/deploy/Deploy";
-import {TimeUtils} from "./TimeUtils";
+import {Deploy} from "../../scripts/deploy/Deploy";
+import {TimeUtils} from "../TimeUtils";
 
 const {expect} = chai;
 
@@ -15,11 +15,13 @@ describe("lib tests", function () {
   let owner: SignerWithAddress;
   let owner2: SignerWithAddress;
   let mim: Token;
+  let helper: ContractTestHelper;
 
   before(async function () {
     snapshotBefore = await TimeUtils.snapshot();
     [owner, owner2] = await ethers.getSigners();
     mim = await Deploy.deployContract(owner, 'Token', 'WMATIC', 'WMATIC', 18, owner.address) as Token;
+    helper = await Deploy.deployContract(owner, 'ContractTestHelper') as ContractTestHelper;
   });
 
   after(async function () {
@@ -64,6 +66,19 @@ describe("lib tests", function () {
   it("broken token", async function () {
     const t = await Deploy.deployContract(owner, 'BrokenToken') as BrokenToken;
     await t.testBrokenTransfer();
+  });
+
+  it("closeTo test", async function () {
+    expect(await helper.closeTo(10,11, 1)).eq(true);
+    expect(await helper.closeTo(10,11, 0)).eq(false);
+    expect(await helper.closeTo(10,10, 0)).eq(true);
+    expect(await helper.closeTo(10,11, 2)).eq(true);
+    expect(await helper.closeTo(10,15, 2)).eq(false);
+    expect(await helper.closeTo(11, 10, 1)).eq(true);
+    expect(await helper.closeTo(11, 10, 0)).eq(false);
+    expect(await helper.closeTo(10, 10, 0)).eq(true);
+    expect(await helper.closeTo(11, 10, 2)).eq(true);
+    expect(await helper.closeTo(15, 10, 2)).eq(false);
   });
 
 

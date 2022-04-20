@@ -104,7 +104,7 @@ describe("minter tests", function () {
     const veDist = await Deploy.deployVeDist(owner, ve.address);
     const voter = await Deploy.deployDystVoter(owner, ve.address, baseFactory.address, gaugesFactory.address, bribesFactory.address);
     const minter = await Deploy.deployDystMinter(owner, voter.address, ve.address, veDist.address);
-    await expect(minter.initialize([owner.address], [1], 2)).revertedWith('Wrong total_amount')
+    await expect(minter.initialize([owner.address], [1], 2)).revertedWith('Wrong totalAmount')
   });
 
 

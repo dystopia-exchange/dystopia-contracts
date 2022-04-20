@@ -29,7 +29,7 @@ contract Ve is IERC721, IERC721Metadata, IVe, Reentrancy {
   uint public override epoch;
   /// @dev epoch -> unsigned point
   mapping(uint => Point) internal _pointHistory;
-  /// @dev user -> Point[user_epoch]
+  /// @dev user -> Point[userEpoch]
   mapping(uint => Point[1000000000]) internal _userPointHistory;
 
   mapping(uint => uint) public override userPointEpoch;
@@ -443,8 +443,8 @@ contract Ve is IERC721, IERC721Metadata, IVe, Reentrancy {
       }
 
       // Read values of scheduled changes in the slope
-      // old_locked.end can be in the past and in the future
-      // new_locked.end can ONLY by in the FUTURE unless everything expired: than zeros
+      // oldLocked.end can be in the past and in the future
+      // newLocked.end can ONLY by in the FUTURE unless everything expired: than zeros
       oldDSlope = slopeChanges[oldLocked.end];
       if (newLocked.end != 0) {
         if (newLocked.end == oldLocked.end) {
@@ -460,7 +460,7 @@ contract Ve is IERC721, IERC721Metadata, IVe, Reentrancy {
       lastPoint = _pointHistory[_epoch];
     }
     uint lastCheckpoint = lastPoint.ts;
-    // initial_last_point is used for extrapolation to calculate block number
+    // initialLastPoint is used for extrapolation to calculate block number
     // (approximately, for *At methods) and save them
     // as we cannot figure that out exactly from inside the contract
     Point memory initialLastPoint = lastPoint;
@@ -501,7 +501,7 @@ contract Ve is IERC721, IERC721Metadata, IVe, Reentrancy {
     }
 
     epoch = _epoch;
-    // Now point_history is filled until t=now
+    // Now pointHistory is filled until t=now
 
     if (_tokenId != 0) {
       // If last point was in this block, the slope change has been applied already
@@ -515,7 +515,7 @@ contract Ve is IERC721, IERC721Metadata, IVe, Reentrancy {
 
     if (_tokenId != 0) {
       // Schedule the slope changes (slope is going down)
-      // We subtract new_user_slope from [new_locked.end]
+      // We subtract newUserSlope from [newLocked.end]
       // and add old_user_slope to [old_locked.end]
       if (oldLocked.end > block.timestamp) {
         // old_dslope was <something> - u_old.slope, so we cancel that
@@ -533,7 +533,7 @@ contract Ve is IERC721, IERC721Metadata, IVe, Reentrancy {
           // old slope disappeared at this point
           slopeChanges[newLocked.end] = newDSlope;
         }
-        // else: we recorded it already in old_dslope
+        // else: we recorded it already in oldDSlope
       }
       // Now handle user history
       uint userEpoch = userPointEpoch[_tokenId] + 1;

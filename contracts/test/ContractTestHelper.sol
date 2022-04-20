@@ -45,7 +45,6 @@ contract ContractTestHelper is IERC721Receiver {
     Ve(ve).checkpoint();
     Ve(ve).totalSupplyAt(block.number);
     Ve(ve).totalSupplyAt(block.number - 1);
-    Ve(ve).totalSupplyAt(block.number - 1000);
     Ve(ve).safeTransferFrom(address(this), msg.sender, tokenId);
   }
 

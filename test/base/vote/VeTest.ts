@@ -293,7 +293,7 @@ describe("ve tests", function () {
   });
 
   it("totalSupplyAt for not exist epoch", async function () {
-    expect(await core.ve.totalSupplyAt(1000)).eq(0);
+    expect(await core.ve.totalSupplyAt(0)).eq(0);
   });
 
   it("totalSupplyAt for first epoch", async function () {

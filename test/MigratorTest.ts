@@ -6,16 +6,16 @@ import {
   Token,
   UniswapV2Factory,
   UniswapV2Pair__factory
-} from "../../typechain";
+} from "../typechain";
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
 import {ethers} from "hardhat";
 import chai from "chai";
-import {Deploy} from "../../scripts/deploy/Deploy";
-import {TimeUtils} from "../TimeUtils";
-import {TestHelper} from "../TestHelper";
+import {Deploy} from "../scripts/deploy/Deploy";
+import {TimeUtils} from "./TimeUtils";
+import {TestHelper} from "./TestHelper";
 import {utils} from "ethers";
 import {parseUnits} from "ethers/lib/utils";
-import {Misc} from "../../scripts/Misc";
+import {Misc} from "../scripts/Misc";
 
 const {expect} = chai;
 

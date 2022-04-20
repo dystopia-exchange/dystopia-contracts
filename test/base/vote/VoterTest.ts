@@ -1,21 +1,23 @@
 import {
-  DystPair,
   Bribe,
   Bribe__factory,
+  DystPair,
   Gauge,
   Gauge__factory,
   IERC20__factory,
   StakingRewards,
   Token
-} from "../../typechain";
+} from "../../../typechain";
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
 import {ethers} from "hardhat";
 import chai from "chai";
-import {CoreAddresses} from "../../scripts/deploy/CoreAddresses";
-import {Deploy} from "../../scripts/deploy/Deploy";
+import {CoreAddresses} from "../../../scripts/deploy/CoreAddresses";
+import {Deploy} from "../../../scripts/deploy/Deploy";
 import {BigNumber, utils} from "ethers";
-import {TestHelper} from "../TestHelper";
-import {TimeUtils} from "../TimeUtils";
+import {TestHelper} from "../../TestHelper";
+import {TimeUtils} from "../../TimeUtils";
+import {parseUnits} from "ethers/lib/utils";
+import {Misc} from "../../../scripts/Misc";
 
 const {expect} = chai;
 
@@ -29,6 +31,7 @@ describe("voter tests", function () {
   let owner: SignerWithAddress;
   let owner2: SignerWithAddress;
   let owner3: SignerWithAddress;
+  let owner4: SignerWithAddress;
   let core: CoreAddresses;
   let ust: Token;
   let mim: Token;
@@ -50,7 +53,7 @@ describe("voter tests", function () {
 
   before(async function () {
     snapshotBefore = await TimeUtils.snapshot();
-    [owner, owner2, owner3] = await ethers.getSigners();
+    [owner, owner2, owner3, owner4] = await ethers.getSigners();
     wmatic = await Deploy.deployContract(owner, 'Token', 'WMATIC', 'WMATIC', 18, owner.address) as Token;
 
     [ust, mim, dai] = await TestHelper.createMockTokensAndMint(owner);
@@ -66,9 +69,9 @@ describe("voter tests", function () {
       owner,
       wmatic.address,
       [wmatic.address, ust.address, mim.address, dai.address],
-      [owner.address, owner2.address],
-      [utils.parseUnits('100'), utils.parseUnits('100')],
-      utils.parseUnits('200')
+      [owner.address, owner2.address, owner4.address],
+      [parseUnits('100'), parseUnits('100'), BigNumber.from(10)],
+      parseUnits('200').add(10)
     );
 
     mimUstPair = await TestHelper.addLiquidity(
@@ -153,8 +156,8 @@ describe("voter tests", function () {
     await TimeUtils.rollback(snapshot);
   });
 
-  it("DystVoter length", async function () {
-    expect(await core.voter.length()).to.equal(3);
+  it("poolsLength test", async function () {
+    expect(await core.voter.poolsLength()).to.equal(3);
   });
 
   it("gauge rewardsListLength", async function () {
@@ -327,7 +330,7 @@ describe("voter tests", function () {
   });
 
   it("distribute gauge", async function () {
-    await core.voter["distribute(address[])"]([gaugeMimUst.address]);
+    await core.voter.distribute(gaugeMimUst.address);
   });
 
   it("whitelist new token", async function () {
@@ -335,6 +338,139 @@ describe("voter tests", function () {
     await mockToken.mint(owner.address, utils.parseUnits('1000000000000', 10));
     await core.voter.whitelist(mockToken.address, 1);
     expect(await core.voter.isWhitelisted(mockToken.address)).is.eq(true);
+  });
+
+  it("listingFee test", async function () {
+    expect(await core.voter.listingFee()).not.eq(0);
+  });
+
+  it("double init reject test", async function () {
+    await expect(core.voter.initialize([], owner.address)).revertedWith('!minter');
+  });
+
+  it("reset not owner reject test", async function () {
+    await expect(core.voter.reset(0)).revertedWith('!owner');
+  });
+
+  it("change vote test", async function () {
+    await core.voter.vote(1, [mimUstPair.address], [100]);
+    expect(await core.voter.votes(1, mimUstPair.address)).above(parseUnits('99'));
+    expect(await core.voter.weights(mimUstPair.address)).above(parseUnits('99'));
+    await core.voter.vote(1, [mimUstPair.address, mimDaiPair.address], [500, -500]);
+    expect(await core.voter.votes(1, mimUstPair.address)).above(parseUnits('49'));
+    expect(await core.voter.votes(1, mimDaiPair.address)).below(parseUnits('-49'));
+    await core.voter.reset(1);
+    expect(await core.voter.votes(1, mimUstPair.address)).eq(0);
+    expect(await core.voter.votes(1, mimDaiPair.address)).eq(0);
+    await core.voter.vote(1, [mimUstPair.address], [100]);
+    expect(await core.voter.votes(1, mimUstPair.address)).above(parseUnits('99'));
+  });
+
+  it("vote with duplicate pool revert test", async function () {
+    await expect(core.voter.vote(1, [mimUstPair.address, mimUstPair.address], [100, 1])).revertedWith("duplicate pool");
+  });
+
+  it("vote with too low power revert test", async function () {
+    await expect(core.voter.connect(owner4).vote(3, [mimUstPair.address, mimDaiPair.address], [parseUnits('1'), 1])).revertedWith("zero power");
+  });
+
+  it("vote not owner revert test", async function () {
+    await expect(core.voter.vote(99, [], [])).revertedWith("!owner");
+  });
+
+  it("vote wrong arrays revert test", async function () {
+    await expect(core.voter.vote(1, [], [1])).revertedWith("!arrays");
+  });
+
+  it("duplicate whitelist revert test", async function () {
+    await expect(core.voter.whitelist(mim.address, 1)).revertedWith("already whitelisted");
+  });
+
+  it("createGauge duplicate gauge revert test", async function () {
+    await expect(core.voter.createGauge(mimUstPair.address)).revertedWith("exist");
+  });
+
+  it("createGauge not pool revert test", async function () {
+    await expect(core.voter.createGauge(owner.address)).revertedWith("!pool");
+  });
+
+  it("createGauge not wl revert test", async function () {
+    const token = await Deploy.deployContract(owner, 'Token', 'T', 'T', 18, owner.address) as Token;
+    await token.mint(owner.address, parseUnits('100'));
+    const pair = await TestHelper.addLiquidity(
+      core.factory,
+      core.router,
+      owner,
+      mim.address,
+      token.address,
+      parseUnits('1'),
+      parseUnits('1'),
+      true
+    );
+
+    await expect(core.voter.createGauge(pair.address)).revertedWith("!whitelisted");
+  });
+
+  it("attachTokenToGauge not gauge revert test", async function () {
+    await expect(core.voter.attachTokenToGauge(1, owner.address)).revertedWith("!gauge");
+  });
+
+  it("attachTokenToGauge zero token test", async function () {
+    const gauge = await Misc.impersonate(gaugeMimDai.address);
+    await core.voter.connect(gauge).attachTokenToGauge(0, owner.address);
+  });
+
+  it("detachTokenFromGauge not gauge revert test", async function () {
+    await expect(core.voter.detachTokenFromGauge(1, owner.address)).revertedWith("!gauge");
+  });
+
+  it("detachTokenFromGauge zero token test", async function () {
+    const gauge = await Misc.impersonate(gaugeMimDai.address);
+    await core.voter.connect(gauge).detachTokenFromGauge(0, owner.address);
+  });
+
+  it("notifyRewardAmount zero amount revert test", async function () {
+    await expect(core.voter.notifyRewardAmount(0)).revertedWith("zero amount");
+  });
+
+  it("notifyRewardAmount no votes revert test", async function () {
+    await expect(core.voter.notifyRewardAmount(1)).revertedWith("!weights");
+  });
+
+  it("notifyRewardAmount too little ratio test", async function () {
+    await core.voter.vote(1, [mimUstPair.address], [1]);
+    const minter = await Misc.impersonate(core.minter.address);
+    await core.token.connect(minter).mint(owner.address, 1);
+    await core.voter.notifyRewardAmount(1);
+    expect(await core.voter.index()).eq(0);
+  });
+
+  it("claimBribes not owner revert test", async function () {
+    await expect(core.voter.claimBribes([], [[]], 99)).revertedWith("!owner");
+  });
+
+  it("claimFees not owner revert test", async function () {
+    await expect(core.voter.claimFees([], [[]], 99)).revertedWith("!owner");
+  });
+
+  it("distributeForPoolsInRange test", async function () {
+    await core.voter.distributeForPoolsInRange(0, 1);
+  });
+
+  it("distributeForPoolsInRange test", async function () {
+    await core.voter.distributeForGauges([gaugeMimDai.address]);
+  });
+
+  it("whitelist wrong token revert test", async function () {
+    await expect(core.voter.whitelist(Misc.ZERO_ADDRESS, 0)).revertedWith("!token");
+  });
+
+  it("whitelist not owner revert test", async function () {
+    await expect(core.voter.whitelist(Misc.ZERO_ADDRESS, 99)).revertedWith("!owner");
+  });
+
+  it("whitelist not power revert test", async function () {
+    await expect(core.voter.connect(owner4).whitelist(Misc.ZERO_ADDRESS, 3)).revertedWith("!power");
   });
 
 });

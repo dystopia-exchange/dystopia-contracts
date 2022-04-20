@@ -4,6 +4,14 @@ pragma solidity ^0.8.13;
 
 interface IVe {
 
+  enum DepositType {
+    DEPOSIT_FOR_TYPE,
+    CREATE_LOCK_TYPE,
+    INCREASE_LOCK_AMOUNT,
+    INCREASE_UNLOCK_TIME,
+    MERGE_TYPE
+  }
+
   struct Point {
     int128 bias;
     int128 slope; // # -dweight / dt
@@ -25,23 +33,23 @@ interface IVe {
 
   function isApprovedOrOwner(address, uint) external view returns (bool);
 
-  function create_lock_for(uint, uint, address) external returns (uint);
+  function createLockFor(uint, uint, address) external returns (uint);
 
-  function user_point_epoch(uint tokenId) external view returns (uint);
+  function userPointEpoch(uint tokenId) external view returns (uint);
 
   function epoch() external view returns (uint);
 
-  function user_point_history(uint tokenId, uint loc) external view returns (Point memory);
+  function userPointHistory(uint tokenId, uint loc) external view returns (Point memory);
 
-  function point_history(uint loc) external view returns (Point memory);
+  function pointHistory(uint loc) external view returns (Point memory);
 
   function checkpoint() external;
 
-  function deposit_for(uint tokenId, uint value) external;
+  function depositFor(uint tokenId, uint value) external;
 
-  function attach(uint tokenId) external;
+  function attachToken(uint tokenId) external;
 
-  function detach(uint tokenId) external;
+  function detachToken(uint tokenId) external;
 
   function voting(uint tokenId) external;
 

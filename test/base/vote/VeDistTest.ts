@@ -1,12 +1,12 @@
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
 import {ethers} from "hardhat";
 import chai from "chai";
-import {Deploy} from "../../scripts/deploy/Deploy";
-import {TimeUtils} from "../TimeUtils";
-import {MaticTestnetAddresses} from "../../scripts/addresses/MaticTestnetAddresses";
+import {Deploy} from "../../../scripts/deploy/Deploy";
+import {TimeUtils} from "../../TimeUtils";
+import {MaticTestnetAddresses} from "../../../scripts/addresses/MaticTestnetAddresses";
 import {BigNumber, utils} from "ethers";
-import {CoreAddresses} from "../../scripts/deploy/CoreAddresses";
-import {Token} from "../../typechain";
+import {CoreAddresses} from "../../../scripts/deploy/CoreAddresses";
+import {Token} from "../../../typechain";
 
 const {expect} = chai;
 

@@ -207,8 +207,7 @@ describe("emission tests", function () {
     expect(await core.token.balanceOf(gaugeMimUst.address)).is.eq(0);
 
     // distribute DYST to all gauges
-    await core.voter["distribute()"]();
-    await core.voter.distro();
+    await core.voter.distributeAll();
 
     // voter has some dust after distribution
     TestHelper.closer(await core.token.balanceOf(core.voter.address), parseUnits('0'), parseUnits('100'));
@@ -283,7 +282,7 @@ async function emissionLoop(
     console.log('!!! PERIOD', activePeriod, now, activePeriod + WEEK - now);
     await TimeUtils.advanceBlocksOnTs(activePeriod + WEEK - now);
 
-    await core.ve.increase_unlock_time(1, 365 * 86400 * 4);
+    await core.ve.increaseUnlockTime(1, 365 * 86400 * 4);
 
     // update period inside
     const tx = await gauge.getReward(owner.address, [core.token.address]);
@@ -310,7 +309,7 @@ async function emissionLoop(
     if (lockPercent !== 0 && !tokenBalance.isZero()) {
       const amount = tokenBalance.mul(lockPercent).div(100);
       console.log('!!!AMOUNT FOR DEPOSIT FROM GAUGES', formatUnits(amount), lockPercent);
-      await core.ve.deposit_for(1, amount);
+      await core.ve.depositFor(1, amount);
       // imitate sell
       await core.token.transfer(ust.address, tokenBalance.sub(amount))
     }

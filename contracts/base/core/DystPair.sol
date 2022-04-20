@@ -459,9 +459,9 @@ contract DystPair is IERC20, IPair, Reentrancy {
     return 3 * x0 * (y * y / 1e18) / 1e18 + (x0 * x0 / 1e18 * x0 / 1e18);
   }
 
-  function _get_y(uint x0, uint xy, uint y) internal pure returns (uint) {
+  function _getY(uint x0, uint xy, uint y) internal pure returns (uint) {
     for (uint i = 0; i < 255; i++) {
-      uint y_prev = y;
+      uint yPrev = y;
       uint k = _f(x0, y);
       if (k < xy) {
         uint dy = (xy - k) * 1e18 / _d(x0, y);
@@ -470,7 +470,7 @@ contract DystPair is IERC20, IPair, Reentrancy {
         uint dy = (k - xy) * 1e18 / _d(x0, y);
         y = y - dy;
       }
-      if (Math.closeTo(y, y_prev, 1)) {
+      if (Math.closeTo(y, yPrev, 1)) {
         break;
       }
     }
@@ -491,7 +491,7 @@ contract DystPair is IERC20, IPair, Reentrancy {
       _reserve1 = _reserve1 * 1e18 / decimals1;
       (uint reserveA, uint reserveB) = tokenIn == token0 ? (_reserve0, _reserve1) : (_reserve1, _reserve0);
       amountIn = tokenIn == token0 ? amountIn * 1e18 / decimals0 : amountIn * 1e18 / decimals1;
-      uint y = reserveB - _get_y(amountIn + reserveA, xy, reserveB);
+      uint y = reserveB - _getY(amountIn + reserveA, xy, reserveB);
       return y * (tokenIn == token0 ? decimals1 : decimals0) / 1e18;
     } else {
       (uint reserveA, uint reserveB) = tokenIn == token0 ? (_reserve0, _reserve1) : (_reserve1, _reserve0);

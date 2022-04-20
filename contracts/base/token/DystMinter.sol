@@ -35,7 +35,13 @@ contract DystMinter is IMinter {
 
   address internal initializer;
 
-  event Mint(address indexed sender, uint weekly, uint growth, uint circulating_supply, uint circulating_emission);
+  event Mint(
+    address indexed sender,
+    uint weekly,
+    uint growth,
+    uint circulatingSupply,
+    uint circulatingEmission
+  );
 
   constructor(
     address voter_, // the voting & distribution system
@@ -68,7 +74,7 @@ contract DystMinter is IMinter {
       ve.createLockFor(amounts[i], _LOCK_PERIOD, claimants[i]);
       sum += amounts[i];
     }
-    require(sum == totalAmount, "Wrong total_amount");
+    require(sum == totalAmount, "Wrong totalAmount");
     initializer = address(0);
     activePeriod = (block.timestamp + _WEEK) / _WEEK * _WEEK;
   }
@@ -151,10 +157,10 @@ contract DystMinter is IMinter {
       }
 
       IERC20(address(token)).safeTransfer(address(veDist), _growth);
-      // checkpoint token balance that was just minted in ve_dist
-      veDist.checkpoint_token();
+      // checkpoint token balance that was just minted in veDist
+      veDist.checkpointToken();
       // checkpoint supply
-      veDist.checkpoint_total_supply();
+      veDist.checkpointTotalSupply();
 
       token.approve(address(voter), _weekly);
       voter.notifyRewardAmount(_weekly);

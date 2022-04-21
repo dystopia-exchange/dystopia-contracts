@@ -15,6 +15,7 @@ contract Migrator {
 
   IUniswapV2Factory public oldFactory;
   IRouter public router;
+  bytes32 public pairInitHashCode;
 
   constructor(IUniswapV2Factory _oldFactory, IRouter _router) {
     oldFactory = _oldFactory;
@@ -48,7 +49,7 @@ contract Migrator {
     uint8 v,
     bytes32 r,
     bytes32 s
-  ) external {
+  ) public {
     IPair pair = IPair(oldFactory.getPair(tokenA, tokenB));
     pair.permit(msg.sender, address(this), liquidity, deadline, v, r, s);
 

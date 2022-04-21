@@ -254,7 +254,7 @@ contract DystVoter is IVoter, Reentrancy {
   }
 
   /// @dev Add rewards to this contract. Usually it is DystMinter.
-  function notifyRewardAmount(uint amount) external lock override {
+  function notifyRewardAmount(uint amount) external override {
     require(amount != 0, "zero amount");
     uint _totalWeight = totalWeight;
     // without votes rewards can not be added

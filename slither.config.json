@@ -1,6 +1,9 @@
 {
-  "detectors_to_exclude": "unimplemented-functions,too-many-digits,variable-names-are-too-similar,low-level-calls,incorrect-versions-of-solidity,assembly-usage,block-timestamp, reentrancy-vulnerabilities-2,reentrancy-vulnerabilities-3,reentrancy-vulnerabilities-1,dangerous-strict-equalities,divide-before-multiply",
+  "detectors_to_exclude": "unimplemented-functions,too-many-digits,variable-names-are-too-similar,low-level-calls,incorrect-versions-of-solidity,assembly-usage,block-timestamp,reentrancy-vulnerabilities-2,reentrancy-vulnerabilities-3,reentrancy-vulnerabilities-1,dangerous-strict-equalities,divide-before-multiply,variable-names-are-too-similar",
   "disable_color": true,
   "filter_paths": "node_modules|test",
-  "ignore_compile": true
+  "ignore_compile": true,
+  "exclude_low": true,
+  "exclude_medium": false,
+  "exclude_high": false
 }

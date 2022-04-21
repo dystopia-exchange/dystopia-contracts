@@ -48,7 +48,7 @@ contract Migrator {
     uint8 v,
     bytes32 r,
     bytes32 s
-  ) public {
+  ) external {
     IPair pair = IPair(oldFactory.getPair(tokenA, tokenB));
     pair.permit(msg.sender, address(this), liquidity, deadline, v, r, s);
 

@@ -41,15 +41,14 @@ contract DystPair is IERC20, IPair, Reentrancy {
   uint internal constant SWAP_FEE = 2000;
   /// @dev 50% of swap fee
   uint internal constant TREASURY_FEE = 2;
+  /// @dev Capture oracle reading every 30 minutes
+  uint internal constant PERIOD_SIZE = 1800;
 
   address public immutable override token0;
   address public immutable override token1;
   address public immutable fees;
   address public immutable factory;
   address public immutable treasury;
-
-  /// @dev Capture oracle reading every 30 minutes
-  uint constant periodSize = 1800;
 
   Observation[] public observations;
 
@@ -173,7 +172,7 @@ contract DystPair is IERC20, IPair, Reentrancy {
     IERC20(token0).safeTransfer(treasury, toTreasury);
     IERC20(token0).safeTransfer(fees, toFees);
     // 1e32 adjustment is removed during claim
-    uint256 _ratio = toFees * _FEE_PRECISION / totalSupply;
+    uint _ratio = toFees * _FEE_PRECISION / totalSupply;
     if (_ratio > 0) {
       index0 += _ratio;
     }
@@ -189,7 +188,7 @@ contract DystPair is IERC20, IPair, Reentrancy {
 
     IERC20(token1).safeTransfer(treasury, toTreasury);
     IERC20(token1).safeTransfer(fees, toFees);
-    uint256 _ratio = toFees * _FEE_PRECISION / totalSupply;
+    uint _ratio = toFees * _FEE_PRECISION / totalSupply;
     if (_ratio > 0) {
       index1 += _ratio;
     }
@@ -259,7 +258,7 @@ contract DystPair is IERC20, IPair, Reentrancy {
     timeElapsed = blockTimestamp - _point.timestamp;
     // compare the last observation with current timestamp,
     // if greater than 30 minutes, record a new event
-    if (timeElapsed > periodSize) {
+    if (timeElapsed > PERIOD_SIZE) {
       observations.push(Observation(blockTimestamp, reserve0CumulativeLast, reserve1CumulativeLast));
     }
     reserve0 = balance0;

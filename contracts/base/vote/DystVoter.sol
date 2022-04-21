@@ -114,14 +114,14 @@ contract DystVoter is IVoter, Reentrancy {
       weights[_pool] -= _votes;
       votes[_tokenId][_pool] -= _votes;
       if (_votes > 0) {
-        IBribe(bribes[gauges[_pool]])._withdraw(uint256(_votes), _tokenId);
+        IBribe(bribes[gauges[_pool]])._withdraw(uint(_votes), _tokenId);
         _totalWeight += _votes;
       } else {
         _totalWeight -= _votes;
       }
       emit Abstained(_tokenId, _votes);
     }
-    totalWeight -= uint256(_totalWeight);
+    totalWeight -= uint(_totalWeight);
     usedWeights[_tokenId] = 0;
     delete poolVote[_tokenId];
   }
@@ -165,7 +165,7 @@ contract DystVoter is IVoter, Reentrancy {
       weights[_pool] += _poolWeight;
       votes[_tokenId][_pool] += _poolWeight;
       if (_poolWeight > 0) {
-        IBribe(bribes[_gauge])._deposit(uint256(_poolWeight), _tokenId);
+        IBribe(bribes[_gauge])._deposit(uint(_poolWeight), _tokenId);
       } else {
         _poolWeight = - _poolWeight;
       }
@@ -174,8 +174,8 @@ contract DystVoter is IVoter, Reentrancy {
       emit Voted(msg.sender, _tokenId, _poolWeight);
     }
     if (_usedWeight > 0) IVe(ve).voting(_tokenId);
-    totalWeight += uint256(_totalWeight);
-    usedWeights[_tokenId] = uint256(_usedWeight);
+    totalWeight += uint(_totalWeight);
+    usedWeights[_tokenId] = uint(_usedWeight);
   }
 
   /// @dev Vote for given pools using a vote power of given tokenId. Reset previous votes.
@@ -262,7 +262,7 @@ contract DystVoter is IVoter, Reentrancy {
     // transfer the distro in
     IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
     // 1e18 adjustment is removed during claim
-    uint256 _ratio = amount * 1e18 / _totalWeight;
+    uint _ratio = amount * 1e18 / _totalWeight;
     if (_ratio > 0) {
       index += _ratio;
     }

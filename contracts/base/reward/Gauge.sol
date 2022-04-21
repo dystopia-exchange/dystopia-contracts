@@ -34,11 +34,11 @@ contract Gauge is IGauge, MultiRewardsPoolBase {
     voter = _voter;
   }
 
-  function claimFees() external lock override returns (uint claimed0, uint claimed1) {
+  function claimFees() external override returns (uint claimed0, uint claimed1) {
     return _claimFees();
   }
 
-  function _claimFees() internal returns (uint claimed0, uint claimed1) {
+  function _claimFees() internal lock returns (uint claimed0, uint claimed1) {
     address _underlying = underlying;
     (claimed0, claimed1) = IPair(_underlying).claimFees();
     if (claimed0 > 0 || claimed1 > 0) {
@@ -104,7 +104,7 @@ contract Gauge is IGauge, MultiRewardsPoolBase {
 
   /// @dev Balance should be recalculated after the lock
   ///      For locking a new ve token withdraw all funds and deposit again
-  function _lockVeToken(address account, uint tokenId) internal {
+  function _lockVeToken(address account, uint tokenId) internal lock {
     require(IERC721(ve).ownerOf(tokenId) == account, "Not ve token owner");
     if (tokenIds[account] == 0) {
       tokenIds[account] = tokenId;
@@ -115,7 +115,7 @@ contract Gauge is IGauge, MultiRewardsPoolBase {
   }
 
   /// @dev Balance should be recalculated after the unlock
-  function _unlockVeToken(address account, uint tokenId) internal {
+  function _unlockVeToken(address account, uint tokenId) internal lock {
     require(tokenId == tokenIds[account], "Wrong token");
     tokenIds[account] = 0;
     IVoter(voter).detachTokenFromGauge(tokenId, account);

@@ -148,7 +148,7 @@ export class Deploy {
     voterTokens: string[],
     minterClaimants: string[],
     minterClaimantsAmounts: BigNumber[],
-    minterMax: BigNumber
+    minterSum: BigNumber
   ) {
     const treasury = await Deploy.deployGovernanceTreasury(signer);
     const token = await Deploy.deployDyst(signer);
@@ -170,7 +170,7 @@ export class Deploy {
     await Misc.runAndWait(() => minter.initialize(
       minterClaimants,
       minterClaimantsAmounts,
-      minterMax
+      minterSum
     ));
 
     return new CoreAddresses(

@@ -15,7 +15,6 @@ contract Migrator {
 
   IUniswapV2Factory public oldFactory;
   IRouter public router;
-  bytes32 public pairInitHashCode;
 
   constructor(IUniswapV2Factory _oldFactory, IRouter _router) {
     oldFactory = _oldFactory;

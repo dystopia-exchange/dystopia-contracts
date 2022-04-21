@@ -173,7 +173,7 @@ contract DystPair is IERC20, IPair, Reentrancy {
     IERC20(token0).safeTransfer(treasury, toTreasury);
     IERC20(token0).safeTransfer(fees, toFees);
     // 1e32 adjustment is removed during claim
-    uint256 _ratio = toFees * _FEE_PRECISION / totalSupply;
+    uint _ratio = toFees * _FEE_PRECISION / totalSupply;
     if (_ratio > 0) {
       index0 += _ratio;
     }
@@ -189,7 +189,7 @@ contract DystPair is IERC20, IPair, Reentrancy {
 
     IERC20(token1).safeTransfer(treasury, toTreasury);
     IERC20(token1).safeTransfer(fees, toFees);
-    uint256 _ratio = toFees * _FEE_PRECISION / totalSupply;
+    uint _ratio = toFees * _FEE_PRECISION / totalSupply;
     if (_ratio > 0) {
       index1 += _ratio;
     }

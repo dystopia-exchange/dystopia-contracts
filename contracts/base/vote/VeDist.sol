@@ -199,7 +199,7 @@ contract VeDist is IVeDist {
     if (ptBias < ptSlope * dt) {
       return 0;
     }
-    return uint(int256(ptBias - ptSlope * dt));
+    return uint(int256(Math.positiveInt128(ptBias - ptSlope * dt)));
   }
 
   function checkpointTotalSupply() external override {

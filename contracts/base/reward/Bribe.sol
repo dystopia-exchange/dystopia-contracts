@@ -77,7 +77,7 @@ contract Bribe is IBribe, MultiRewardsPoolBase {
   }
 
   function _addressToTokenId(address adr) internal pure returns (uint) {
-    return uint256(uint160(adr));
+    return uint(uint160(adr));
   }
 
 }

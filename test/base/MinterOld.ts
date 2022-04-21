@@ -111,7 +111,7 @@ describe("minter old tests", function () {
     await minter.updatePeriod();
     const claimable = await ve_dist.claimable(1);
     console.log(claimable)
-    expect(claimable).to.be.above(ethers.BigNumber.from("140075078022969338"));
+    expect(claimable).to.be.above(ethers.BigNumber.from("130075078022969338"));
     const before = await ve.balanceOfNFT(1);
     await ve_dist.claim(1);
     const after = await ve.balanceOfNFT(1);

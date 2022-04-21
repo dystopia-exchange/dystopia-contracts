@@ -21,7 +21,7 @@ library SafeERC20 {
   function safeTransfer(
     IERC20 token,
     address to,
-    uint256 value
+    uint value
   ) internal {
     _callOptionalReturn(token, abi.encodeWithSelector(token.transfer.selector, to, value));
   }
@@ -30,7 +30,7 @@ library SafeERC20 {
     IERC20 token,
     address from,
     address to,
-    uint256 value
+    uint value
   ) internal {
     _callOptionalReturn(token, abi.encodeWithSelector(token.transferFrom.selector, from, to, value));
   }
@@ -38,9 +38,9 @@ library SafeERC20 {
   function safeIncreaseAllowance(
     IERC20 token,
     address spender,
-    uint256 value
+    uint value
   ) internal {
-    uint256 newAllowance = token.allowance(address(this), spender) + value;
+    uint newAllowance = token.allowance(address(this), spender) + value;
     _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, newAllowance));
   }
 

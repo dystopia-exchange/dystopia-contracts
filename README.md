@@ -168,6 +168,6 @@ function distribute(address token) external
 | DystVoter               | [0xECACDAcf3b6c23E180f70cF28b6811652e6808e7](https://mumbai.polygonscan.com/address/0xECACDAcf3b6c23E180f70cF28b6811652e6808e7#code) |
 | Ve                      | [0x043074eaAf5DCca960601b7B464FCd2bEC34df1D](https://mumbai.polygonscan.com/address/0x043074eaAf5DCca960601b7B464FCd2bEC34df1D#code) |
 | VeDist                  | [0x67fef6a7908Faf1d89B659b9bbE76D82837Ee6E2](https://mumbai.polygonscan.com/address/0x67fef6a7908Faf1d89B659b9bbE76D82837Ee6E2#code) |
-| Migrator                | [0x67fef6a7908Faf1d89B659b9bbE76D82837Ee6E2](https://mumbai.polygonscan.com/address/0x67fef6a7908Faf1d89B659b9bbE76D82837Ee6E2#code) |
+| Migrator                | [0x434B01D3E005cce37607D0D029BE72679cdA7521](https://mumbai.polygonscan.com/address/0x434B01D3E005cce37607D0D029BE72679cdA7521#code) |
 
 

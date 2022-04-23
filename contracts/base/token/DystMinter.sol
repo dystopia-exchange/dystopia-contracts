@@ -18,19 +18,41 @@ contract DystMinter is IMinter {
 
   /// @dev Allows minting once per week (reset every Thursday 00:00 UTC)
   uint internal constant _WEEK = 86400 * 7;
-  uint internal constant _EMISSION = 98;
-  uint internal constant _TAIL_EMISSION = 2;
   uint internal constant _LOCK_PERIOD = 86400 * 7 * 52 * 4;
-  /// @dev 2% per week target emission
-  uint internal constant _TARGET_BASE = 100;
-  /// @dev 0.2% per week target emission
-  uint internal constant _TAIL_BASE = 1000;
+
+  /// @dev Decrease base weekly emission by 2%
+  uint internal constant _WEEKLY_EMISSION_DECREASE = 98;
+  uint internal constant _WEEKLY_EMISSION_DECREASE_DENOMINATOR = 100;
+
+
+  /// @dev Weekly emission threshold for the end game. 1% of circulation supply.
+  uint internal constant _TAIL_EMISSION = 1;
+  uint internal constant _TAIL_EMISSION_DENOMINATOR = 100;
+
+  /// @dev Decrease weekly rewards for ve holders. 10% of the full amount.
+  uint internal constant _GROWTH_DIVIDER = 10;
+
+  /// @dev Decrease initialStubCirculationSupply by 1% per week.
+  ///      Decreasing only if circulation supply lower that the stub circulation
+  uint internal constant _INITIAL_CIRCULATION_DECREASE = 99;
+  uint internal constant _INITIAL_CIRCULATION_DECREASE_DENOMINATOR = 100;
+
+  /// @dev Stubbed initial circulating supply to avoid first weeks gaps of locked amounts.
+  ///      Should be equal expected unlocked token percent.
+  uint internal constant _STUB_CIRCULATION = 10;
+  uint internal constant _STUB_CIRCULATION_DENOMINATOR = 100;
+
+  /// @dev The core parameter for determinate the whole emission dynamic.
+  ///       Will be decreased every week.
+  uint internal constant _START_BASE_WEEKLY_EMISSION = 20_000_000e18;
+
+
   IUnderlying public immutable token;
   IVoter public immutable voter;
   IVe public immutable ve;
   IVeDist public immutable veDist;
-  uint public weekly = 5_000_000e18;
-  uint public initialStubCirculationSupply;
+  uint public baseWeeklyEmission = _START_BASE_WEEKLY_EMISSION;
+  uint public initialStubCirculation;
   uint public activePeriod;
 
   address internal initializer;
@@ -56,9 +78,7 @@ contract DystMinter is IMinter {
     activePeriod = (block.timestamp + (2 * _WEEK)) / _WEEK * _WEEK;
   }
 
-  /// @dev sum amounts / max = % ownership of top protocols,
-  ///      so if initial 20m is distributed, and target is 25% protocol ownership,
-  ///      then max - 4 x 20m = 80m
+  /// @dev Mint initial supply to holders and lock it to ve token.
   function initialize(
     address[] memory claimants,
     uint[] memory amounts,
@@ -66,8 +86,7 @@ contract DystMinter is IMinter {
   ) external {
     require(initializer == msg.sender, "Not initializer");
     token.mint(address(this), totalAmount);
-    // 20% of minted will be a stub circulation supply for a warming up period
-    initialStubCirculationSupply = totalAmount / 5;
+    initialStubCirculation = totalAmount * _STUB_CIRCULATION / _STUB_CIRCULATION_DENOMINATOR;
     token.approve(address(ve), type(uint).max);
     uint sum;
     for (uint i = 0; i < claimants.length; i++) {
@@ -95,7 +114,7 @@ contract DystMinter is IMinter {
 
   function _circulatingSupplyAdjusted() internal view returns (uint) {
     // we need a stub supply for cover initial gap when huge amount of tokens was distributed and locked
-    return Math.max(_circulatingSupply(), initialStubCirculationSupply);
+    return Math.max(_circulatingSupply(), initialStubCirculation);
   }
 
   /// @dev Emission calculation is 2% of available supply to mint adjusted by circulating / total supply
@@ -105,7 +124,8 @@ contract DystMinter is IMinter {
 
   function _calculateEmission() internal view returns (uint) {
     // use adjusted circulation supply for avoid first weeks gaps
-    return weekly * _EMISSION * _circulatingSupplyAdjusted() / _TARGET_BASE / token.totalSupply();
+    // baseWeeklyEmission should be decrease every week
+    return baseWeeklyEmission * _circulatingSupplyAdjusted() / token.totalSupply();
   }
 
   /// @dev Weekly emission takes the max of calculated (aka target) emission versus circulating tail end emission
@@ -123,7 +143,7 @@ contract DystMinter is IMinter {
   }
 
   function _circulatingEmission() internal view returns (uint) {
-    return _circulatingSupply() * _TAIL_EMISSION / _TAIL_BASE;
+    return _circulatingSupply() * _TAIL_EMISSION / _TAIL_EMISSION_DENOMINATOR;
   }
 
   /// @dev Calculate inflation and adjust ve balances accordingly
@@ -132,21 +152,26 @@ contract DystMinter is IMinter {
   }
 
   function _calculateGrowth(uint _minted) internal view returns (uint) {
-    return IUnderlying(address(ve)).totalSupply() * _minted / token.totalSupply();
+    return IUnderlying(address(ve)).totalSupply() * _minted / token.totalSupply() / _GROWTH_DIVIDER;
   }
 
   /// @dev Update period can only be called once per cycle (1 week)
   function updatePeriod() external override returns (uint) {
     uint _period = activePeriod;
-    if (block.timestamp >= _period + _WEEK && initializer == address(0)) {// only trigger if new week
+    // only trigger if new week
+    if (block.timestamp >= _period + _WEEK && initializer == address(0)) {
       _period = block.timestamp / _WEEK * _WEEK;
       activePeriod = _period;
       uint _weekly = _weeklyEmission();
       // slightly decrease weekly emission
-      weekly = weekly * _EMISSION / _TARGET_BASE;
-      // decrease stub supply every week until reach nearly zero amount
-      if (initialStubCirculationSupply > _circulatingEmission()) {
-        initialStubCirculationSupply -= initialStubCirculationSupply / 10;
+      baseWeeklyEmission = baseWeeklyEmission
+      * _WEEKLY_EMISSION_DECREASE
+      / _WEEKLY_EMISSION_DECREASE_DENOMINATOR;
+      // decrease stub supply every week if it higher than the real circulation
+      if (initialStubCirculation > _circulatingEmission()) {
+        initialStubCirculation = initialStubCirculation
+        * _INITIAL_CIRCULATION_DECREASE
+        / _INITIAL_CIRCULATION_DECREASE_DENOMINATOR;
       }
 
       uint _growth = _calculateGrowth(_weekly);

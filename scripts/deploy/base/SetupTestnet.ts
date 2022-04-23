@@ -94,10 +94,15 @@ const claimantsAmounts = [
   BigNumber.from("511920000000000000000000"),
   BigNumber.from("452870000000000000000000")];
 
-const minterMax = BigNumber.from("100000000000000000000000000");
-
 async function main() {
   const signer = (await ethers.getSigners())[0];
+
+  let minterMax = BigNumber.from("0");
+
+  for (const c of claimantsAmounts) {
+    minterMax = minterMax.add(c);
+  }
+
   const core = await Deploy.deployCore(signer, MaticTestnetAddresses.WMATIC_TOKEN, voterTokens, claimants, claimantsAmounts, minterMax)
 
   const data = ''
@@ -117,6 +122,7 @@ async function main() {
 
   await Misc.wait(5);
 
+  await Verify.verify(core.treasury.address);
   await Verify.verify(core.token.address);
   await Verify.verify(core.gaugesFactory.address);
   await Verify.verify(core.bribesFactory.address);

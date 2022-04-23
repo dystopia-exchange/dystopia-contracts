@@ -100,25 +100,25 @@ describe("minter old tests", function () {
 
   it("minter weekly distribute", async function () {
     await minter.updatePeriod();
-    expect(await minter.weekly()).to.equal(ethers.BigNumber.from("5000000000000000000000000"));
+    expect(await minter.baseWeeklyEmission()).to.equal(ethers.BigNumber.from("20000000000000000000000000"));
     await network.provider.send("evm_increaseTime", [86400 * 7])
     await network.provider.send("evm_mine")
     await minter.updatePeriod();
     expect(await ve_dist.claimable(1)).to.equal(0);
-    expect(await minter.weekly()).to.equal(ethers.BigNumber.from("5000000000000000000000000"));
+    expect(await minter.baseWeeklyEmission()).to.equal(ethers.BigNumber.from("20000000000000000000000000"));
     await network.provider.send("evm_increaseTime", [86400 * 7])
     await network.provider.send("evm_mine")
     await minter.updatePeriod();
     const claimable = await ve_dist.claimable(1);
     console.log(claimable)
-    expect(claimable).to.be.above(ethers.BigNumber.from("130075078022969338"));
+    expect(claimable).to.be.above(ethers.BigNumber.from("46017464891488080"));
     const before = await ve.balanceOfNFT(1);
     await ve_dist.claim(1);
     const after = await ve.balanceOfNFT(1);
     console.log(before,after)
     expect(await ve_dist.claimable(1)).to.equal(0);
 
-    const weekly = await minter.weekly();
+    const weekly = await minter.baseWeeklyEmission();
     console.log(weekly);
     console.log(await minter.calculateGrowth(weekly));
     console.log(await ve_underlying.totalSupply());

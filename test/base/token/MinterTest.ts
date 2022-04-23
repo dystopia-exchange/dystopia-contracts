@@ -79,11 +79,11 @@ describe("minter tests", function () {
   });
 
   it("calculate_emission test", async function () {
-    expect(await core.minter.calculateEmission()).is.eq(BigNumber.from('980000000000000000000000'));
+    expect(await core.minter.calculateEmission()).is.eq(BigNumber.from('2000000000000000000000000'));
   });
 
   it("weekly_emission test", async function () {
-    expect(await core.minter.weeklyEmission()).is.eq(BigNumber.from('980000000000000000000000'));
+    expect(await core.minter.weeklyEmission()).is.eq(BigNumber.from('2000000000000000000000000'));
   });
 
   it("circulating_emission test", async function () {
@@ -113,7 +113,7 @@ describe("minter tests", function () {
     while (true) {
       await TimeUtils.advanceBlocksOnTs(60 * 60 * 24 * 7)
       await core.minter.updatePeriod();
-      const c = await core.minter.initialStubCirculationSupply();
+      const c = await core.minter.initialStubCirculation();
       const circulatingEmission = await core.minter.circulatingEmission();
       console.log(c.toString(), circulatingEmission.toString());
       if (c.lte(circulatingEmission)) {

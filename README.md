@@ -176,7 +176,7 @@ function distribute(address token) external
 | Name                    | Address                                                                                                                    |
 |:------------------------|:---------------------------------------------------------------------------------------------------------------------------|
 | DystFactory             | [0x1d21Db6cde1b18c7E47B0F7F42f4b3F68b9beeC9](https://polygonscan.com/address/0x1d21Db6cde1b18c7E47B0F7F42f4b3F68b9beeC9)   |
-| DystRouter01            | [0x6BD6979fe0345A9c02bF5Fa714003C428627F353](https://polygonscan.com/address/0x6BD6979fe0345A9c02bF5Fa714003C428627F353)   |
+| DystRouter01            | [0xbE75Dd16D029c6B32B7aD57A0FD9C1c20Dd2862e](https://polygonscan.com/address/0xbE75Dd16D029c6B32B7aD57A0FD9C1c20Dd2862e)   |
 | GovernanceTreasury      | [0xBd51042D3A9EF62d4d93013315AE96A0c1760d7E](https://polygonscan.com/address/0xBd51042D3A9EF62d4d93013315AE96A0c1760d7E)   |
 | BribeFactory            | [](https://polygonscan.com/address/)                                                                                       |
 | GaugesFactory           | [](https://polygonscan.com/address/)                                                                                       |

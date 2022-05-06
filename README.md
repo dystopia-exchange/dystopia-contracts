@@ -171,3 +171,18 @@ function distribute(address token) external
 | Migrator                | [0x434B01D3E005cce37607D0D029BE72679cdA7521](https://mumbai.polygonscan.com/address/0x434B01D3E005cce37607D0D029BE72679cdA7521#code) |
 
 
+### Polygon deployment
+
+| Name                    | Address                                                                                                                    |
+|:------------------------|:---------------------------------------------------------------------------------------------------------------------------|
+| DystFactory             | [0x1d21Db6cde1b18c7E47B0F7F42f4b3F68b9beeC9](https://polygonscan.com/address/0x1d21Db6cde1b18c7E47B0F7F42f4b3F68b9beeC9)   |
+| DystRouter01            | [0x6BD6979fe0345A9c02bF5Fa714003C428627F353](https://polygonscan.com/address/0x6BD6979fe0345A9c02bF5Fa714003C428627F353)   |
+| GovernanceTreasury      | [0xBd51042D3A9EF62d4d93013315AE96A0c1760d7E](https://polygonscan.com/address/0xBd51042D3A9EF62d4d93013315AE96A0c1760d7E)   |
+| BribeFactory            | [](https://polygonscan.com/address/)                                                                                       |
+| GaugesFactory           | [](https://polygonscan.com/address/)                                                                                       |
+| DYST                    | [](https://polygonscan.com/address/)                                                                                       |
+| DystMinter              | [](https://polygonscan.com/address/)                                                                                       |
+| DystVoter               | [](https://polygonscan.com/address/)                                                                                       |
+| Ve                      | [](https://polygonscan.com/address/)                                                                                       |
+| VeDist                  | [](https://polygonscan.com/address/)                                                                                       |
+| Migrator                | [](https://polygonscan.com/address/)                                                                                       |

@@ -1,8 +1,8 @@
 import {
+  ContractTestHelper,
   DystFactory,
   DystPair,
   DystRouter01,
-  ContractTestHelper,
   IERC20__factory,
   Token
 } from "../../../typechain";
@@ -359,7 +359,58 @@ describe("pair tests", function () {
     expect(receipt.gasUsed).below(BigNumber.from(130000));
   });
 
+  it("twap price complex test", async function () {
+    await mim.approve(router.address, parseUnits('100'));
+    await ust.approve(router.address, parseUnits('100', 6));
+
+    expect(await pair.observationLength()).eq(1);
+    const window = 10;
+    for (let i = 0; i < window; i++) {
+      await TimeUtils.advanceBlocksOnTs(60 * 60)
+      await pair.sync();
+    }
+
+    expect(await pair.observationLength()).eq(window + 1);
+    await checkTwap(pair, mim.address, BigNumber.from(177));
+
+    await router.swapExactTokensForTokens(parseUnits('1'), 0, [{
+      from: mim.address,
+      to: ust.address,
+      stable: true,
+    }], owner.address, 9999999999);
+
+    await checkTwap(pair, mim.address, BigNumber.from(581_393));
+    await TimeUtils.advanceBlocksOnTs(60 * 60 * window)
+    await pair.sync();
+    await checkTwap(pair, mim.address, BigNumber.from(523_258));
+
+    await router.swapExactTokensForTokens(parseUnits('1', 6), 0, [{
+      to: mim.address,
+      from: ust.address,
+      stable: true,
+    }], owner.address, 9999999999);
+
+    await checkTwap(pair, mim.address, BigNumber.from(195_121));
+    await TimeUtils.advanceBlocksOnTs(60 * 60 * window)
+    await pair.sync();
+    await checkTwap(pair, mim.address, BigNumber.from(181_396));
+
+  });
+
 });
+
+async function checkTwap(pair: DystPair, tokenIn: string, diff: BigNumber) {
+  const amount = parseUnits('1');
+  const twapPrice = await pair.quote(tokenIn, amount, 10)
+  const curPrice = await pair.getAmountOut(amount, tokenIn);
+  console.log('twapPrice', twapPrice.toString());
+  console.log('curPrice', curPrice.toString());
+  if(twapPrice.gt(curPrice)) {
+    TestHelper.closer(twapPrice.sub(curPrice), diff, diff.div(100));
+  } else {
+    TestHelper.closer(curPrice.sub(twapPrice), diff, diff.div(100));
+  }
+}
 
 async function swapInLoop(
   owner: SignerWithAddress,

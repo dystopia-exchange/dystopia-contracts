@@ -19,7 +19,7 @@ const claimantsAmounts = [
   BigNumber.from(""),
 ];
 
-const FACTORY = '';
+const FACTORY = '0x1d21Db6cde1b18c7E47B0F7F42f4b3F68b9beeC9';
 
 async function main() {
   const signer = (await ethers.getSigners())[0];

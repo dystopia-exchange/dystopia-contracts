@@ -5,13 +5,13 @@ import logSettings from "../../log_settings";
 import {BigNumber, ContractFactory, utils} from "ethers";
 import {Libraries} from "hardhat-deploy/dist/types";
 import {
-  Dyst,
   BribeFactory,
+  Dyst,
   DystFactory,
-  GaugeFactory,
   DystMinter,
   DystRouter01,
   DystVoter,
+  GaugeFactory,
   GovernanceTreasury,
   Token,
   Ve,
@@ -185,6 +185,58 @@ export class Deploy {
       minter,
       treasury
     );
+  }
+
+
+  public static async deployDex(
+    signer: SignerWithAddress,
+    networkToken: string,
+  ) {
+    const treasury = await Deploy.deployGovernanceTreasury(signer);
+    const baseFactory = await Deploy.deployDystFactory(signer, treasury.address);
+    const router = await Deploy.deployDystRouter01(signer, baseFactory.address, networkToken);
+
+    return [baseFactory, router, treasury];
+  }
+
+  public static async deployDystSystem(
+    signer: SignerWithAddress,
+    networkToken: string,
+    voterTokens: string[],
+    minterClaimants: string[],
+    minterClaimantsAmounts: BigNumber[],
+    minterSum: BigNumber,
+    baseFactory: string
+  ) {
+    const token = await Deploy.deployDyst(signer);
+    const gaugesFactory = await Deploy.deployGaugeFactory(signer);
+    const bribesFactory = await Deploy.deployBribeFactory(signer);
+
+    const ve = await Deploy.deployVe(signer, token.address);
+    const veDist = await Deploy.deployVeDist(signer, ve.address);
+    const voter = await Deploy.deployDystVoter(signer, ve.address, baseFactory, gaugesFactory.address, bribesFactory.address);
+    const minter = await Deploy.deployDystMinter(signer, voter.address, ve.address, veDist.address);
+
+    await Misc.runAndWait(() => token.setMinter(minter.address));
+    await Misc.runAndWait(() => ve.setVoter(voter.address));
+    await Misc.runAndWait(() => veDist.setDepositor(minter.address));
+
+    await Misc.runAndWait(() => voter.initialize(voterTokens, minter.address));
+    await Misc.runAndWait(() => minter.initialize(
+      minterClaimants,
+      minterClaimantsAmounts,
+      minterSum
+    ));
+
+    return [
+      token,
+      gaugesFactory,
+      bribesFactory,
+      ve,
+      veDist,
+      voter,
+      minter,
+    ];
   }
 
 }

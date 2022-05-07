@@ -142,8 +142,38 @@ function distribute(address token) external
 
 ### veNFT distribution recipients
 
-| Name | Address | Qty |
-| :--- | :--- | :--- |
+| Name             | Address                                      | Qty            |
+|:-----------------|:---------------------------------------------|:---------------|
+| PolygonDAO       | 0x342952B86Bea9F2225f14D9f0dddDE070D1d0cC1   | 10,000,000.00  |
+| FRAX             | 0xDCB5A4b6Ee39447D700F4FA3303B1d1c25Ea9cA7   | 3,000,000.00   |
+| UST              | 0x2c44BB177C44Bc91Ad91d75F12Dbc589B10F02cB   | 1,000,000.00   |
+| MAI              | 0x3FEACf904b152b1880bDE8BF04aC9Eb636fEE4d8   | 1,000,000.00   |
+| Aavegotchi       | 0xD4151c984e6CF33E04FFAAF06c3374B2926Ecc64   | 192,307.69     |
+| Adamant Finance  | 0x59cbff972fe0c19c881354a9cde52aca704da848   | 192,307.69     |
+| Beefy Finance    | 0xe37dD9A535c1D3c9fC33e3295B7e08bD1C42218D   | 192,307.69     |
+| CompliFi         | 0xa2722e04A1C70756AD297695e3c409507dc01341   | 192,307.69     |
+| Gains Network    | 0xeEc0974A7DBD8341A0aA07Ea95C61745aa691Cd9   | 192,307.69     |
+| GotchiVault      | 0x3F2c32b452c235218d6e1c3988E4B1F5F74afD4a   | 192,307.69     |
+| Impermax Finance | 0x3f81e3d58ff74B8b692e4936c310D3A5f333cF28   | 192,307.69     |
+| InsurAce         | 0xe96DAADd5d03F2f067965a466228f6D2CF4b3bD2   | 192,307.69     |
+| Jarvis Network   | 0x2709fa6FA31BD336455d4F96DdFC505b3ACA5A68   | 192,307.69     |
+| Klima DAO        | 0x65A5076C0BA74e5f3e069995dc3DAB9D197d995c   | 192,307.69     |
+| Kogefarm         | 0xb26adCEE4aDE6812b036b96d77A7E997Ddd0F611   | 192,307.69     |
+| Market           | 0xd6f81D154D0532906140ef37268BC8eD2A17e008   | 192,307.69     |
+| Mimo Defi        | 0x4A0b0189035D3d710aa9DA8a13174Dd904c77148   | 192,307.69     |
+| Multichain       | 0xe0c92587b8b2C1a8Bd069F1f0eB990fD42a2198F   | 192,307.69     |
+| pNetwork         | 0x6e321232bD0C4A223355B06eB6BeFB9975f5618e   | 192,307.69     |
+| PoolTogether     | 0x3feE50d2888F2F7106fcdC0120295EBA3ae59245   | 192,307.69     |
+| Ramp             | 0xB63428448De118A7A6B6622556BaDAcB409eA961   | 192,307.69     |
+| Solo Top         | 0xC1B43205C21071aF382587f9519d238240d8B4F3   | 192,307.69     |
+| Sphere Finance   | 0x20D61737f972EEcB0aF5f0a85ab358Cd083Dd56a   | 192,307.69     |
+| StakeDAO         | 0xaA8B91ba8d78A0dc9a74FaBc54B6c4CC76191B0c   | 192,307.69     |
+| Synapse          | 0xBdD38B2eaae34C9FCe187909e81e75CBec0dAA7A   | 192,307.69     |
+| Tetu             | 0xcc16d636dD05b52FF1D8B9CE09B09BC62b11412B   | 192,307.69     |
+| Tidal Finance    | 0x42B5bb174CfA09012581425EAF62De1d1185ac7C   | 192,307.69     |
+| Vesq             | 0x4F64c22FB06ab877Bf63f7064fA21C5c51cc85bf   | 192,307.69     |
+| Goodghosting     | 0xcc7b93e2aa199785ebd57ca563ecea7314afa875   | 192,307.69     |
+| OtterClam        | 0x929A27c46041196e1a49C7B459d63eC9A20cd879   | 192,307.69     |
 
 
 ### Mumbai deployment

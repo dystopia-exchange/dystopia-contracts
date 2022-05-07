@@ -14,5 +14,6 @@ export class MaticAddresses {
   public static FRAX_TOKEN = "0x104592a158490a9228070E0A8e5343B499e125D0".toLowerCase();
   public static DAI_TOKEN = "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063".toLowerCase();
   public static USDT_TOKEN = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F".toLowerCase();
+  public static UST_TOKEN = "0x692597b009d13C4049a947CAB2239b7d6517875F".toLowerCase();
 
 }

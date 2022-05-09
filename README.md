@@ -140,7 +140,7 @@ function vote(address[] calldata _poolVote, uint[] calldata _weights) external
 function distribute(address token) external
 ```
 
-### veNFT distribution recipients
+### veDYST distribution recipients
 
 | Name             | Address                                      | Qty            |
 |:-----------------|:---------------------------------------------|:---------------|
@@ -203,16 +203,15 @@ function distribute(address token) external
 
 ### Polygon deployment
 
-| Name                    | Address                                                                                                                    |
-|:------------------------|:---------------------------------------------------------------------------------------------------------------------------|
-| DystFactory             | [0x1d21Db6cde1b18c7E47B0F7F42f4b3F68b9beeC9](https://polygonscan.com/address/0x1d21Db6cde1b18c7E47B0F7F42f4b3F68b9beeC9)   |
-| DystRouter01            | [0xbE75Dd16D029c6B32B7aD57A0FD9C1c20Dd2862e](https://polygonscan.com/address/0xbE75Dd16D029c6B32B7aD57A0FD9C1c20Dd2862e)   |
-| GovernanceTreasury      | [0xBd51042D3A9EF62d4d93013315AE96A0c1760d7E](https://polygonscan.com/address/0xBd51042D3A9EF62d4d93013315AE96A0c1760d7E)   |
-| BribeFactory            | [](https://polygonscan.com/address/)                                                                                       |
-| GaugesFactory           | [](https://polygonscan.com/address/)                                                                                       |
-| DYST                    | [](https://polygonscan.com/address/)                                                                                       |
-| DystMinter              | [](https://polygonscan.com/address/)                                                                                       |
-| DystVoter               | [](https://polygonscan.com/address/)                                                                                       |
-| Ve                      | [](https://polygonscan.com/address/)                                                                                       |
-| VeDist                  | [](https://polygonscan.com/address/)                                                                                       |
-| Migrator                | [](https://polygonscan.com/address/)                                                                                       |
+| Name               | Address                                                                                                                   |
+|:-------------------|:--------------------------------------------------------------------------------------------------------------------------|
+| DystFactory        | [0x1d21Db6cde1b18c7E47B0F7F42f4b3F68b9beeC9](https://polygonscan.com/address/0x1d21Db6cde1b18c7E47B0F7F42f4b3F68b9beeC9)  |
+| DystRouter01       | [0xbE75Dd16D029c6B32B7aD57A0FD9C1c20Dd2862e](https://polygonscan.com/address/0xbE75Dd16D029c6B32B7aD57A0FD9C1c20Dd2862e)  |
+| GovernanceTreasury | [0xBd51042D3A9EF62d4d93013315AE96A0c1760d7E](https://polygonscan.com/address/0xBd51042D3A9EF62d4d93013315AE96A0c1760d7E)  |
+| BribeFactory       | [0x5405F6de2a0D7Ea0dAA2b8f7E018868F9C3c2A02](https://polygonscan.com/address/0x5405F6de2a0D7Ea0dAA2b8f7E018868F9C3c2A02)  |
+| GaugesFactory      | [0x08bFE3d50f5B55a0fc15D8Eaf970b8171803613c](https://polygonscan.com/address/0x08bFE3d50f5B55a0fc15D8Eaf970b8171803613c)  |
+| DYST               | [0x5093868fBc3f96FF07A840D3b03Aa807dA05e2EF](https://polygonscan.com/address/0x5093868fBc3f96FF07A840D3b03Aa807dA05e2EF)  |
+| DystMinter         | [0xaB9C265a56980955Aa46bBAb214B2657DaFF18A7](https://polygonscan.com/address/0xaB9C265a56980955Aa46bBAb214B2657DaFF18A7)  |
+| DystVoter          | [0xeFD3f2598bAAf11118f5f44A73130274F22B2848](https://polygonscan.com/address/0xeFD3f2598bAAf11118f5f44A73130274F22B2848)  |
+| veDYST             | [0x0841097f62a82c2Fef8aA943a2f80b59773E5e02](https://polygonscan.com/address/0x0841097f62a82c2Fef8aA943a2f80b59773E5e02)  |
+| VeDist             | [0xBB5b65FE42B1965eD412fDe45B9b336a2cFba43b](https://polygonscan.com/address/0xBB5b65FE42B1965eD412fDe45B9b336a2cFba43b)  |

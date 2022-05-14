@@ -4,7 +4,7 @@ import chai from "chai";
 import {Deploy} from "../../../scripts/deploy/Deploy";
 import {TimeUtils} from "../../TimeUtils";
 import {BigNumber} from "ethers";
-import {ContractTestHelper, Multicall2, Token, Ve, VeDist} from "../../../typechain";
+import {ContractTestHelper, Controller, Multicall2, Token, Ve, VeDist} from "../../../typechain";
 import {parseUnits} from "ethers/lib/utils";
 import {Misc} from "../../../scripts/Misc";
 
@@ -31,7 +31,8 @@ describe("ve dist tests", function () {
     wmatic = await Deploy.deployContract(owner, 'Token', 'WMATIC', 'WMATIC', 18, owner.address) as Token;
     await wmatic.mint(owner.address, parseUnits('10000'));
 
-    ve = await Deploy.deployVe(owner, wmatic.address);
+    const controller = await Deploy.deployContract(owner, 'Controller') as Controller;
+    ve = await Deploy.deployVe(owner, wmatic.address, controller.address);
     veDist = await Deploy.deployVeDist(owner, ve.address);
 
     await wmatic.approve(ve.address, parseUnits('10000'))
@@ -121,7 +122,8 @@ describe("ve dist tests", function () {
   });
 
   it("claim for early token test", async function () {
-    const ve1 = await Deploy.deployVe(owner, wmatic.address);
+    const controller = await Deploy.deployContract(owner, 'Controller') as Controller;
+    const ve1 = await Deploy.deployVe(owner, wmatic.address, controller.address);
     await wmatic.approve(ve1.address, parseUnits('10000'))
     await ve1.createLock(parseUnits('1'), 60 * 60 * 24 * 14);
     await TimeUtils.advanceBlocksOnTs(WEEK * 2);
@@ -133,7 +135,8 @@ describe("ve dist tests", function () {
   });
 
   it("claim for early token with delay test", async function () {
-    const ve1 = await Deploy.deployVe(owner, wmatic.address);
+    const controller = await Deploy.deployContract(owner, 'Controller') as Controller;
+    const ve1 = await Deploy.deployVe(owner, wmatic.address, controller.address);
     await wmatic.approve(ve1.address, parseUnits('10000'))
     await ve1.createLock(parseUnits('1'), 60 * 60 * 24 * 14);
     await TimeUtils.advanceBlocksOnTs(WEEK * 2);

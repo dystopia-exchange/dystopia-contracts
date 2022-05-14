@@ -1,6 +1,6 @@
 /* tslint:disable:variable-name no-shadowed-variable ban-types no-var-requires no-any */
 import {
-  Bribe,
+  Bribe, Controller,
   Dyst,
   DystFactory,
   DystMinter,
@@ -51,6 +51,7 @@ describe("base old tests", function () {
   let owner2: SignerWithAddress;
   let owner3: SignerWithAddress;
   let vecontract;
+  let controller: Controller;
   let gauges_factory;
   let bribeToken1Adr: string;
 
@@ -76,7 +77,9 @@ describe("base old tests", function () {
     late_reward = await token.deploy('LR', 'LR', 18, owner.address);
     await late_reward.mint(owner.address, ethers.BigNumber.from("20000000000000000000000000"));
     vecontract = await ethers.getContractFactory("Ve");
-    ve = await vecontract.deploy(ve_underlying.address);
+    const controllerContract = await ethers.getContractFactory("Controller");
+    controller = await controllerContract.deploy();
+    ve = await vecontract.deploy(ve_underlying.address, controller.address);
 
     await ust.deployed();
     await mim.deployed();
@@ -365,8 +368,6 @@ describe("base old tests", function () {
     voter = await DystVoter.deploy(ve.address, factory.address, gauges_factory.address, bribe_factory.address);
     await voter.deployed();
 
-    await ve.setVoter(voter.address);
-
     expect(await voter.poolsLength()).to.equal(0);
   });
 
@@ -376,9 +377,11 @@ describe("base old tests", function () {
     await ve_dist.deployed();
 
     const Minter = await ethers.getContractFactory("DystMinter");
-    minter = await Minter.deploy(voter.address, ve.address, ve_dist.address, 2);
+    minter = await Minter.deploy(ve.address, controller.address, 2);
     await minter.deployed();
     await ve_dist.setDepositor(minter.address);
+    await controller.setVoter(voter.address);
+    await controller.setVeDist(ve_dist.address);
     await voter.initialize([ust.address, mim.address, dai.address, ve_underlying.address], minter.address);
   });
 

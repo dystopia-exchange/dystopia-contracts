@@ -42,6 +42,7 @@ describe("gauge factory tests", function () {
       owner.address,
       owner.address,
       owner.address,
+      []
     );
   });
 

@@ -40,7 +40,7 @@ describe("multi reward pool tests", function () {
     rewardToken2 = await Deploy.deployContract(owner, 'Token', 'REWARD2', 'REWARD2', 18, owner.address) as Token;
     await rewardToken2.mint(rewarder.address, parseUnits('100'));
 
-    pool = await Deploy.deployContract(owner, 'MultiRewardsPoolMock', wmatic.address) as MultiRewardsPoolMock;
+    pool = await Deploy.deployContract(owner, 'MultiRewardsPoolMock', wmatic.address, owner.address, [rewardToken.address]) as MultiRewardsPoolMock;
 
     await wmatic.approve(pool.address, parseUnits('999999999'));
     await wmatic.connect(user).approve(pool.address, parseUnits('999999999'));
@@ -63,7 +63,38 @@ describe("multi reward pool tests", function () {
 
 
   it("rewardTokensLength test", async function () {
-    expect(await pool.rewardTokensLength()).is.eq(0);
+    expect(await pool.rewardTokensLength()).is.eq(1);
+  });
+
+
+  it("notifyRewardAmount revert for not allowed token test", async function () {
+    await expect(pool.connect(rewarder).notifyRewardAmount(rewardToken2.address, FULL_REWARD)).revertedWith('Token not allowed');
+  });
+
+  it("removeRewardToken test", async function () {
+    await pool.registerRewardToken(rewardToken2.address)
+    await pool.registerRewardToken(owner.address)
+    await pool.registerRewardToken(user.address)
+    expect(await pool.rewardTokensLength()).eq(4);
+    await expect(pool.removeRewardToken(rewardToken2.address)).revertedWith("First tokens forbidden to remove");
+    await pool.removeRewardToken(user.address);
+    await expect(pool.removeRewardToken(owner.address)).revertedWith('First 3 tokens should not be removed');
+    expect(await pool.rewardTokensLength()).eq(3);
+  });
+
+  it("removeRewardToken revert for not finished rewards test", async function () {
+    await pool.connect(rewarder).notifyRewardAmount(rewardToken.address, FULL_REWARD);
+    await expect(pool.connect(user).registerRewardToken(rewardToken2.address)).revertedWith('Not operator')
+    await pool.registerRewardToken(rewardToken2.address)
+    await expect(pool.registerRewardToken(rewardToken2.address)).revertedWith('Already registered')
+    await pool.registerRewardToken(owner.address)
+    await pool.registerRewardToken(user.address)
+    expect(await pool.rewardTokensLength()).eq(4);
+    await expect(pool.removeRewardToken(rewardToken.address)).revertedWith('Rewards not ended');
+  });
+
+  it("removeRewardToken revert for not registered token test", async function () {
+    await expect(pool.removeRewardToken(rewardToken2.address)).revertedWith('Not reward token');
   });
 
   it("rewardPerToken test", async function () {
@@ -131,19 +162,19 @@ describe("multi reward pool tests", function () {
 
   it("not more than MAX REWARDS TOKENS", async function () {
     let lastRt = null;
-    for (let i = 0; i < 11; i++) {
+    const loops = 9;
+    for (let i = 0; i < loops; i++) {
       const rt = await Deploy.deployContract(owner, 'Token', 'RT', 'RT', 18, owner.address) as Token;
-      await rt.mint(rewarder.address, Misc.MAX_UINT);
-      await rt.connect(rewarder).approve(pool.address, Misc.MAX_UINT);
-      if (i < 10) {
-        await pool.connect(rewarder).notifyRewardAmount(rt.address, 100);
+      console.log(i, (await pool.rewardTokensLength()).toString())
+      if (i < loops) {
+        await pool.registerRewardToken(rt.address);
       } else {
-        await expect(pool.connect(rewarder).notifyRewardAmount(rt.address, 100)).revertedWith("Too many reward tokens");
+        await expect(pool.registerRewardToken(rt.address)).revertedWith("Too many reward tokens");
       }
       lastRt = rt;
     }
     if (!!lastRt) {
-      await expect(pool.connect(rewarder).notifyRewardAmount(lastRt.address, 100)).revertedWith("Too many reward tokens");
+      await expect(pool.registerRewardToken(lastRt.address)).revertedWith("Too many reward tokens");
     }
     expect(await pool.rewardTokensLength()).is.eq(10);
   });
@@ -264,6 +295,7 @@ describe("multi reward pool tests", function () {
     await pool.batchUpdateRewardPerToken(rewardToken.address, 200);
     await pool.batchUpdateRewardPerToken(rewardToken2.address, 200);
 
+    await pool.registerRewardToken(rewardToken2.address);
     await pool.connect(rewarder).notifyRewardAmount(rewardToken2.address, FULL_REWARD.div(4));
 
     await TimeUtils.advanceBlocksOnTs(60 * 60 * 6);

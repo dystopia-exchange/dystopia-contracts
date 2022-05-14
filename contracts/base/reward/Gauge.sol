@@ -28,7 +28,17 @@ contract Gauge is IGauge, MultiRewardsPoolBase {
   event VeTokenLocked(address indexed account, uint tokenId);
   event VeTokenUnlocked(address indexed account, uint tokenId);
 
-  constructor(address _stake, address _bribe, address _ve, address _voter) MultiRewardsPoolBase(_stake) {
+  constructor(
+    address _stake,
+    address _bribe,
+    address _ve,
+    address _voter,
+    address[] memory _allowedRewardTokens
+  ) MultiRewardsPoolBase(
+    _stake,
+    _voter,
+    _allowedRewardTokens
+  ) {
     bribe = _bribe;
     ve = _ve;
     voter = _voter;

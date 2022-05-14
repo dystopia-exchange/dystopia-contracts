@@ -68,14 +68,15 @@ contract DystMinter is IMinter {
   constructor(
     address voter_, // the voting & distribution system
     address ve_, // the ve(3,3) system that will be locked into
-    address veDist_ // the distribution system that ensures users aren't diluted
+    address veDist_, // the distribution system that ensures users aren't diluted
+    uint warmingUpPeriod // 2 by default
   ) {
     initializer = msg.sender;
     token = IUnderlying(IVe(ve_).token());
     voter = IVoter(voter_);
     ve = IVe(ve_);
     veDist = IVeDist(veDist_);
-    activePeriod = (block.timestamp + (2 * _WEEK)) / _WEEK * _WEEK;
+    activePeriod = (block.timestamp + (warmingUpPeriod * _WEEK)) / _WEEK * _WEEK;
   }
 
   /// @dev Mint initial supply to holders and lock it to ve token.

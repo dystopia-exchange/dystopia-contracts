@@ -39,7 +39,8 @@ describe("minter tests", function () {
       [wmatic.address, ust.address, mim.address, dai.address],
       [owner.address, owner2.address],
       [utils.parseUnits('100'), utils.parseUnits('100')],
-      utils.parseUnits('200')
+      utils.parseUnits('200'),
+      2
     );
 
     // ------------- setup gauges and bribes --------------
@@ -103,7 +104,8 @@ describe("minter tests", function () {
     const ve = await Deploy.deployVe(owner, token.address);
     const veDist = await Deploy.deployVeDist(owner, ve.address);
     const voter = await Deploy.deployDystVoter(owner, ve.address, baseFactory.address, gaugesFactory.address, bribesFactory.address);
-    const minter = await Deploy.deployDystMinter(owner, voter.address, ve.address, veDist.address);
+    const minter = await Deploy.deployDystMinter(owner, voter.address, ve.address, veDist.address, 1);
+    console.log((await minter.activePeriod()).toString());
     await expect(minter.initialize([owner.address], [1], 2)).revertedWith('Wrong totalAmount')
   });
 

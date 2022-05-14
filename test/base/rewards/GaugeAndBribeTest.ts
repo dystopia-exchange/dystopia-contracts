@@ -68,7 +68,8 @@ describe("gauge and bribe tests", function () {
       [wmatic.address, ust.address, mim.address, dai.address],
       [owner.address, owner2.address, owner.address],
       [utils.parseUnits('100'), utils.parseUnits('100'), BigNumber.from(100)],
-      utils.parseUnits('200').add(100)
+      utils.parseUnits('200').add(100),
+      2
     );
 
     mimUstPair = await TestHelper.addLiquidity(
@@ -206,7 +207,7 @@ describe("gauge and bribe tests", function () {
     const c = await bribeMimUst.getPriorRewardPerToken(mim.address, checkpoint.timestamp);
     expect(c[1]).is.not.eq(0);
     expect(c[1]).is.not.eq(0);
-    expect(await bribeMimUst.rewardTokensLength()).is.eq(1);
+    expect(await bribeMimUst.rewardTokensLength()).is.eq(3);
     expect(await bribeMimUst.left(mim.address)).is.not.eq(0);
   });
 

@@ -199,14 +199,38 @@ contract DystVoter is IVoter, Reentrancy {
     emit Whitelisted(msg.sender, _token);
   }
 
+  /// @dev Add a token to a gauge/bribe as possible reward.
+  function registerRewardToken(address _token, address _gaugeOrBribe, uint _tokenId) external {
+    require(_tokenId > 0, "!token");
+    require(msg.sender == IERC721(ve).ownerOf(_tokenId), "!owner");
+    require(IVe(ve).balanceOfNFT(_tokenId) > _listingFee(), "!power");
+    IMultiRewardsPool(_gaugeOrBribe).registerRewardToken(_token);
+  }
+
+  /// @dev Remove a token from a gauge/bribe allowed rewards list.
+  function removeRewardToken(address _token, address _gaugeOrBribe, uint _tokenId) external {
+    require(_tokenId > 0, "!token");
+    require(msg.sender == IERC721(ve).ownerOf(_tokenId), "!owner");
+    require(IVe(ve).balanceOfNFT(_tokenId) > _listingFee(), "!power");
+    IMultiRewardsPool(_gaugeOrBribe).removeRewardToken(_token);
+  }
+
   /// @dev Create gauge for given pool. Only for a pool with whitelisted tokens.
   function createGauge(address _pool) external returns (address) {
     require(gauges[_pool] == address(0x0), "exists");
     require(IFactory(factory).isPair(_pool), "!pool");
     (address tokenA, address tokenB) = IPair(_pool).tokens();
     require(isWhitelisted[tokenA] && isWhitelisted[tokenB], "!whitelisted");
-    address _bribe = IBribeFactory(bribeFactory).createBribe();
-    address _gauge = IGaugeFactory(gaugeFactory).createGauge(_pool, _bribe, ve);
+
+    address[] memory allowedRewards = new address[](3);
+    allowedRewards[0] = tokenA;
+    allowedRewards[1] = tokenB;
+    if (token != tokenA && token != tokenB) {
+      allowedRewards[2] = token;
+    }
+
+    address _bribe = IBribeFactory(bribeFactory).createBribe(allowedRewards);
+    address _gauge = IGaugeFactory(gaugeFactory).createGauge(_pool, _bribe, ve, allowedRewards);
     IERC20(token).safeIncreaseAllowance(_gauge, type(uint).max);
     bribes[_gauge] = _bribe;
     gauges[_pool] = _gauge;

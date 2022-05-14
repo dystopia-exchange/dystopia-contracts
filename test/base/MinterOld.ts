@@ -34,7 +34,6 @@ describe("minter old tests", function () {
 
   it("deploy base", async function () {
     [owner] = await ethers.getSigners(0);
-    console.log(owner,ethers.getSigners(1))
     token = await ethers.getContractFactory("Token");
     const Dyst = await ethers.getContractFactory("Dyst");
     const mim = await token.deploy('MIM', 'MIM', 18, owner.address);
@@ -69,7 +68,7 @@ describe("minter old tests", function () {
     await ve.setVoter(gauge_factory.address);
 
     const Minter = await ethers.getContractFactory("DystMinter");
-    minter = await Minter.deploy(gauge_factory.address, ve.address, ve_dist.address);
+    minter = await Minter.deploy(gauge_factory.address, ve.address, ve_dist.address, 2);
     await minter.deployed();
     await ve_dist.setDepositor(minter.address);
     await ve_underlying.setMinter(minter.address);

@@ -331,10 +331,12 @@ describe("pair tests", function () {
 
   it("swap gas", async function () {
     const token0 = await pair.token0();
-    await IERC20__factory.connect(token0, owner).transfer(pair.address, 1000);
-    const tx = await pair.swap(0, 100, owner.address, '0x')
+    const token1 = await pair.token1();
+    await IERC20__factory.connect(token0, owner).transfer(pair.address, 1000000);
+    await IERC20__factory.connect(token1, owner).transfer(pair.address, 1000000);
+    const tx = await pair.swap(0, 10, owner.address, '0x')
     const receipt = await tx.wait()
-    expect(receipt.gasUsed).is.below(BigNumber.from(180000));
+    expect(receipt.gasUsed).is.below(BigNumber.from(280000));
   });
 
   it("mint gas", async function () {

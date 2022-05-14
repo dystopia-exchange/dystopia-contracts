@@ -112,7 +112,8 @@ async function main() {
     claimants,
     claimantsAmounts,
     minterMax,
-    FACTORY
+    FACTORY,
+    1
   );
 
   const data = ''

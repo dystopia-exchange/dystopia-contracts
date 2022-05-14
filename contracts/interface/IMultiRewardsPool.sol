@@ -26,4 +26,8 @@ interface IMultiRewardsPool {
 
   function earned(address token, address account) external view returns (uint);
 
+  function registerRewardToken(address token) external;
+
+  function removeRewardToken(address token) external;
+
 }

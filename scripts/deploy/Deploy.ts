@@ -131,7 +131,8 @@ export class Deploy {
     signer: SignerWithAddress,
     voter: string,
     ve: string,
-    veDist: string
+    veDist: string,
+    warmingUpPeriod: number
   ) {
     return (await Deploy.deployContract(
       signer,
@@ -139,6 +140,7 @@ export class Deploy {
       voter,
       ve,
       veDist,
+      warmingUpPeriod,
     )) as DystMinter;
   }
 
@@ -148,7 +150,8 @@ export class Deploy {
     voterTokens: string[],
     minterClaimants: string[],
     minterClaimantsAmounts: BigNumber[],
-    minterSum: BigNumber
+    minterSum: BigNumber,
+    warmingUpPeriod = 2
   ) {
     const treasury = await Deploy.deployGovernanceTreasury(signer);
     const token = await Deploy.deployDyst(signer);
@@ -160,7 +163,7 @@ export class Deploy {
     const ve = await Deploy.deployVe(signer, token.address);
     const veDist = await Deploy.deployVeDist(signer, ve.address);
     const voter = await Deploy.deployDystVoter(signer, ve.address, baseFactory.address, gaugesFactory.address, bribesFactory.address);
-    const minter = await Deploy.deployDystMinter(signer, voter.address, ve.address, veDist.address);
+    const minter = await Deploy.deployDystMinter(signer, voter.address, ve.address, veDist.address, warmingUpPeriod);
 
     await Misc.runAndWait(() => token.setMinter(minter.address));
     await Misc.runAndWait(() => ve.setVoter(voter.address));
@@ -206,7 +209,8 @@ export class Deploy {
     minterClaimants: string[],
     minterClaimantsAmounts: BigNumber[],
     minterSum: BigNumber,
-    baseFactory: string
+    baseFactory: string,
+    warmingUpPeriod: number,
   ) {
     const token = await Deploy.deployDyst(signer);
     const gaugesFactory = await Deploy.deployGaugeFactory(signer);
@@ -215,7 +219,7 @@ export class Deploy {
     const ve = await Deploy.deployVe(signer, token.address);
     const veDist = await Deploy.deployVeDist(signer, ve.address);
     const voter = await Deploy.deployDystVoter(signer, ve.address, baseFactory, gaugesFactory.address, bribesFactory.address);
-    const minter = await Deploy.deployDystMinter(signer, voter.address, ve.address, veDist.address);
+    const minter = await Deploy.deployDystMinter(signer, voter.address, ve.address, veDist.address, warmingUpPeriod);
 
     await Misc.runAndWait(() => token.setMinter(minter.address));
     await Misc.runAndWait(() => ve.setVoter(voter.address));

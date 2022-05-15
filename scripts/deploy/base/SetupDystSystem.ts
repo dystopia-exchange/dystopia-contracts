@@ -18,12 +18,13 @@ const voterTokens = [
   MaticAddresses.DAI_TOKEN,
   MaticAddresses.USDT_TOKEN,
   MaticAddresses.UST_TOKEN,
+  MaticAddresses.MAI_TOKEN,
 ];
 
 const claimants = [
   "0x342952B86Bea9F2225f14D9f0dddDE070D1d0cC1",
   "0xDCB5A4b6Ee39447D700F4FA3303B1d1c25Ea9cA7",
-  "0x2c44BB177C44Bc91Ad91d75F12Dbc589B10F02cB",
+  "0x342952B86Bea9F2225f14D9f0dddDE070D1d0cC1", // instead of UST guys we temporally sent it to Polygon DAO
   "0x3FEACf904b152b1880bDE8BF04aC9Eb636fEE4d8",
   "0xD4151c984e6CF33E04FFAAF06c3374B2926Ecc64",
   "0x59cbff972fe0c19c881354a9cde52aca704da848",

@@ -15,5 +15,6 @@ export class MaticAddresses {
   public static DAI_TOKEN = "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063".toLowerCase();
   public static USDT_TOKEN = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F".toLowerCase();
   public static UST_TOKEN = "0x692597b009d13C4049a947CAB2239b7d6517875F".toLowerCase();
+  public static MAI_TOKEN = "0xa3Fa99A148fA48D14Ed51d610c367C61876997F1".toLowerCase();
 
 }

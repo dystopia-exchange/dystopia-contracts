@@ -8,6 +8,8 @@ import "./Gauge.sol";
 contract GaugeFactory is IGaugeFactory {
   address public lastGauge;
 
+  event GaugeCreated(address value);
+
   function createGauge(
     address _pool,
     address _bribe,
@@ -16,6 +18,7 @@ contract GaugeFactory is IGaugeFactory {
   ) external override returns (address) {
     address _lastGauge = address(new Gauge(_pool, _bribe, _ve, msg.sender, _allowedRewardTokens));
     lastGauge = _lastGauge;
+    emit GaugeCreated(_lastGauge);
     return _lastGauge;
   }
 
@@ -28,6 +31,7 @@ contract GaugeFactory is IGaugeFactory {
   ) external override returns (address) {
     address _lastGauge = address(new Gauge(_pool, _bribe, _ve, _voter, _allowedRewardTokens));
     lastGauge = _lastGauge;
+    emit GaugeCreated(_lastGauge);
     return _lastGauge;
   }
 }

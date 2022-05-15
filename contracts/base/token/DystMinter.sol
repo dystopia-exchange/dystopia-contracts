@@ -10,6 +10,7 @@ import "../../interface/IVe.sol";
 import "../../interface/IVeDist.sol";
 import "../../interface/IMinter.sol";
 import "../../interface/IERC20.sol";
+import "../../interface/IController.sol";
 
 /// @title Codifies the minting rules as per ve(3,3),
 ///        abstracted from the token to support any token that allows minting
@@ -48,9 +49,8 @@ contract DystMinter is IMinter {
 
 
   IUnderlying public immutable token;
-  IVoter public immutable voter;
   IVe public immutable ve;
-  IVeDist public immutable veDist;
+  address public immutable controller;
   uint public baseWeeklyEmission = _START_BASE_WEEKLY_EMISSION;
   uint public initialStubCirculation;
   uint public activePeriod;
@@ -66,16 +66,14 @@ contract DystMinter is IMinter {
   );
 
   constructor(
-    address voter_, // the voting & distribution system
     address ve_, // the ve(3,3) system that will be locked into
-    address veDist_, // the distribution system that ensures users aren't diluted
+    address controller_, // controller with veDist and voter addresses
     uint warmingUpPeriod // 2 by default
   ) {
     initializer = msg.sender;
     token = IUnderlying(IVe(ve_).token());
-    voter = IVoter(voter_);
     ve = IVe(ve_);
-    veDist = IVeDist(veDist_);
+    controller = controller_;
     activePeriod = (block.timestamp + (warmingUpPeriod * _WEEK)) / _WEEK * _WEEK;
   }
 
@@ -99,6 +97,14 @@ contract DystMinter is IMinter {
     activePeriod = (block.timestamp + _WEEK) / _WEEK * _WEEK;
   }
 
+  function _veDist() internal view returns (IVeDist) {
+    return IVeDist(IController(controller).veDist());
+  }
+
+  function _voter() internal view returns (IVoter) {
+    return IVoter(IController(controller).voter());
+  }
+
   /// @dev Calculate circulating supply as total token supply - locked supply - veDist balance - minter balance
   function circulatingSupply() external view returns (uint) {
     return _circulatingSupply();
@@ -108,7 +114,7 @@ contract DystMinter is IMinter {
     return token.totalSupply() - IUnderlying(address(ve)).totalSupply()
     // exclude veDist token balance from circulation - users unable to claim them without lock
     // late claim will lead to wrong circulation supply calculation
-    - token.balanceOf(address(veDist))
+    - token.balanceOf(address(_veDist()))
     // exclude balance on minter, it is obviously locked
     - token.balanceOf(address(this));
   }
@@ -182,14 +188,14 @@ contract DystMinter is IMinter {
         token.mint(address(this), _required - _balanceOf);
       }
 
-      IERC20(address(token)).safeTransfer(address(veDist), _growth);
+      IERC20(address(token)).safeTransfer(address(_veDist()), _growth);
       // checkpoint token balance that was just minted in veDist
-      veDist.checkpointToken();
+      _veDist().checkpointToken();
       // checkpoint supply
-      veDist.checkpointTotalSupply();
+      _veDist().checkpointTotalSupply();
 
-      token.approve(address(voter), _weekly);
-      voter.notifyRewardAmount(_weekly);
+      token.approve(address(_voter()), _weekly);
+      _voter().notifyRewardAmount(_weekly);
 
       emit Mint(msg.sender, _weekly, _growth, _circulatingSupply(), _circulatingEmission());
     }

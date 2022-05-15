@@ -8,6 +8,7 @@ import "../../interface/IERC721.sol";
 import "../../interface/IERC721Metadata.sol";
 import "../../interface/IVe.sol";
 import "../../interface/IERC721Receiver.sol";
+import "../../interface/IController.sol";
 import "../Reentrancy.sol";
 import "../../lib/SafeERC20.sol";
 import "../../lib/Math.sol";
@@ -37,7 +38,7 @@ contract Ve is IERC721, IERC721Metadata, IVe, Reentrancy {
 
   mapping(uint => uint) public attachments;
   mapping(uint => bool) public voted;
-  address public voter;
+  address public controller;
 
   string constant public override name = "veDYST";
   string constant public override symbol = "veDYST";
@@ -90,9 +91,9 @@ contract Ve is IERC721, IERC721Metadata, IVe, Reentrancy {
 
   /// @notice Contract constructor
   /// @param token_ `ERC20CRV` token address
-  constructor(address token_) {
+  constructor(address token_, address controller_) {
     token = token_;
-    voter = msg.sender;
+    controller = controller_;
     _pointHistory[0].blk = block.number;
     _pointHistory[0].ts = block.timestamp;
 
@@ -104,6 +105,10 @@ contract Ve is IERC721, IERC721Metadata, IVe, Reentrancy {
     emit Transfer(address(0), address(this), tokenId);
     // burn-ish
     emit Transfer(address(this), address(0), tokenId);
+  }
+
+  function _voter() internal view returns (address) {
+    return IController(controller).voter();
   }
 
   /// @dev Interface identification is specified in ERC-165.
@@ -586,28 +591,23 @@ contract Ve is IERC721, IERC721Metadata, IVe, Reentrancy {
     emit Supply(supplyBefore, supplyBefore + _value);
   }
 
-  function setVoter(address _voter) external {
-    require(msg.sender == voter, "!voter");
-    voter = _voter;
-  }
-
   function voting(uint _tokenId) external override {
-    require(msg.sender == voter, "!voter");
+    require(msg.sender == _voter(), "!voter");
     voted[_tokenId] = true;
   }
 
   function abstain(uint _tokenId) external override {
-    require(msg.sender == voter, "!voter");
+    require(msg.sender == _voter(), "!voter");
     voted[_tokenId] = false;
   }
 
   function attachToken(uint _tokenId) external override {
-    require(msg.sender == voter, "!voter");
+    require(msg.sender == _voter(), "!voter");
     attachments[_tokenId] = attachments[_tokenId] + 1;
   }
 
   function detachToken(uint _tokenId) external override {
-    require(msg.sender == voter, "!voter");
+    require(msg.sender == _voter(), "!voter");
     attachments[_tokenId] = attachments[_tokenId] - 1;
   }
 

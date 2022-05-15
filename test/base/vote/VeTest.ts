@@ -140,10 +140,6 @@ describe("ve tests", function () {
     await expect(core.ve.createLockFor(1, 60 * 60 * 24 * 365, Misc.ZERO_ADDRESS)).revertedWith('zero dst')
   });
 
-  it("setVoter revert", async function () {
-    await expect(core.ve.setVoter(Misc.ZERO_ADDRESS)).revertedWith('!voter')
-  });
-
   it("voting revert", async function () {
     await expect(core.ve.voting(1)).revertedWith('!voter')
   });

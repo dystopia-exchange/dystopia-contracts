@@ -7,7 +7,11 @@ import "../base/reward/MultiRewardsPoolBase.sol";
 
 contract MultiRewardsPoolMock is MultiRewardsPoolBase {
 
-  constructor(address _stake) MultiRewardsPoolBase(_stake) {}
+  constructor(
+    address _stake,
+    address _operator,
+    address[] memory _rewards
+  ) MultiRewardsPoolBase(_stake, _operator, _rewards) {}
 
   // for test 2 deposits in one tx
   function testDoubleDeposit(uint amount) external {

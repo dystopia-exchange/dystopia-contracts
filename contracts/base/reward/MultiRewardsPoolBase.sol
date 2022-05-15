@@ -13,6 +13,9 @@ abstract contract MultiRewardsPoolBase is Reentrancy, IMultiRewardsPool {
   using SafeERC20 for IERC20;
   using CheckpointLib for mapping(uint => CheckpointLib.Checkpoint);
 
+  /// @dev Operator can add/remove reward tokens
+  address public operator;
+
   /// @dev The LP token that needs to be staked for rewards
   address public immutable override underlying;
 
@@ -60,8 +63,19 @@ abstract contract MultiRewardsPoolBase is Reentrancy, IMultiRewardsPool {
   event NotifyReward(address indexed from, address indexed reward, uint amount);
   event ClaimRewards(address indexed from, address indexed reward, uint amount, address recepient);
 
-  constructor(address _stake) {
+  constructor(address _stake, address _operator, address[] memory _allowedRewardTokens) {
     underlying = _stake;
+    operator = _operator;
+    for (uint i; i < _allowedRewardTokens.length; i++) {
+      if (_allowedRewardTokens[i] != address(0)) {
+        _registerRewardToken(_allowedRewardTokens[i]);
+      }
+    }
+  }
+
+  modifier onlyOperator() {
+    require(msg.sender == operator, "Not operator");
+    _;
   }
 
   //**************************************************************************
@@ -100,6 +114,44 @@ abstract contract MultiRewardsPoolBase is Reentrancy, IMultiRewardsPool {
 
   function earned(address token, address account) external view override returns (uint) {
     return _earned(token, account);
+  }
+
+  //**************************************************************************
+  //************************ OPERATOR ACTIONS ********************************
+  //**************************************************************************
+
+  function registerRewardToken(address token) external onlyOperator {
+    _registerRewardToken(token);
+  }
+
+  function _registerRewardToken(address token) internal {
+    require(rewardTokens.length < MAX_REWARD_TOKENS, "Too many reward tokens");
+    require(!isRewardToken[token], "Already registered");
+    isRewardToken[token] = true;
+    rewardTokens.push(token);
+  }
+
+  function removeRewardToken(address token) external onlyOperator {
+    require(periodFinish[token] < block.timestamp, "Rewards not ended");
+    require(isRewardToken[token], "Not reward token");
+
+    isRewardToken[token] = false;
+    uint length = rewardTokens.length;
+    require(length > 3, "First 3 tokens should not be removed");
+    // keep 3 tokens as guarantee against malicious actions
+    // assume it will be DYST + pool tokens
+    uint i = 3;
+    bool found = false;
+    for (; i < length; i++) {
+      address t = rewardTokens[i];
+      if (t == token) {
+        found = true;
+        break;
+      }
+    }
+    require(found, "First tokens forbidden to remove");
+    rewardTokens[i] = rewardTokens[length - 1];
+    rewardTokens.pop();
   }
 
   //**************************************************************************
@@ -297,6 +349,7 @@ abstract contract MultiRewardsPoolBase is Reentrancy, IMultiRewardsPool {
   function _notifyRewardAmount(address token, uint amount) internal lock virtual {
     require(token != underlying, "Wrong token for rewards");
     require(amount > 0, "Zero amount");
+    require(isRewardToken[token], "Token not allowed");
     if (rewardRate[token] == 0) {
       _writeRewardPerTokenCheckpoint(token, 0, block.timestamp);
     }
@@ -316,12 +369,6 @@ abstract contract MultiRewardsPoolBase is Reentrancy, IMultiRewardsPool {
     }
 
     periodFinish[token] = block.timestamp + DURATION;
-    if (!isRewardToken[token]) {
-      require(rewardTokens.length < MAX_REWARD_TOKENS, "Too many reward tokens");
-      isRewardToken[token] = true;
-      rewardTokens.push(token);
-    }
-
     emit NotifyReward(msg.sender, token, amount);
   }
 

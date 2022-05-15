@@ -1,7 +1,7 @@
 /* tslint:disable:variable-name no-shadowed-variable ban-types no-var-requires no-any */
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { network } from "hardhat";
-import { Dyst, DystMinter, Token, Ve, VeDist } from "../../typechain";
+import {Controller, Dyst, DystMinter, Token, Ve, VeDist } from "../../typechain";
 import {Deploy} from "../../scripts/deploy/Deploy";
 
 const { expect } = require("chai");
@@ -34,14 +34,15 @@ describe("minter old tests", function () {
 
   it("deploy base", async function () {
     [owner] = await ethers.getSigners(0);
-    console.log(owner,ethers.getSigners(1))
     token = await ethers.getContractFactory("Token");
     const Dyst = await ethers.getContractFactory("Dyst");
+    const controllerCtr = await ethers.getContractFactory("Controller");
+    const controller = await controllerCtr.deploy() as Controller;
     const mim = await token.deploy('MIM', 'MIM', 18, owner.address);
     await mim.mint(owner.address, ethers.BigNumber.from("1000000000000000000000000000000"));
     ve_underlying = await Dyst.deploy();
     const vecontract = await ethers.getContractFactory("Ve");
-    ve = await vecontract.deploy(ve_underlying.address);
+    ve = await vecontract.deploy(ve_underlying.address, controller.address);
     await ve_underlying.mint(owner.address, ethers.BigNumber.from("10000000000000000000000000"));
     const treasury = await Deploy.deployGovernanceTreasury(owner);
     const DystFactory = await ethers.getContractFactory("DystFactory");
@@ -57,19 +58,21 @@ describe("minter old tests", function () {
     const bribe_factory = await BribeFactory.deploy();
     await bribe_factory.deployed();
     const DystVoter = await ethers.getContractFactory("DystVoter");
-    const gauge_factory = await DystVoter.deploy(ve.address, factory.address, gauges_factory.address, bribe_factory.address);
-    await gauge_factory.deployed();
+    const voter = await DystVoter.deploy(ve.address, factory.address, gauges_factory.address, bribe_factory.address);
+    await voter.deployed();
 
-    await gauge_factory.initialize([mim.address, ve_underlying.address],owner.address);
+    await voter.initialize([mim.address, ve_underlying.address],owner.address);
     await ve_underlying.approve(ve.address, ethers.BigNumber.from("1000000000000000000"));
     await ve.createLock(ethers.BigNumber.from("1000000000000000000"), 4 * 365 * 86400);
     const VeDist = await ethers.getContractFactory("VeDist");
     ve_dist = await VeDist.deploy(ve.address);
     await ve_dist.deployed();
-    await ve.setVoter(gauge_factory.address);
+
+    await controller.setVeDist(ve_dist.address)
+    await controller.setVoter(voter.address)
 
     const Minter = await ethers.getContractFactory("DystMinter");
-    minter = await Minter.deploy(gauge_factory.address, ve.address, ve_dist.address);
+    minter = await Minter.deploy(ve.address, controller.address, 2);
     await minter.deployed();
     await ve_dist.setDepositor(minter.address);
     await ve_underlying.setMinter(minter.address);
@@ -82,12 +85,12 @@ describe("minter old tests", function () {
 
     const pair = await router.pairFor(mim.address, ve_underlying.address, false);
 
-    await ve_underlying.approve(gauge_factory.address, ethers.BigNumber.from("500000000000000000000000"));
-    await gauge_factory.createGauge(pair);
+    await ve_underlying.approve(voter.address, ethers.BigNumber.from("500000000000000000000000"));
+    await voter.createGauge(pair);
     expect(await ve.balanceOfNFT(1)).to.above(ethers.BigNumber.from("995063075414519385"));
     expect(await ve_underlying.balanceOf(ve.address)).to.be.equal(ethers.BigNumber.from("1000000000000000000"));
 
-    await gauge_factory.vote(1, [pair], [5000]);
+    await voter.vote(1, [pair], [5000]);
   });
 
   it("initialize veNFT", async function () {

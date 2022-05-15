@@ -161,7 +161,27 @@ describe("voter tests", function () {
   });
 
   it("gauge rewardsListLength", async function () {
-    expect(await gaugeMimDai.rewardTokensLength()).to.equal(0);
+    expect(await gaugeMimDai.rewardTokensLength()).to.equal(3);
+  });
+
+  it("registerRewardToken test", async function () {
+    expect(await gaugeMimUst.rewardTokensLength()).to.equal(3);
+    await expect(core.voter.registerRewardToken(dai.address, gaugeMimUst.address, 0)).revertedWith('!token')
+    await expect(core.voter.registerRewardToken(dai.address, gaugeMimUst.address, 111)).revertedWith('!owner')
+    await expect(core.voter.connect(owner4).registerRewardToken(dai.address, gaugeMimUst.address, 3)).revertedWith('!power')
+    await core.voter.registerRewardToken(dai.address, gaugeMimUst.address, 1)
+    expect(await gaugeMimUst.rewardTokensLength()).to.equal(4);
+  });
+
+  it("removeRewardToken test", async function () {
+    expect(await gaugeMimUst.rewardTokensLength()).to.equal(3);
+    await core.voter.registerRewardToken(dai.address, gaugeMimUst.address, 1)
+    expect(await gaugeMimUst.rewardTokensLength()).to.equal(4);
+    await expect(core.voter.removeRewardToken(dai.address, gaugeMimUst.address, 0)).revertedWith('!token')
+    await expect(core.voter.removeRewardToken(dai.address, gaugeMimUst.address, 111)).revertedWith('!owner')
+    await expect(core.voter.connect(owner4).removeRewardToken(dai.address, gaugeMimUst.address, 3)).revertedWith('!power')
+    await core.voter.removeRewardToken(dai.address, gaugeMimUst.address, 1)
+    expect(await gaugeMimUst.rewardTokensLength()).to.equal(3);
   });
 
   it("veNFT gauge manipulate", async function () {

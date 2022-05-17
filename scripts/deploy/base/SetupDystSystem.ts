@@ -99,6 +99,7 @@ async function main() {
   }
 
   const [
+    controller,
     token,
     gaugesFactory,
     bribesFactory,
@@ -118,6 +119,7 @@ async function main() {
   );
 
   const data = ''
+    + 'controller: ' + controller.address + '\n'
     + 'token: ' + token.address + '\n'
     + 'gaugesFactory: ' + gaugesFactory.address + '\n'
     + 'bribesFactory: ' + bribesFactory.address + '\n'

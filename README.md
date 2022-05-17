@@ -177,27 +177,26 @@ function distribute(address token) external
 
 ### Mumbai deployment
 
-| Name | Address |
-| :--- | :--- |
-| wMATIC| [0xe02f20BB33F8Bfb48eB907523435CA886e139A08](https://mumbai.polygonscan.com/address/0xe02f20BB33F8Bfb48eB907523435CA886e139A08#code) |
-| USDT| [0x801FC386bd0a7998EE162ffF32b793D0624f3476](https://mumbai.polygonscan.com/address/0x801FC386bd0a7998EE162ffF32b793D0624f3476#code) |
-| MIM | [0xe0695CD828B63C0E4b70fdD44d0f066560EE8CfE](https://mumbai.polygonscan.com/address/0xe0695CD828B63C0E4b70fdD44d0f066560EE8CfE#code) |
-| DAI | [0x1ac7b60D5dDeB00DF64C992c8c760463250Ca158](https://mumbai.polygonscan.com/address/0x1ac7b60D5dDeB00DF64C992c8c760463250Ca158#code) |
-| BaseV1 | [0x8a78e8F5784bD604687478475C59F85f468d35c3](https://mumbai.polygonscan.com/address/0x8a78e8F5784bD604687478475C59F85f468d35c3#code) |
+| Name   | Address                                                                                                                                |
+|:-------|:---------------------------------------------------------------------------------------------------------------------------------------|
+| wMATIC | [0xe02f20BB33F8Bfb48eB907523435CA886e139A08](https://mumbai.polygonscan.com/address/0xe02f20BB33F8Bfb48eB907523435CA886e139A08#code)   |
+| USDT   | [0x801FC386bd0a7998EE162ffF32b793D0624f3476](https://mumbai.polygonscan.com/address/0x801FC386bd0a7998EE162ffF32b793D0624f3476#code)   |
+| MIM    | [0xe0695CD828B63C0E4b70fdD44d0f066560EE8CfE](https://mumbai.polygonscan.com/address/0xe0695CD828B63C0E4b70fdD44d0f066560EE8CfE#code)   |
+| DAI    | [0x1ac7b60D5dDeB00DF64C992c8c760463250Ca158](https://mumbai.polygonscan.com/address/0x1ac7b60D5dDeB00DF64C992c8c760463250Ca158#code)   |
 
-| Name                    | Address |
-|:------------------------| :--- |
-| DystFactory             | [0xD0692d6C30cd7a383f227Ba1cB28EeCE2F050926](https://mumbai.polygonscan.com/address/0xD0692d6C30cd7a383f227Ba1cB28EeCE2F050926#code) |
-| DystRouter01            | [0xe9EdEb5576ea876014e76A496B4c564756ddDAEF](https://mumbai.polygonscan.com/address/0xe9EdEb5576ea876014e76A496B4c564756ddDAEF#code) |
-| GovernanceTreasury      | [0x463cA34bC5530819EE1467A18C1c48a1bB306B74](https://mumbai.polygonscan.com/address/0x463cA34bC5530819EE1467A18C1c48a1bB306B74#code) |
-| BribeFactory            | [0x9205cd74cB212DE16244674C81B9e508B2e72e39](https://mumbai.polygonscan.com/address/0x9205cd74cB212DE16244674C81B9e508B2e72e39#code) |
-| GaugesFactory           | [0xDC5655BF9f0ED15F46376Dc01F9D835705CDb7c5](https://mumbai.polygonscan.com/address/0xDC5655BF9f0ED15F46376Dc01F9D835705CDb7c5#code) |
-| DYST                    | [0x6E511b6fAce2c5094163A1F420135a4D70a5ecd7](https://mumbai.polygonscan.com/address/0x6E511b6fAce2c5094163A1F420135a4D70a5ecd7#code) |
-| DystMinter              | [0xc3236222E4CA98D3406D9Acc9198A9D4cAc50b30](https://mumbai.polygonscan.com/address/0xc3236222E4CA98D3406D9Acc9198A9D4cAc50b30#code) |
-| DystVoter               | [0xECACDAcf3b6c23E180f70cF28b6811652e6808e7](https://mumbai.polygonscan.com/address/0xECACDAcf3b6c23E180f70cF28b6811652e6808e7#code) |
-| Ve                      | [0x043074eaAf5DCca960601b7B464FCd2bEC34df1D](https://mumbai.polygonscan.com/address/0x043074eaAf5DCca960601b7B464FCd2bEC34df1D#code) |
-| VeDist                  | [0x67fef6a7908Faf1d89B659b9bbE76D82837Ee6E2](https://mumbai.polygonscan.com/address/0x67fef6a7908Faf1d89B659b9bbE76D82837Ee6E2#code) |
-| Migrator                | [0x434B01D3E005cce37607D0D029BE72679cdA7521](https://mumbai.polygonscan.com/address/0x434B01D3E005cce37607D0D029BE72679cdA7521#code) |
+| Name                 | Address                                                                                                                               |
+|:---------------------|:--------------------------------------------------------------------------------------------------------------------------------------|
+| DystFactory          | [0xD0692d6C30cd7a383f227Ba1cB28EeCE2F050926](https://mumbai.polygonscan.com/address/0xD0692d6C30cd7a383f227Ba1cB28EeCE2F050926#code)  |
+| DystRouter01         | [0xe9EdEb5576ea876014e76A496B4c564756ddDAEF](https://mumbai.polygonscan.com/address/0xe9EdEb5576ea876014e76A496B4c564756ddDAEF#code)  |
+| GovernanceTreasury   | [0x463cA34bC5530819EE1467A18C1c48a1bB306B74](https://mumbai.polygonscan.com/address/0x463cA34bC5530819EE1467A18C1c48a1bB306B74#code)  |
+| BribeFactory         | [0x0C6868831c504Fb0bB61A54FEfC6464804380508](https://mumbai.polygonscan.com/address/0x0C6868831c504Fb0bB61A54FEfC6464804380508#code)  |
+| GaugesFactory        | [0xC9d5917A0cb82450Cd687AF31eCAaC967D7F121C](https://mumbai.polygonscan.com/address/0xC9d5917A0cb82450Cd687AF31eCAaC967D7F121C#code)  |
+| DYST                 | [0xD8a4054d63fCb0030BC73E2323344Ae59A19E92b](https://mumbai.polygonscan.com/address/0xD8a4054d63fCb0030BC73E2323344Ae59A19E92b#code)  |
+| DystMinter           | [0x08d7607b2FD46ae255040014a39CDC2094e55901](https://mumbai.polygonscan.com/address/0x08d7607b2FD46ae255040014a39CDC2094e55901#code)  |
+| DystVoter            | [0x75e1e98650c119c4E3dCE3070CE6A5397Ed70c6a](https://mumbai.polygonscan.com/address/0x75e1e98650c119c4E3dCE3070CE6A5397Ed70c6a#code)  |
+| Ve                   | [0xa4EB2E1284D9E30fb656Fe6b34c1680Ef5d4cBFC](https://mumbai.polygonscan.com/address/0xa4EB2E1284D9E30fb656Fe6b34c1680Ef5d4cBFC#code)  |
+| VeDist               | [0x0B62ad43837A69Ad60289EEea7C6e907e759F6E8](https://mumbai.polygonscan.com/address/0x0B62ad43837A69Ad60289EEea7C6e907e759F6E8#code)  |
+| Controller           | [0xC363F3D4e1C005bf5321040653A088F71Bb974Ab](https://mumbai.polygonscan.com/address/0xC363F3D4e1C005bf5321040653A088F71Bb974Ab#code)  |
 
 
 ### Polygon deployment

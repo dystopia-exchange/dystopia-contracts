@@ -8,12 +8,12 @@ import {writeFileSync} from "fs";
 async function main() {
   const signer = (await ethers.getSigners())[0];
 
-  const oldUniswapFactory = '';
-  const dystRouter = '';
+  const oldUniswapFactory = '0xc35dadb65012ec5796536bd9864ed8773abc74c4';
+  const dystRouter = '0xbE75Dd16D029c6B32B7aD57A0FD9C1c20Dd2862e';
 
   const migrator = await Deploy.deployContract(signer, oldUniswapFactory, dystRouter)
 
-  const data = 'migrator: ' + migrator.address
+  const data = 'migrator sushiswap: ' + migrator.address
 
   console.log(data);
   writeFileSync('tmp/migrator.txt', data);

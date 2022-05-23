@@ -25,18 +25,6 @@ contract Migrator {
     return oldFactory.getPair(tokenA, tokenB);
   }
 
-  function getAmountsFromLiquidityForOldPair(
-    address tokenA,
-    address tokenB,
-    uint liquidity
-  ) external view returns (uint, uint){
-    uint balanceA = IERC20(tokenA).balanceOf(address(this));
-    uint balanceB = IERC20(tokenB).balanceOf(address(this));
-    address pair = oldFactory.getPair(tokenA, tokenB);
-    uint _totalSupply = IERC20(pair).totalSupply();
-    return (liquidity * balanceA / _totalSupply, liquidity * balanceB / _totalSupply);
-  }
-
   function migrateWithPermit(
     address tokenA,
     address tokenB,

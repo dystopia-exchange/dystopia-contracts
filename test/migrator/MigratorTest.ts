@@ -85,7 +85,7 @@ describe("migrator tests", function () {
     let oldPairBalance = await oldPair.balanceOf(owner.address);
     expect(oldPairBalance).is.not.eq(0);
 
-    let [amountMim, amountUst] = await migrator.getAmountsFromLiquidityForOldPair(mim.address, ust.address, oldPairBalance)
+    
 
     const {
       v,
@@ -103,8 +103,8 @@ describe("migrator tests", function () {
       ust.address,
       true,
       oldPairBalance,
-      amountMim.mul(999).div(1000),
-      amountUst.mul(999).div(1000),
+      100,
+      100,
       99999999999,
       v, r, s
     );
@@ -124,7 +124,7 @@ describe("migrator tests", function () {
     oldPairBalance = await oldPair.balanceOf(owner.address);
     expect(oldPairBalance).is.not.eq(0);
 
-    [amountMim, amountUst] = await migrator.getAmountsFromLiquidityForOldPair(mim.address, ust.address, oldPairBalance)
+   
 
     const {
       v: v1,
@@ -142,8 +142,8 @@ describe("migrator tests", function () {
       ust.address,
       true,
       oldPairBalance,
-      amountMim.mul(999).div(1000),
-      amountUst.mul(999).div(1000),
+      100,
+      100,
       99999999999,
       v1, r1, s1
     );
@@ -173,7 +173,7 @@ describe("migrator tests", function () {
     let oldPairBalance = await oldPair.balanceOf(owner.address);
     expect(oldPairBalance).is.not.eq(0);
 
-    let [amountMim, amountUst] = await migrator.getAmountsFromLiquidityForOldPair(mim.address, ust.address, oldPairBalance)
+    
 
     const {
       v,
@@ -191,8 +191,8 @@ describe("migrator tests", function () {
       ust.address,
       true,
       oldPairBalance,
-      amountMim.mul(999).div(1000),
-      amountUst.mul(999).div(1000),
+      100,
+      100,
       99999999999,
       v, r, s
     );
@@ -222,7 +222,7 @@ describe("migrator tests", function () {
     oldPairBalance = await oldPair.balanceOf(owner.address);
     expect(oldPairBalance).is.not.eq(0);
 
-    [amountMim, amountUst] = await migrator.getAmountsFromLiquidityForOldPair(mim.address, ust.address, oldPairBalance)
+ 
 
     const {
       v: v1,
@@ -240,8 +240,8 @@ describe("migrator tests", function () {
       ust.address,
       true,
       oldPairBalance,
-      amountMim.mul(999).div(1000),
-      amountUst.mul(999).div(1000),
+      100,
+      100,
       99999999999,
       v1, r1, s1
     );
@@ -266,8 +266,6 @@ describe("migrator tests", function () {
     oldPairBalance = await oldPair.balanceOf(owner.address);
     expect(oldPairBalance).is.not.eq(0);
 
-    [amountMim, amountUst] = await migrator.getAmountsFromLiquidityForOldPair(mim.address, ust.address, oldPairBalance)
-
     const {
       v: v2,
       r: r2,
@@ -284,8 +282,8 @@ describe("migrator tests", function () {
       ust.address,
       true,
       oldPairBalance,
-      amountMim.mul(999).div(1000),
-      amountUst.mul(999).div(1000),
+      100,
+      100,
       99999999999,
       v2, r2, s2
     );
@@ -322,8 +320,6 @@ describe("migrator tests", function () {
     const oldPair = UniswapV2Pair__factory.connect(await migrator.getOldPair(mim.address, ust.address), owner);
     const oldPairBalance = await oldPair.balanceOf(owner.address);
 
-    const [amountMim, amountUst] = await migrator.getAmountsFromLiquidityForOldPair(mim.address, ust.address, oldPairBalance)
-
     const {
       v,
       r,
@@ -340,8 +336,8 @@ describe("migrator tests", function () {
       ust.address,
       true,
       oldPairBalance.div(10),
-      amountMim.mul(999).div(1000),
-      amountUst.mul(999).div(1000),
+     100,
+     100,
       99999999999,
       v, r, s
     );

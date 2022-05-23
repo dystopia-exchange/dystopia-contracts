@@ -11,7 +11,7 @@ async function main() {
   const oldUniswapFactory = '0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32';
   const dystRouter = '0xbE75Dd16D029c6B32B7aD57A0FD9C1c20Dd2862e';
 
-  const migrator = await Deploy.deployContract(signer, oldUniswapFactory, dystRouter)
+  const migrator = await Deploy.deployContract(signer, 'Migrator', oldUniswapFactory, dystRouter)
 
   const data = 'migrator quickswap: ' + migrator.address
 

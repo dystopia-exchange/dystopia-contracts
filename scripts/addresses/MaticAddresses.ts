@@ -16,5 +16,7 @@ export class MaticAddresses {
   public static USDT_TOKEN = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F".toLowerCase();
   public static UST_TOKEN = "0x692597b009d13C4049a947CAB2239b7d6517875F".toLowerCase();
   public static MAI_TOKEN = "0xa3Fa99A148fA48D14Ed51d610c367C61876997F1".toLowerCase();
+  public static FXS_TOKEN = "0x3e121107F6F22DA4911079845a470757aF4e1A1b".toLowerCase();
+  public static DYST_TOKEN = "0x39aB6574c289c3Ae4d88500eEc792AB5B947A5Eb".toLowerCase();
 
 }

@@ -155,6 +155,7 @@ export class Deploy {
     const [baseFactory, router, treasury] = await Deploy.deployDex(signer, networkToken);
 
     const [
+      controller,
       token,
       gaugesFactory,
       bribesFactory,
@@ -234,6 +235,7 @@ export class Deploy {
     ));
 
     return [
+      controller,
       token,
       gaugesFactory,
       bribesFactory,

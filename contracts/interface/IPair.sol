@@ -25,9 +25,11 @@ interface IPair {
 
   function claimFees() external returns (uint, uint);
 
-  function tokens() external returns (address, address);
+  function tokens() external view returns (address, address);
 
-  function token0() external returns (address);
+  function token0() external view returns (address);
 
-  function token1() external returns (address);
+  function token1() external view returns (address);
+
+  function stable() external view returns (bool);
 }

@@ -16,6 +16,4 @@ interface IFactory {
   function getPair(address tokenA, address token, bool stable) external view returns (address);
 
   function createPair(address tokenA, address tokenB, bool stable) external returns (address pair);
-
-  function allPairsLength() external view returns (uint);
 }

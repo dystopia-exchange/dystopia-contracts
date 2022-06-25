@@ -35,7 +35,7 @@ interface IPair {
 
   function sync() external;
 
-  function name() external pure returns (string memory);
+  function name() external view returns (string memory);
 
-  function symbol() external pure returns (string memory);
+  function symbol() external view returns (string memory);
 }

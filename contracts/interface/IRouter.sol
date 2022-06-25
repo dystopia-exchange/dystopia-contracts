@@ -87,7 +87,6 @@ interface IRouter {
         uint deadline
     ) external returns (uint[] memory amounts);
 
-    //This is corrected but this method is not implemented in DystRouter01.sol
     function swapTokensForExactTokens(
         uint amountOut,
         uint amountInMax,
@@ -103,7 +102,6 @@ interface IRouter {
         uint deadline
     ) external payable returns (uint[] memory amounts);
 
-    //This is corrected but this method is not implemented in DystRouter01.sol
     function swapTokensForExactMATIC(
         uint amountOut,
         uint amountInMax,
@@ -120,7 +118,6 @@ interface IRouter {
         uint deadline
     ) external returns (uint[] memory amounts);
 
-    //This is corrected but this method is not implemented in DystRouter01.sol
     function swapMATICForExactTokens(
         uint amountOut,
         Route[] calldata routes,
@@ -184,7 +181,6 @@ interface IRouter {
         view
         returns (uint[] memory amounts);
 
-    //This is corrected but this method is not implemented in DystRouter01.sol
     function getAmountsIn(uint amountOut, Route[] memory routes)
         external
         view

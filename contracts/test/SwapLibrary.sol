@@ -3,15 +3,20 @@
 pragma solidity 0.8.13;
 
 import "../interface/IRouter.sol";
+import "../interface/IFactory.sol";
 import "../interface/IPair.sol";
 import "../lib/Math.sol";
 
 contract SwapLibrary {
 
+  address  immutable public factory;
   IRouter immutable public router;
+  bytes32 immutable pairCodeHash;
 
   constructor(address _router) {
     router = IRouter(_router);
+    factory = IRouter(_router).factory();
+    pairCodeHash = IFactory(IRouter(_router).factory()).pairCodeHash();
   }
 
   function _f(uint x0, uint y) internal pure returns (uint) {
@@ -147,6 +152,38 @@ contract SwapLibrary {
       return x * y;
       // xy >= k
     }
+  }
+
+  function getNormalizedReserves(address tokenA, address tokenB, bool stable) external view returns (uint reserveA, uint reserveB){
+    address pair = pairFor(tokenA, tokenB, stable);
+    if (pair == address(0)) {
+      return (0, 0);
+    }
+    (uint decimals0, uint decimals1, uint reserve0, uint reserve1,, address t0, address t1) = IPair(pair).metadata();
+
+    reserveA = tokenA == t0 ? reserve0 : reserve1;
+    reserveB = tokenA == t1 ? reserve0 : reserve1;
+    uint decimalsA = tokenA == t0 ? decimals0 : decimals1;
+    uint decimalsB = tokenA == t1 ? decimals0 : decimals1;
+    reserveA = reserveA * 1e18 / decimalsA;
+    reserveB = reserveB * 1e18 / decimalsB;
+  }
+
+  /// @dev Calculates the CREATE2 address for a pair without making any external calls.
+  function pairFor(address tokenA, address tokenB, bool stable) public view returns (address pair) {
+    (address token0, address token1) = sortTokens(tokenA, tokenB);
+    pair = address(uint160(uint(keccak256(abi.encodePacked(
+        hex'ff',
+        factory,
+        keccak256(abi.encodePacked(token0, token1, stable)),
+        pairCodeHash // init code hash
+      )))));
+  }
+
+  function sortTokens(address tokenA, address tokenB) public pure returns (address token0, address token1) {
+    require(tokenA != tokenB, 'IDENTICAL_ADDRESSES');
+    (token0, token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
+    require(token0 != address(0), 'ZERO_ADDRESS');
   }
 
 }

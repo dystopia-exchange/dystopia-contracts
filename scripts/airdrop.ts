@@ -15,12 +15,13 @@ const buySources = new Set<string>([
   '0xDEF171Fe48CF0115B1d80b88dc8eAB59176FEe57'.toLowerCase(), // paraswap
   '0xB099ED146fAD4d0dAA31E3810591FC0554aF62bB'.toLowerCase(), // bogged
   '0x6352a56caadC4F1E25CD6c75970Fa768A3304e64'.toLowerCase(), // openocean
+  '0xb31D1B1eA48cE4Bf10ed697d44B747287E785Ad4'.toLowerCase(), // firebird
   ROUTER, // dystopia router
   // '0x1e08a5b6a1694bc1a65395db6f4c506498daa349'.toLowerCase(), // wmatic/dyst
 ]);
 
 const EXCLUDE_LOCKERS = new Set<string>([
-  '0x58e06181394444fE18C9D794b794c8fBAf3118D9'.toLowerCase(),
+  '0x58e06181394444fE18C9D794b794c8fBAf3118D9'.toLowerCase(), // penDYST
 ])
 
 const MAIN_PAIRS = [
@@ -33,12 +34,13 @@ const MAIN_PAIRS = [
 
 async function main() {
 
-  const START = 33020919;
-  // const END = 33051441;
+  const START = 33403019;
+  // const END = 33280278;
   const END = await ethers.provider.getBlockNumber();
 
   const dystTransferTopic = Dyst__factory.createInterface().getEventTopic("Transfer");
   const veLockTopic = Ve__factory.createInterface().getEventTopic("Deposit");
+  const veCtr = Ve__factory.connect(VE, ethers.provider);
 
   const transferLogs = await parseLogs(
     [DYST],
@@ -57,6 +59,9 @@ async function main() {
 
   const dystRecievers = new Map<string, BigNumber>();
   const holdersLocked = new Map<string, BigNumber>();
+  const holdersTotalLockBefore = new Map<string, BigNumber>();
+  const holdersTotalLockAfter = new Map<string, BigNumber>();
+  const holdersTotalLockDiff = new Map<string, BigNumber>();
 
   for (const log of lockLogs) {
     const logParsed = Ve__factory.createInterface().parseLog(log);
@@ -73,6 +78,37 @@ async function main() {
       }
     }
   }
+  console.log('-------------------------')
+
+  for (const holder of Array.from(holdersLocked.keys())) {
+    const nftsCount = (await veCtr.balanceOf(holder, {blockTag: START})).toNumber();
+    for (let i = 0; i < nftsCount; i++) {
+      const tokenId = await veCtr.tokenOfOwnerByIndex(holder, i, {blockTag: START});
+      const data = await veCtr.locked(tokenId, {blockTag: START});
+      // console.log('locked', holder, formatUnits(data.amount));
+      holdersTotalLockBefore.set(holder.toLowerCase(), (holdersTotalLockBefore.get(holder.toLowerCase()) ?? BigNumber.from(0)).add(data.amount))
+    }
+  }
+
+  console.log('-------------------------')
+
+  for (const holder of Array.from(holdersLocked.keys())) {
+    const nftsCount = (await veCtr.balanceOf(holder)).toNumber();
+    for (let i = 0; i < nftsCount; i++) {
+      const tokenId = await veCtr.tokenOfOwnerByIndex(holder, i);
+      const data = await veCtr.locked(tokenId);
+      // console.log('locked', holder, formatUnits(data.amount));
+      holdersTotalLockAfter.set(holder.toLowerCase(), (holdersTotalLockAfter.get(holder.toLowerCase()) ?? BigNumber.from(0)).add(data.amount))
+    }
+  }
+
+  for (const holder of Array.from(holdersTotalLockAfter.keys())) {
+    const before = holdersTotalLockBefore.get(holder) ?? BigNumber.from(0);
+    const after = holdersTotalLockAfter.get(holder) ?? BigNumber.from(0);
+    console.log("lock increased", holder, formatUnits(after.sub(before)))
+    holdersTotalLockDiff.set(holder, after.sub(before));
+  }
+
   console.log('-------------------------')
 
   for (const log of transferLogs) {
@@ -131,9 +167,16 @@ async function main() {
 
   for (const holder of Array.from(dystRecievers.keys())) {
     const bought = dystRecievers.get(holder) ?? BigNumber.from(0);
-    const lockAmount = holdersLocked.get(holder.toLowerCase()) ?? BigNumber.from(0);
+    let lockAmount = holdersLocked.get(holder.toLowerCase()) ?? BigNumber.from(0);
     // const isEOA = !(await isContract(holder))
     const isEOA = true;
+
+    const diff = holdersTotalLockDiff.get(holder) ?? BigNumber.from(0);
+    if (lockAmount.gt(diff)) {
+      // console.log(`Locked diff not enough for ${holder} diff: ${formatUnits(diff)} locked: ${formatUnits(lockAmount)}`);
+      lockAmount = diff;
+    }
+
     if (lockAmount.gt(0) && isEOA) {
       // console.log(`Recieved DYST ${holder} Amount: ${formatUnits(bought)} Locked: ${formatUnits(lockAmount)}`);
       console.log(holder, Math.min(+formatUnits(bought), +formatUnits(lockAmount)));

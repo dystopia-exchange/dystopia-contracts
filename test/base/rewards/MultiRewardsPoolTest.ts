@@ -10,7 +10,8 @@ import {Misc} from "../../../scripts/Misc";
 
 const {expect} = chai;
 
-const FULL_REWARD = parseUnits('100');
+const FULL_REWARD = parseUnits('1000000');
+const FULL_REWARD2 = parseUnits('1', 6);
 
 describe("multi reward pool tests", function () {
 
@@ -32,20 +33,20 @@ describe("multi reward pool tests", function () {
     [owner, user, rewarder] = await ethers.getSigners();
 
     wmatic = await Deploy.deployContract(owner, 'Token', 'WMATIC', 'WMATIC', 18, owner.address) as Token;
-    await wmatic.mint(owner.address, parseUnits('100'));
+    await wmatic.mint(owner.address, parseUnits('100000000000000000000'));
     await wmatic.mint(user.address, FULL_REWARD);
 
     rewardToken = await Deploy.deployContract(owner, 'Token', 'REWARD', 'REWARD', 18, owner.address) as Token;
     await rewardToken.mint(rewarder.address, Misc.MAX_UINT);
-    rewardToken2 = await Deploy.deployContract(owner, 'Token', 'REWARD2', 'REWARD2', 18, owner.address) as Token;
-    await rewardToken2.mint(rewarder.address, parseUnits('100'));
+    rewardToken2 = await Deploy.deployContract(owner, 'Token', 'REWARD2', 'REWARD2', 6, owner.address) as Token;
+    await rewardToken2.mint(rewarder.address, parseUnits('100000000000000000000', 6));
 
     pool = await Deploy.deployContract(owner, 'MultiRewardsPoolMock', wmatic.address, owner.address, [rewardToken.address]) as MultiRewardsPoolMock;
 
-    await wmatic.approve(pool.address, parseUnits('999999999'));
-    await wmatic.connect(user).approve(pool.address, parseUnits('999999999'));
+    await wmatic.approve(pool.address, Misc.MAX_UINT);
+    await wmatic.connect(user).approve(pool.address, Misc.MAX_UINT);
     await rewardToken.connect(rewarder).approve(pool.address, Misc.MAX_UINT);
-    await rewardToken2.connect(rewarder).approve(pool.address, parseUnits('999999999'));
+    await rewardToken2.connect(rewarder).approve(pool.address, Misc.MAX_UINT);
   });
 
   after(async function () {
@@ -184,7 +185,7 @@ describe("multi reward pool tests", function () {
     await pool.connect(rewarder).notifyRewardAmount(rewardToken.address, FULL_REWARD.div(4));
     await expect(pool.connect(rewarder).notifyRewardAmount(rewardToken.address, 10)).revertedWith('Amount should be higher than remaining rewards');
     await expect(pool.connect(rewarder).notifyRewardAmount(wmatic.address, 10)).revertedWith('Wrong token for rewards');
-    await pool.connect(rewarder).notifyRewardAmount(rewardToken.address, Misc.MAX_UINT.div('10000000000000000000'));
+    await pool.connect(rewarder).notifyRewardAmount(rewardToken.address, parseUnits(1_000_000_000_000 + ''));
   });
 
   // ***************** THE MAIN LOGIC TESTS *********************************
@@ -283,7 +284,7 @@ describe("multi reward pool tests", function () {
   });
 
   it("multiple deposit/withdraws and get rewards should receive all amount for multiple accounts", async function () {
-    await pool.deposit(parseUnits('0.5'));
+    await pool.deposit(parseUnits('1000000000'));
 
     await pool.connect(rewarder).notifyRewardAmount(rewardToken.address, FULL_REWARD.div(4));
 
@@ -296,7 +297,7 @@ describe("multi reward pool tests", function () {
     await pool.batchUpdateRewardPerToken(rewardToken2.address, 200);
 
     await pool.registerRewardToken(rewardToken2.address);
-    await pool.connect(rewarder).notifyRewardAmount(rewardToken2.address, FULL_REWARD.div(4));
+    await pool.connect(rewarder).notifyRewardAmount(rewardToken2.address, FULL_REWARD2.div(4));
 
     await TimeUtils.advanceBlocksOnTs(60 * 60 * 6);
     await pool.testDoubleDeposit(parseUnits('0.5'));
@@ -306,7 +307,7 @@ describe("multi reward pool tests", function () {
     await TimeUtils.advanceBlocksOnTs(60 * 60 * 24 * 6);
     await pool.connect(user).testDoubleWithdraw(parseUnits('0.2'));
 
-    await pool.connect(rewarder).notifyRewardAmount(rewardToken2.address, FULL_REWARD.div(4));
+    await pool.connect(rewarder).notifyRewardAmount(rewardToken2.address, FULL_REWARD2.div(4));
 
     await TimeUtils.advanceBlocksOnTs(60 * 60 * 6);
     await pool.connect(user).testDoubleDeposit(parseUnits('0.2'));
@@ -321,7 +322,7 @@ describe("multi reward pool tests", function () {
 
     await pool.connect(rewarder).notifyRewardAmount(rewardToken.address, FULL_REWARD.div(4));
     await TimeUtils.advanceBlocksOnTs(1);
-    await pool.connect(rewarder).notifyRewardAmount(rewardToken2.address, FULL_REWARD.div(4));
+    await pool.connect(rewarder).notifyRewardAmount(rewardToken2.address, FULL_REWARD2.div(4));
 
     await pool.batchUpdateRewardPerToken(rewardToken.address, 1);
     await pool.batchUpdateRewardPerToken(rewardToken2.address, 1);
@@ -333,7 +334,7 @@ describe("multi reward pool tests", function () {
     await pool.connect(user).deposit(parseUnits('1'));
 
     await pool.connect(rewarder).notifyRewardAmount(rewardToken.address, FULL_REWARD.div(4));
-    await pool.connect(rewarder).notifyRewardAmount(rewardToken2.address, FULL_REWARD.div(4));
+    await pool.connect(rewarder).notifyRewardAmount(rewardToken2.address, FULL_REWARD2.div(4));
 
     await TimeUtils.advanceBlocksOnTs(60 * 60 * 6);
     await pool.deposit(parseUnits('0.5'));
@@ -354,7 +355,7 @@ describe("multi reward pool tests", function () {
     expect((await rewardToken.balanceOf(owner.address)).add(await rewardToken.balanceOf(user.address))).is.above(FULL_REWARD.sub(14));
 
     expect(await rewardToken2.balanceOf(pool.address)).is.below(14);
-    expect((await rewardToken2.balanceOf(owner.address)).add(await rewardToken2.balanceOf(user.address))).is.above(FULL_REWARD.sub(14));
+    expect((await rewardToken2.balanceOf(owner.address)).add(await rewardToken2.balanceOf(user.address))).is.above(FULL_REWARD2.div(1e12));
 
     await pool.withdraw(parseUnits('1'));
     await pool.deposit(parseUnits('1'));

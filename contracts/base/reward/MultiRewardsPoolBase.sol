@@ -24,7 +24,7 @@ abstract contract MultiRewardsPoolBase is Reentrancy, IMultiRewardsPool {
 
   /// @dev Rewards are released over 7 days
   uint internal constant DURATION = 7 days;
-  uint internal constant PRECISION = 10 ** 18;
+  uint internal constant PRECISION = 10 ** 27;
   uint internal constant MAX_REWARD_TOKENS = 10;
 
   /// Default snx staking contract implementation

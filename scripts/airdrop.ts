@@ -16,6 +16,7 @@ const buySources = new Set<string>([
   '0xB099ED146fAD4d0dAA31E3810591FC0554aF62bB'.toLowerCase(), // bogged
   '0x6352a56caadC4F1E25CD6c75970Fa768A3304e64'.toLowerCase(), // openocean
   '0xb31D1B1eA48cE4Bf10ed697d44B747287E785Ad4'.toLowerCase(), // firebird
+  '0x617Dee16B86534a5d792A4d7A62FB491B544111E'.toLowerCase(), // kyberswap
   ROUTER, // dystopia router
   // '0x1e08a5b6a1694bc1a65395db6f4c506498daa349'.toLowerCase(), // wmatic/dyst
 ]);
@@ -34,9 +35,9 @@ const MAIN_PAIRS = [
 
 async function main() {
 
-  const START = 33403019;
-  // const END = 33280278;
-  const END = await ethers.provider.getBlockNumber();
+  const START = 33691328;
+  const END = 33981369;
+  // const END = await ethers.provider.getBlockNumber();
 
   const dystTransferTopic = Dyst__factory.createInterface().getEventTopic("Transfer");
   const veLockTopic = Ve__factory.createInterface().getEventTopic("Deposit");
@@ -93,10 +94,10 @@ async function main() {
   console.log('-------------------------')
 
   for (const holder of Array.from(holdersLocked.keys())) {
-    const nftsCount = (await veCtr.balanceOf(holder)).toNumber();
+    const nftsCount = (await veCtr.balanceOf(holder, {blockTag: END})).toNumber();
     for (let i = 0; i < nftsCount; i++) {
-      const tokenId = await veCtr.tokenOfOwnerByIndex(holder, i);
-      const data = await veCtr.locked(tokenId);
+      const tokenId = await veCtr.tokenOfOwnerByIndex(holder, i, {blockTag: END});
+      const data = await veCtr.locked(tokenId, {blockTag: END});
       // console.log('locked', holder, formatUnits(data.amount));
       holdersTotalLockAfter.set(holder.toLowerCase(), (holdersTotalLockAfter.get(holder.toLowerCase()) ?? BigNumber.from(0)).add(data.amount))
     }
